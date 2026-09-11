@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tartili Digital</title>
+    
+    <!-- ==========================================
+         1. INISIALISASI FIREBASE & AUTENTIKASI
+         ========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyDCkiYKe-lKkbb0czz9y9ZBGN9SgOhbjmw",
+            authDomain: "tartili.firebaseapp.com",
+            projectId: "tartili",
+            storageBucket: "tartili.firebasestorage.app",
+            messagingSenderId: "677535626906",
+            appId: "1:677535626906:web:bc08dffdac958357e69123"
+        };
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+
+            window.firebaseAuth = auth;
+            window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+            window.signOut = signOut;
+
+            onAuthStateChanged(auth, (user) => {
+                const loginScreen = document.getElementById('login-screen');
+                const menuScreen = document.getElementById('menu-screen');
+                const readScreen = document.getElementById('read-screen');
+                const bookmarksScreen = document.getElementById('bookmarks-screen');
+
+                if (user) {
+                    loginScreen.classList.remove('active');
+                    if (!readScreen.classList.contains('active') && !bookmarksScreen.classList.contains('active')) {
+                        menuScreen.classList.add('active');
+                    }
+                    if (readScreen.classList.contains('active')) {
+                        window.appState = 'read';
+                    } else if (bookmarksScreen.classList.contains('active')) {
+                        window.appState = 'bookmarks';
+                    } else {
+                        window.appState = 'menu';
+                        updateMenuCoverFocus();
+                    }
+                } else {
+                    loginScreen.classList.add('active');
+                    menuScreen.classList.remove('active');
+                    readScreen.classList.remove('active');
+                    bookmarksScreen.classList.remove('active');
+                    window.appState = 'login';
+                }
+            });
+        } catch (e) {
+            console.error("Gagal memuat Firebase:", e);
+        }
+    </script>
+
+    <!-- Memuat Berkas Konfigurasi Data Buku Tartili (Jilid 1-6) -->
+    <script src="tartili1.js"></script>
+    <script src="tartili2.js"></script>
+    <script src="tartili3.js"></script>
+    <script src="tartili4.js"></script>
+    <script src="tartili5.js"></script>
+    <script src="tartili6.js"></script>
+
+    <!-- ==========================================
+         2. PENGATURAN TAMPILAN (CSS / STYLE MODERN)
+         ========================================== -->
+    <style>
+        :root {
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            overflow: hidden; 
+            height: 100vh; 
+            height: 100dvh; 
+            transition: background 0.4s ease, color 0.4s ease; 
+        }
+        
+        body.light-theme {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-panel: rgba(255, 255, 255, 0.85);
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --input-bg: #f1f5f9;
+            --accent-gradient: linear-gradient(135deg, #38bdf8, #0284c7);
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        }
+        body.dark-theme {
+            --bg-main: #09090b;
+            --bg-card: #18181b;
+            --bg-panel: rgba(24, 24, 27, 0.85);
+            --border-color: #27272a;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --input-bg: #27272a;
+            --accent-gradient: linear-gradient(135deg, #38bdf8, #0284c7);
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+        }
+
+        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; justify-content: center; align-items: center; }
+        .screen.active { display: flex; }
+        
+        #login-screen { background: var(--bg-main); padding: 20px; z-index: 999; }
+        .login-card {
+            background: var(--bg-panel); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            padding: 32px 24px; border-radius: 20px; border: 1px solid var(--border-color);
+            box-shadow: var(--shadow); width: 100%; max-width: 360px;
+            display: flex; flex-direction: column; gap: 14px; text-align: center;
+        }
+        .login-card h2 { color: var(--text-main); font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 2px; }
+        .login-card input {
+            width: 100%; padding: 12px 16px; border: 1px solid var(--border-color);
+            border-radius: 12px; font-size: 14px; outline: none; background: var(--input-bg); color: var(--text-main);
+            transition: var(--transition);
+        }
+        .login-card input:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
+        .btn-login {
+            width: 100%; padding: 12px; border: none; border-radius: 12px;
+            background: var(--accent-gradient); color: white;
+            font-weight: 700; cursor: pointer; font-size: 14px;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3); transition: var(--transition);
+        }
+        .btn-login:hover { opacity: 0.95; transform: translateY(-1px); }
+        .login-error { color: #ef4444; font-size: 12px; font-weight: 600; margin-top: 4px; display: none; }
+
+        #menu-screen { background: var(--bg-main); overflow-y: auto; padding: 16px; display: none; flex-direction: column; justify-content: center; align-items: center; gap: 12px; }
+        #menu-screen.active { display: flex; }
+        
+        .menu-content-wrapper {
+            display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 380px; position: relative;
+        }
+
+        #menu-screen h2 { margin: 0; color: var(--text-main); font-size: 22px; font-weight: 800; letter-spacing: 1px; text-align: center; width: 100%; }
+        .grid-jilid { display: grid; gap: 12px; width: 100%; margin: 0; }
+        
+        #bookmarks-screen { background: var(--bg-main); overflow-y: auto; padding: 16px; display: none; flex-direction: column; justify-content: space-between; align-items: center; height: 100vh; height: 100dvh; }
+        #bookmarks-screen.active { display: flex; }
+        
+        .bookmarks-content-wrapper {
+            display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 400px; height: 100%; justify-content: space-between; padding: 10px 0;
+        }
+        .bookmarks-header { width: 100%; display: flex; justify-content: center; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); }
+        .bookmarks-header h2 { color: var(--text-main); font-size: 18px; font-weight: 700; text-align: center; width: 100%; }
+        
+        .bookmarks-list {
+            width: 100%; flex: 1; max-height: calc(100vh - 180px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 8px;
+            border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-panel); backdrop-filter: blur(12px);
+            box-shadow: var(--shadow); scrollbar-width: thin;
+        }
+        
+        .bookmark-item {
+            display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;
+            background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; cursor: pointer;
+            transition: var(--transition);
+        }
+        .bookmark-item:hover { border-color: #0284c7; background: var(--bg-card); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(2, 132, 199, 0.1); }
+        
+        .bookmark-item-content { display: flex; align-items: center; gap: 12px; width: 100%; }
+        .bookmark-item-icon { 
+            width: 32px; height: 32px; border-radius: 8px; background: rgba(2, 132, 199, 0.1); color: #0284c7;
+            display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;
+        }
+        .bookmark-item-info { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+        .bookmark-item-title { font-size: 13px; font-weight: 700; color: var(--text-main); }
+        .bookmark-item-subtitle { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+        
+        .bookmark-item-delete { 
+            background: rgba(239, 68, 68, 0.1); border: none; color: #ef4444; cursor: pointer; 
+            width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 12px; transition: var(--transition); flex-shrink: 0;
+        }
+        .bookmark-item-delete:hover { background: #ef4444; color: white; transform: scale(1.05); }
+
+        #toastNotification {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: #18181b; color: white; padding: 10px 22px; border-radius: 30px;
+            font-size: 13px; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 9999; pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        @media (orientation: portrait) {
+            .menu-content-wrapper { max-width: 320px; }
+            .grid-jilid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, auto); }
+            .btn-cover { aspect-ratio: 3/4; }
+            
+            #menu-screen h2 { order: 1 !important; }
+            .grid-jilid { order: 2 !important; }
+            .shortcut-panel { order: 3 !important; width: 100% !important; }
+            .logout-wrapper { order: 4 !important; width: 100% !important; display: flex !important; justify-content: center !important; align-items: center !important; gap: 10px !important; margin-top: 4px !important; }
+
+            .image-scroll-area { flex: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 4px !important; overflow: hidden !important; }
+            .image-container { height: 100% !important; width: auto !important; aspect-ratio: 1 / 1.414 !important; max-width: 100% !important; max-height: 100% !important; margin-bottom: 0 !important; }
+            .image-container img { width: 100% !important; height: 100% !important; object-fit: fill !important; }
+
+            .controls-wrapper { display: flex; flex-direction: column; width: 92% !important; max-width: 400px !important; }
+            .page-nav-panel { order: 1 !important; padding: 6px 10px !important; }
+            .shortcut-panel { order: 2 !important; }
+            .record-panel { order: 3 !important; }
+            
+            #read-screen .page-nav-panel .section-title,
+            #read-screen .shortcut-panel .section-title,
+            #bookmarks-screen .shortcut-panel .section-title { display: none !important; }
+
+            .page-nav-buttons { gap: 6px !important; }
+            .btn-page-nav-custom { height: 32px !important; }
+            .btn-prev-custom .nav-icon, .btn-next-custom .nav-icon { width: 26px !important; height: 26px !important; }
+            .nav-icon svg { width: 14px !important; height: 14px !important; }
+            .btn-prev-custom { padding-left: 32px !important; }
+            .btn-next-custom { padding-right: 32px !important; }
+
+            #menu-screen .shortcut-panel, #bookmarks-screen .shortcut-panel { padding: 8px 12px !important; }
+            #menu-screen .shortcut-container, #bookmarks-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; gap: 8px !important; width: 100% !important; }
+            #menu-screen .shortcut-left, #bookmarks-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 8px !important; flex: 1 !important; align-items: center !important; }
+            #menu-screen .shortcut-row, #bookmarks-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 6px !important; flex: 1 !important; margin: 0 !important; flex-direction: row !important; }
+            #menu-screen .shortcut-row span, #bookmarks-screen .shortcut-row span { font-size: 12px !important; width: auto !important; color: var(--text-muted); }
+            #menu-screen .shortcut-panel select, #bookmarks-screen .shortcut-panel select { width: 100% !important; height: 32px !important; font-size: 13px !important; padding: 2px 6px !important; flex: 1 !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 8px; }
+            
+            #menu-screen .shortcut-panel .btn-open-menu, #bookmarks-screen .shortcut-panel .btn-open-target, #bookmarks-screen .shortcut-panel .btn-menu-back { width: 60px !important; flex: 0 0 60px !important; height: 32px !important; font-size: 12px !important; margin-top: 0 !important; border-radius: 8px !important; }
+        }
+        
+        @media (orientation: landscape) {
+            #menu-screen { 
+                flex-direction: column !important; justify-content: center !important; 
+                align-items: center !important; gap: 12px !important; padding: 12px !important; 
+                height: 100dvh !important; overflow: hidden !important;
+            }
+            .menu-content-wrapper { max-width: 850px !important; gap: 14px !important; }
+
+            #menu-screen h2 { font-size: 18px; text-align: center; width: 100%; order: 1 !important; }
+            .grid-jilid { grid-template-columns: repeat(6, 1fr); grid-template-rows: 1fr; gap: 14px; order: 2 !important; }
+            .btn-cover { aspect-ratio: 3/4; max-height: 170px !important; }
+            
+            #menu-screen .shortcut-panel { 
+                width: 100% !important; max-width: 480px !important; height: auto !important; 
+                min-height: unset !important; max-height: none !important; flex-grow: 0 !important;
+                flex-shrink: 0 !important; padding: 8px 12px !important; order: 3 !important;
+            }
+            #menu-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 12px !important; width: 100% !important; height: auto !important; }
+            #menu-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 12px !important; flex: 1 !important; align-items: center !important; }
+            #menu-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 6px !important; flex: 1 !important; margin: 0 !important; flex-direction: row !important; }
+            #menu-screen .shortcut-row span { width: auto !important; font-size: 12px !important; color: var(--text-muted); }
+            #menu-screen .shortcut-panel select { padding: 4px 8px !important; font-size: 12px !important; height: 30px !important; width: 100% !important; flex: 1 !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 8px; }
+            
+            #menu-screen .shortcut-panel .btn-open-menu { width: 90px !important; flex: 0 0 90px !important; height: 30px !important; font-size: 12px !important; align-self: center !important; margin-top: 0 !important; border-radius: 8px !important; }
+
+            .logout-wrapper { order: 4 !important; width: 100% !important; display: flex !important; justify-content: center !important; align-items: center !important; gap: 10px !important; }
+
+            .image-scroll-area {
+                display: flex !important; flex-direction: column !important; align-items: center !important;
+                justify-content: flex-start !important; overflow-y: auto !important; overflow-x: hidden !important;
+                padding-top: 6px !important; padding-bottom: 6px !important;
+            }
+            
+            .image-container { 
+                max-width: 550px !important; height: auto !important; aspect-ratio: 1 / 1.414 !important; 
+                margin: 0 auto !important; transform-origin: top center !important;
+            }
+            .image-container img { width: 100% !important; height: 100% !important; object-fit: fill !important; }
+
+            .controls-wrapper {
+                position: relative !important; bottom: auto !important; left: auto !important;
+                transform: none !important; width: calc(550px * 1.8) !important; max-width: 98% !important;
+                margin: 6px auto; display: flex !important; flex-direction: row !important;
+                flex-wrap: nowrap !important; justify-content: center !important; align-items: stretch !important;
+                gap: 8px !important; background: var(--bg-panel); backdrop-filter: blur(16px);
+                padding: 8px 12px; border-radius: 16px; box-shadow: var(--shadow); z-index: 100; border: 1px solid var(--border-color);
+            }
+            
+            .shortcut-panel { width: auto !important; flex: 1.8 !important; height: auto !important; display: flex; flex-direction: column; justify-content: center; }
+            .record-panel { width: auto !important; flex: 1.4 !important; height: auto !important; order: 2 !important; display: flex; flex-direction: column; justify-content: center; }
+            .page-nav-panel { 
+                width: auto !important; flex: 0.85 !important; height: auto !important; order: 3 !important;
+                background: var(--bg-card) !important; border: 1px solid var(--border-color) !important; border-radius: 12px !important; 
+                padding: 6px 8px !important; display: flex !important; flex-direction: column !important; 
+                justify-content: center !important; align-items: stretch !important; gap: 4px !important; 
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important; 
+            }
+            
+            #read-screen .page-nav-panel .section-title,
+            #read-screen .shortcut-panel .section-title { display: block !important; }
+
+            #bookmarks-screen .bookmarks-content-wrapper { max-width: 550px !important; justify-content: flex-start !important; gap: 10px !important; }
+            #bookmarks-screen .bookmarks-list { max-height: calc(100vh - 130px) !important; }
+            #bookmarks-screen .shortcut-panel { 
+                width: 100% !important; max-width: 100% !important; 
+                padding: 8px 12px !important; height: auto !important; 
+                justify-content: center !important; flex: 0 0 auto !important;
+            }
+            #bookmarks-screen .shortcut-panel .section-title { display: none !important; }
+
+            .page-nav-buttons { gap: 4px !important; }
+            .btn-page-nav-custom {
+                height: 30px !important; flex: 1 !important; width: 100% !important; border-radius: 15px !important;
+            }
+            .btn-prev-custom .nav-icon, .btn-next-custom .nav-icon { width: 20px !important; height: 20px !important; }
+            .nav-icon svg { width: 11px !important; height: 11px !important; }
+            .btn-prev-custom { padding-left: 22px !important; }
+            .btn-next-custom { padding-right: 22px !important; }
+            
+            .universal-btn { height: 30px !important; font-size: 12px !important; border-radius: 8px !important; }
+            
+            #read-screen .shortcut-container, #bookmarks-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 8px !important; width: 100% !important; }
+            #read-screen .shortcut-left, #bookmarks-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 8px !important; flex: 2.2 !important; align-items: center !important; }
+            #read-screen .shortcut-row, #bookmarks-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 6px !important; margin: 0 !important; flex-direction: row !important; }
+            #read-screen .shortcut-row span, #bookmarks-screen .shortcut-row span { width: auto !important; font-size: 12px !important; color: var(--text-muted); flex-shrink: 0; }
+            
+            #bookmarks-screen .shortcut-row.row-tartili { flex: 0.85 1 0% !important; width: auto !important; }
+            #bookmarks-screen .shortcut-row.row-halaman { flex: 1.15 1 0% !important; width: auto !important; }
+            
+            /* Menyesuaikan proporsi lebar: Kotak Tartili sedikit dikurangi, Kotak Halaman sedikit ditambah */
+            #read-screen .shortcut-row.row-tartili { flex: 0.85 1 0% !important; width: auto !important; }
+            #read-screen .shortcut-row.row-halaman { flex: 1.15 1 0% !important; width: auto !important; }
+            
+            #read-screen .shortcut-panel select, #bookmarks-screen .shortcut-panel select { padding: 4px 8px !important; font-size: 12px !important; height: 30px !important; width: 100% !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 8px; }
+            #read-screen .btn-open-target, #bookmarks-screen .btn-open-target { width: 60px !important; flex: 0 0 60px !important; height: 30px !important; font-size: 12px !important; align-self: center !important; margin-top: 0 !important; border-radius: 8px !important; }
+            #read-screen .btn-menu-back, #bookmarks-screen .btn-menu-back { width: 60px !important; flex: 0 0 60px !important; height: 30px !important; font-size: 12px !important; align-self: center !important; margin-top: 0 !important; border-radius: 8px !important; }
+        }
+
+        .btn-cover { width: 100%; border: none; padding: 0; cursor: pointer; border-radius: 16px; transition: var(--transition); transform: scale(0.95); background: transparent; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .btn-cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 16px; display: block; }
+        .btn-cover:hover, .btn-cover.keyboard-focused { transform: translateY(-4px) scale(1.0); outline: 3px solid #0284c7; box-shadow: 0 12px 25px rgba(2, 132, 199, 0.25); }
+        .btn-cover:active { transform: scale(1.02); }
+
+        .btn-theme-toggle {
+            background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
+            width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.05); transition: var(--transition);
+        }
+        .btn-theme-toggle:hover { transform: scale(1.05); background: var(--input-bg); }
+        .btn-theme-toggle svg {
+            width: 20px; height: 20px; fill: none; stroke: var(--text-muted);
+            stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: var(--transition);
+        }
+        body.dark-theme .btn-theme-toggle svg { stroke: #38bdf8; }
+
+        .btn-bookmark {
+            background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
+            width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.05); transition: var(--transition); flex-shrink: 0;
+        }
+        .btn-bookmark:hover { transform: scale(1.05); }
+        .btn-bookmark svg {
+            width: 20px; height: 20px; fill: none; stroke: var(--text-muted);
+            stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: var(--transition);
+        }
+        .btn-bookmark.saved { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); }
+        .btn-bookmark.saved svg { fill: #ef4444; stroke: #ef4444; }
+
+        /* Styling Tombol Navigasi Kustom (Gaya Kapsul Miring & Warna Biru Selaras) */
+        .btn-page-nav-custom {
+            flex: 1;
+            height: 38px;
+            border: none;
+            border-radius: 19px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            position: relative;
+            font-weight: bold;
+            transition: var(--transition);
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
+            color: white;
+        }
+        .btn-prev-custom {
+            background: linear-gradient(135deg, #38bdf8, #0284c7);
+            padding-left: 36px;
+            justify-content: flex-start;
+        }
+        .btn-prev-custom .nav-icon {
+            position: absolute;
+            left: 4px;
+            width: 30px;
+            height: 30px;
+            background: #ffffff;
+            color: #0284c7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .btn-next-custom {
+            background: linear-gradient(135deg, #38bdf8, #0284c7);
+            padding-right: 36px;
+            justify-content: flex-end;
+        }
+        .btn-next-custom .nav-icon {
+            position: absolute;
+            right: 4px;
+            width: 30px;
+            height: 30px;
+            background: #ffffff;
+            color: #0284c7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .nav-icon svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .btn-page-nav-custom:hover { opacity: 0.92; transform: translateY(-1px); }
+        .btn-page-nav-custom:active { transform: scale(0.98); }
+
+        #read-screen { position: relative; background: var(--bg-main); display: none; width: 100%; height: 100%; overflow: hidden; }
+        #read-screen.active { display: flex; flex-direction: column; }
+
+        .image-scroll-area {
+            flex: 1; width: 100%; overflow-y: auto; overflow-x: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            padding: 8px 0; background: var(--bg-main); position: relative;
+        }
+
+        .loading-spinner {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 42px; height: 42px; border: 4px solid var(--border-color); border-top: 4px solid #0284c7;
+            border-radius: 50%; animation: spin 0.8s linear infinite; z-index: 5; display: none;
+        }
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        .image-container { 
+            position: relative; display: block; border-radius: 14px; background: var(--bg-card);
+            box-shadow: var(--shadow); width: 92%; max-width: 420px;
+            aspect-ratio: 1 / 1.414; transform-origin: center center; will-change: transform;
+            transition: transform 0.05s ease-out; border: 1px solid var(--border-color);
+        }
+
+        .image-container img { width: 100%; height: 100%; display: block; border-radius: 14px; pointer-events: none; object-fit: fill; }
+        .sound-block { position: absolute; cursor: pointer; background: rgba(2, 132, 199, 0.08); border: 1px dashed rgba(2, 132, 199, 0.4); border-radius: 6px; transition: var(--transition); }
+        .sound-block:hover { background: rgba(2, 132, 199, 0.2); }
+        .sound-block:active { background: rgba(2, 132, 199, 0.35); }
+
+        .controls-wrapper {
+            width: calc(420px * 1.8); max-width: 95%; margin: 0 auto 6px auto; display: flex; flex-direction: column; gap: 6px;
+            flex-shrink: 0; z-index: 100; background: var(--bg-panel); backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px); padding: 10px; border-radius: 16px; box-shadow: var(--shadow); border: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            text-align: center; font-size: 11px; font-weight: 700; color: var(--text-muted);
+            margin-bottom: 2px; letter-spacing: 0.5px; text-transform: uppercase;
+        }
+
+        .page-nav-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .page-nav-buttons { width: 100%; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+
+        .record-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .record-buttons { display: flex; justify-content: space-between; align-items: stretch; gap: 6px; }
+        
+        .universal-btn { 
+            height: 32px; border: none; border-radius: 8px; color: white; cursor: pointer; 
+            font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; 
+            flex: 1 !important; width: 0 !important; padding: 0 !important; margin: 0 !important;
+            transition: var(--transition); box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .universal-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+        .btn-menu-back { background: linear-gradient(135deg, #22c55e, #15803d); }
+        .btn-open-target { background: linear-gradient(135deg, #38bdf8, #0284c7); }
+        .btn-record { background: linear-gradient(135deg, #f87171, #dc2626); }
+        .btn-stop { background: linear-gradient(135deg, #fbbf24, #d97706); }
+        .btn-ok { background: linear-gradient(135deg, #38bdf8, #0284c7); }
+        .btn-send { background: linear-gradient(135deg, #22c55e, #15803d); }
+        .universal-btn:disabled { background: var(--border-color) !important; color: var(--text-muted) !important; cursor: not-allowed; box-shadow: none !important; transform: none !important; }
+
+        @keyframes pulse-animation {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.65; transform: scale(0.98); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .is-recording {
+            animation: pulse-animation 1.2s infinite ease-in-out;
+            background: linear-gradient(135deg, #ef4444, #991b1b) !important;
+        }
+
+        .shortcut-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .shortcut-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .shortcut-row span { width: 55px; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+        .shortcut-panel select { flex: 1; width: 0; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 12px; background: var(--input-bg); color: var(--text-main); font-weight: 600; outline: none; transition: var(--transition); }
+        .shortcut-panel select:focus { border-color: #0284c7; }
+        
+        .shortcut-container { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+        .shortcut-left { flex: 2; display: flex; flex-direction: column; gap: 4px; }
+    </style>
+</head>
+<body class="light-theme">
+
+    <!-- Toast Notifikasi Elemen -->
+    <div id="toastNotification">Pemberitahuan</div>
+
+    <!-- ==========================================
+         3. STRUKTUR HTML (ANTARMUKA / TAMPILAN)
+         ========================================== -->
+
+    <!-- Halaman Login -->
+    <div id="login-screen" class="screen">
+        <div class="login-card">
+            <h2>Tartili Digital</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px;">Silakan masuk dengan akun terdaftar.</p>
+            <input type="email" id="loginEmail" placeholder="Email Anda" />
+            <input type="password" id="loginPassword" placeholder="Kata Sandi" />
+            <button class="btn-login" onclick="handleLogin()">Masuk</button>
+            <div id="loginError" class="login-error">Email atau kata sandi salah.</div>
+        </div>
+    </div>
+
+    <!-- Halaman Menu Utama -->
+    <div id="menu-screen" class="screen">
+        <div class="menu-content-wrapper">
+            <h2>TARTILI</h2>
+            <div class="grid-jilid">
+                <button class="btn-cover" id="cover-btn-0" onclick="openJilid(1, 'a')" onmouseenter="selectedMenuCoverIndex=0; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover1.jpg"></button>
+                <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover2.jpg"></button>
+                <button class="btn-cover" id="cover-btn-2" onclick="openJilid(3, 'a')" onmouseenter="selectedMenuCoverIndex=2; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover3.jpg"></button>
+                <button class="btn-cover" id="cover-btn-3" onclick="openJilid(4, 'a')" onmouseenter="selectedMenuCoverIndex=3; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover4.jpg"></button>
+                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=4; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover5.jpg"></button>
+                <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover6.jpg"></button>
+            </div>
+            
+            <div class="shortcut-panel">
+                <div class="shortcut-container">
+                    <div class="shortcut-left">
+                        <div class="shortcut-row">
+                            <span>Tartili</span>
+                            <select id="jumpJilidMenu" onchange="updatePageOptions('Menu')">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                            </select>
+                        </div>
+                        <div class="shortcut-row">
+                            <span>Halaman</span>
+                            <select id="jumpPageSelectMenu"></select>
+                        </div>
+                    </div>
+                    <button class="btn-open-menu" onclick="directOpen('Menu')" style="background: var(--accent-gradient); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: var(--transition);">Buka</button>
+                </div>
+            </div>
+
+            <div class="logout-wrapper">
+                <button class="btn-bookmark saved" onclick="openBookmarksScreen()" title="Halaman Tersimpan">
+                    <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
+                </button>
+                <button onclick="handleLogout()" style="background: #ef4444; color: white; border: none; padding: 0 16px; height: 40px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 6px rgba(239, 68, 68, 0.25); display: flex; align-items: center; justify-content: center; gap: 4px; transition: var(--transition);" title="Keluar">Logout</button>
+                
+                <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Halaman Daftar Bookmark (Tersimpan) -->
+    <div id="bookmarks-screen" class="screen">
+        <div class="bookmarks-content-wrapper">
+            <div class="bookmarks-header">
+                <h2>Halaman Tersimpan</h2>
+            </div>
+            
+            <div class="bookmarks-list" id="bookmarksListContainer">
+                <!-- Daftar item bookmark dimuat dinamis -->
+            </div>
+            
+            <div class="shortcut-panel">
+                <div class="section-title">Pintasan</div>
+                <div class="shortcut-container">
+                    <button class="universal-btn btn-menu-back" onclick="goToMenu()">Menu</button>
+                    <div class="shortcut-left">
+                        <div class="shortcut-row row-tartili">
+                            <span>Tartili</span>
+                            <select id="jumpJilidBookmarks" onchange="updatePageOptions('Bookmarks')">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                            </select>
+                        </div>
+                        <div class="shortcut-row row-halaman">
+                            <span>Halaman</span>
+                            <select id="jumpPageSelectBookmarks"></select>
+                        </div>
+                    </div>
+                    <button class="universal-btn btn-open-target" onclick="directOpen('Bookmarks')">Buka</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Halaman Membaca Buku -->
+    <div id="read-screen" class="screen">
+        <div class="image-scroll-area" id="scrollArea">
+            <div class="loading-spinner" id="loadingSpinner"></div>
+            <div class="image-container" id="imageContainer"></div>
+        </div>
+        
+        <div class="controls-wrapper">
+            <div class="page-nav-panel">
+                <div class="section-title">Halaman</div>
+                <div class="page-nav-buttons">
+                    <!-- Tombol Sebelumnya Kustom (Nuansa Biru Selaras) -->
+                    <button class="btn-page-nav-custom btn-prev-custom" onclick="changePage(-1)" title="Sebelumnya">
+                        <span class="nav-icon">
+                            <svg viewBox="0 0 24 24"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
+                        </span>
+                    </button>
+                    
+                    <!-- Tombol Simpan/Bookmark di Tengah -->
+                    <button class="btn-bookmark" id="btnBookmark" onclick="toggleBookmark()" title="Simpan Halaman">
+                        <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
+                    </button>
+                    
+                    <!-- Tombol Berikutnya Kustom (Nuansa Biru Selaras) -->
+                    <button class="btn-page-nav-custom btn-next-custom" onclick="changePage(1)" title="Berikutnya">
+                        <span class="nav-icon">
+                            <svg viewBox="0 0 24 24"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="shortcut-panel">
+                <div class="section-title">Pintasan</div>
+                <div class="shortcut-container">
+                    <button class="universal-btn btn-menu-back" onclick="goToMenu()">Menu</button>
+                    <div class="shortcut-left">
+                        <div class="shortcut-row row-tartili">
+                            <span>Tartili</span>
+                            <select id="jumpJilidRead" onchange="updatePageOptions('Read')">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                            </select>
+                        </div>
+                        <div class="shortcut-row row-halaman">
+                            <span>Halaman</span>
+                            <select id="jumpPageSelectRead"></select>
+                        </div>
+                    </div>
+                    <button class="universal-btn btn-open-target" onclick="directOpen('Read')">Buka</button>
+                </div>
+            </div>
+
+            <div class="record-panel">
+                <div class="section-title" id="recordTitle">Setoran membaca</div>
+                <div class="record-buttons">
+                    <button class="universal-btn btn-record" id="btnRec" onclick="startRecording()">Rekam</button>
+                    <button class="universal-btn btn-stop" id="btnStop" onclick="stopRecording()" disabled>Stop</button>
+                    <button class="universal-btn btn-ok" id="btnOk" onclick="uploadRecordingToDrive()" disabled>Simpan</button>
+                    <button class="universal-btn btn-send" id="btnSend" onclick="sendToWhatsApp()" disabled>Kirim WA</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         4. LOGIKA APLIKASI UTAMA (JAVASCRIPT)
+         ========================================== -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    const CACHE_NAME = 'tartili-cache-v2';
+                    self.addEventListener('install', (e) => { self.skipWaiting(); });
+                    self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
+                    self.addEventListener('fetch', (e) => {
+                        e.respondWith(
+                            caches.match(e.request).then((cachedResponse) => {
+                                if (cachedResponse) return cachedResponse;
+                                return fetch(e.request).then((response) => {
+                                    if(!response || response.status !== 200 || response.type !== 'basic') return response;
+                                    let responseToCache = response.clone();
+                                    caches.open(CACHE_NAME).then((cache) => { cache.put(e.request, responseToCache); });
+                                    return response;
+                                }).catch(() => {});
+                            })
+                        );
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'text/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed', err));
+            });
+        }
+
+        const savedTheme = localStorage.getItem('tartili_theme') || 'light-theme';
+        document.body.className = savedTheme;
+        updateThemeToggleIcon();
+
+        function toggleTheme() {
+            if (document.body.classList.contains('light-theme')) {
+                document.body.className = 'dark-theme';
+                localStorage.setItem('tartili_theme', 'dark-theme');
+            } else {
+                document.body.className = 'light-theme';
+                localStorage.setItem('tartili_theme', 'light-theme');
+            }
+            updateThemeToggleIcon();
+            showToast(document.body.classList.contains('dark-theme') ? 'Mode Gelap diaktifkan' : 'Mode Terang diaktifkan');
+        }
+
+        function updateThemeToggleIcon() {
+            const btn = document.querySelector('.btn-theme-toggle');
+            if (btn) {
+                const isDark = document.body.classList.contains('dark-theme');
+                if (isDark) {
+                    btn.innerHTML = `
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>`;
+                } else {
+                    btn.innerHTML = `
+                        <svg viewBox="0 0 24 24">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>`;
+                }
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toastNotification');
+            toast.innerText = message;
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+            setTimeout(() => {
+                toast.style.transform = 'translateX(-50%) translateY(100px)';
+            }, 2800);
+        }
+
+        let savedLastRead = JSON.parse(localStorage.getItem('tartili_last_read')) || { jilid: 1, page: 'a' };
+        let savedBookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks')) || [];
+        
+        let currentJilid = savedLastRead.jilid, currentPage = savedLastRead.page, appState = 'menu', selectedMenuCoverIndex = 0, currentAudio = null;
+        let mediaRecorder, audioChunks = [], recordedAudioBlob = null, generatedWhatsAppUrl = ""; 
+        
+        const baseUrl = "https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/";
+        let scale = 1, initialDistance = null;
+        let touchStartX = 0, touchEndX = 0;
+        const minSwipeDistance = 50;
+
+        const allAudioConfig = {
+            "1": typeof tartili1Config !== 'undefined' ? tartili1Config : {},
+            "2": typeof tartili2Config !== 'undefined' ? tartili2Config : {},
+            "3": typeof tartili3Config !== 'undefined' ? tartili3Config : {},
+            "4": typeof tartili4Config !== 'undefined' ? tartili4Config : {},
+            "5": typeof tartili5Config !== 'undefined' ? tartili5Config : {},
+            "6": typeof tartili6Config !== 'undefined' ? tartili6Config : {}
+        };
+
+        function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorDiv = document.getElementById('loginError');
+
+            if (!email || !password) {
+                errorDiv.innerText = "Isi email dan kata sandi.";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            window.signInWithEmailAndPassword(window.firebaseAuth, email, password)
+                .then(() => { errorDiv.style.display = 'none'; showToast('Berhasil masuk!'); })
+                .catch(() => {
+                    errorDiv.innerText = "Email atau kata sandi salah / belum terdaftar.";
+                    errorDiv.style.display = 'block';
+                });
+        }
+
+        function handleLogout() {
+            if (confirm("Apakah Anda yakin ingin keluar dari akun?")) {
+                window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
+            }
+        }
+
+        history.replaceState({ screen: 'menu' }, '', '');
+
+        window.addEventListener('popstate', function(event) {
+            if (appState === 'read') {
+                if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+                resetRecording();
+                appState = 'menu';
+                document.getElementById('read-screen').classList.remove('active');
+                document.getElementById('bookmarks-screen').classList.remove('active');
+                document.getElementById('menu-screen').classList.add('active');
+                updateMenuCoverFocus();
+                history.replaceState({ screen: 'menu' }, '', '');
+            } else if (appState === 'bookmarks') {
+                appState = 'menu';
+                document.getElementById('bookmarks-screen').classList.remove('active');
+                document.getElementById('menu-screen').classList.add('active');
+                updateMenuCoverFocus();
+                history.replaceState({ screen: 'menu' }, '', '');
+            } else {
+                history.back();
+            }
+        });
+
+        function isPortrait() { return window.innerHeight > window.innerWidth; }
+
+        window.addEventListener('resize', () => {
+            if (isPortrait()) { resetZoom(); }
+            const container = document.getElementById('imageContainer');
+            if (appState === 'read' && (!container.innerHTML || container.innerHTML.trim() === '')) {
+                loadPageData();
+            }
+        });
+
+        updatePageOptions('Menu');
+        updatePageOptions('Read'); 
+        updatePageOptions('Bookmarks');
+        updateMenuCoverFocus();
+
+        function openBookmarksScreen() {
+            appState = 'bookmarks';
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('read-screen').classList.remove('active');
+            document.getElementById('bookmarks-screen').classList.add('active');
+            renderBookmarksList();
+            updatePageOptions('Bookmarks');
+            history.pushState({ screen: 'bookmarks' }, '', '');
+        }
+
+        function renderBookmarksList() {
+            const container = document.getElementById('bookmarksListContainer');
+            if (!container) return;
+            container.innerHTML = "";
+
+            if (savedBookmarks.length === 0) {
+                container.innerHTML = `
+                    <div style="display:flex; flex-direction: column; align-items:center; justify-content:center; height: 180px; color:var(--text-muted); font-size:13px; padding:20px; text-align:center; gap: 8px;">
+                        <span style="font-size: 32px;">📖</span>
+                        <span>Belum ada halaman tersimpan.</span>
+                    </div>`;
+                return;
+            }
+
+            const reversedBookmarks = [...savedBookmarks].reverse();
+
+            reversedBookmarks.forEach((b, revIndex) => {
+                const originalIndex = savedBookmarks.length - 1 - revIndex;
+
+                let item = document.createElement('div');
+                item.className = 'bookmark-item';
+                item.setAttribute('onclick', `openJilid(${b.jilid}, '${b.page}')`);
+                item.innerHTML = `
+                    <div class="bookmark-item-content">
+                        <div class="bookmark-item-icon">
+                            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:#0284c7;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
+                        </div>
+                        <div class="bookmark-item-info">
+                            <span class="bookmark-item-title">Tartili Jilid ${b.jilid}</span>
+                            <span class="bookmark-item-subtitle">Halaman ${b.page}</span>
+                        </div>
+                    </div>
+                    <button class="bookmark-item-delete" onclick="removeBookmark(${originalIndex}, event)" title="Hapus">✕</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function removeBookmark(index, event) {
+            event.stopPropagation();
+            savedBookmarks.splice(index, 1);
+            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
+            renderBookmarksList();
+            updateBookmarkButtonState();
+            showToast('Halaman dihapus dari simpanan');
+        }
+
+        function goToMenu() {
+            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+            resetRecording();
+            appState = 'menu';
+            document.getElementById('read-screen').classList.remove('active');
+            document.getElementById('bookmarks-screen').classList.remove('active');
+            document.getElementById('menu-screen').classList.add('active');
+            updateMenuCoverFocus();
+            history.replaceState({ screen: 'menu' }, '', '');
+        }
+
+        function updateMenuCoverFocus() {
+            for (let i = 0; i < 6; i++) {
+                let btn = document.getElementById('cover-btn-' + i);
+                if (btn) {
+                    if (i === selectedMenuCoverIndex) btn.classList.add('keyboard-focused');
+                    else btn.classList.remove('keyboard-focused');
+                }
+            }
+        }
+
+        function getNumericPageList(jilid) {
+            let list = [], max = (jilid === 6) ? 48 : 44;
+            for (let i = 1; i <= max; i++) list.push(i.toString());
+            return list;
+        }
+
+        function getFullPageList(jilid) {
+            let list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', '0'];
+            return list.concat(getNumericPageList(jilid));
+        }
+
+        function updatePageOptions(context) {
+            let selectId = 'jumpJilidMenu';
+            let targetSelectId = 'jumpPageSelectMenu';
+            if (context === 'Read') {
+                selectId = 'jumpJilidRead';
+                targetSelectId = 'jumpPageSelectRead';
+            } else if (context === 'Bookmarks') {
+                selectId = 'jumpJilidBookmarks';
+                targetSelectId = 'jumpPageSelectBookmarks';
+            }
+            
+            let jilidEl = document.getElementById(selectId);
+            let select = document.getElementById(targetSelectId);
+            if (!jilidEl || !select) return;
+            
+            let jilid = parseInt(jilidEl.value);
+            select.innerHTML = "";
+            getNumericPageList(jilid).forEach(p => { 
+                let opt = document.createElement('option'); 
+                opt.value = p; opt.text = p; 
+                select.appendChild(opt); 
+            });
+        }
+
+        function openJilid(jilid, page) {
+            currentJilid = jilid; currentPage = page; appState = 'read';
+            document.getElementById('read-screen').classList.add('active');
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('bookmarks-screen').classList.remove('active');
+            updatePageOptions('Read');
+            
+            let numList = getNumericPageList(currentJilid);
+            let targetPage = numList.includes(currentPage.toString()) ? currentPage.toString() : "1";
+            document.getElementById('jumpPageSelectRead').value = targetPage;
+            
+            resetZoom();
+            loadPageData();
+            history.pushState({ screen: 'read' }, '', '');
+        }
+
+        function resetZoom() { scale = 1; updateImageTransform(); }
+
+        function updateImageTransform() {
+            const container = document.getElementById('imageContainer');
+            if (container) container.style.transform = `scale(${scale})`;
+        }
+
+        function changePage(delta) {
+            let pages = getFullPageList(currentJilid);
+            let currentIndex = pages.indexOf(currentPage.toString());
+            let newIndex = currentIndex + delta;
+            if (newIndex >= 0 && newIndex < pages.length) {
+                currentPage = pages[newIndex];
+                resetZoom();
+                loadPageData();
+            }
+        }
+
+        function toggleBookmark() {
+            let index = savedBookmarks.findIndex(b => b.jilid === currentJilid && b.page === currentPage);
+            
+            if (index > -1) {
+                savedBookmarks.splice(index, 1);
+                showToast('Halaman dihapus dari simpanan');
+            } else {
+                savedBookmarks.push({ jilid: currentJilid, page: currentPage });
+                showToast('Halaman berhasil disimpan!');
+            }
+            
+            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
+            updateBookmarkButtonState();
+        }
+
+        function updateBookmarkButtonState() {
+            const btn = document.getElementById('btnBookmark');
+            if (!btn) return;
+            let isSaved = savedBookmarks.some(b => b.jilid === currentJilid && b.page === currentPage);
+            if (isSaved) {
+                btn.classList.add('saved');
+                btn.title = "Hapus Simpanan (Unsave)";
+            } else {
+                btn.classList.remove('saved');
+                btn.title = "Simpan Halaman (Save)";
+            }
+        }
+
+        function loadPageData() {
+            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+            resetRecording();
+            
+            localStorage.setItem('tartili_last_read', JSON.stringify({ jilid: currentJilid, page: currentPage }));
+            updateBookmarkButtonState();
+
+            const container = document.getElementById('imageContainer');
+            const spinner = document.getElementById('loadingSpinner');
+            const imgPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/halaman${currentPage}.jpg`;
+            
+            if (spinner) spinner.style.display = 'block';
+            container.innerHTML = "";
+
+            let img = new Image();
+            img.src = imgPath;
+            img.onload = function() {
+                if (spinner) spinner.style.display = 'none';
+                let htmlContent = `<img src="${imgPath}">`;
+                
+                if (allAudioConfig[currentJilid] && allAudioConfig[currentJilid][currentPage]) {
+                    allAudioConfig[currentJilid][currentPage].forEach(block => {
+                        let [top, left, width, height, soundFile] = block;
+                        htmlContent += `<div class="sound-block" style="top: ${top}%; left: ${left}%; width: ${width}%; height: ${height}%;" onclick="playSound('${soundFile}')"></div>`;
+                    });
+                }
+                container.innerHTML = htmlContent;
+            };
+            img.onerror = function() {
+                if (spinner) spinner.style.display = 'none';
+                container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:12px;">Gagal memuat halaman</div>`;
+            };
+
+            document.getElementById('jumpJilidRead').value = currentJilid;
+            let numList = getNumericPageList(currentJilid);
+            if (numList.includes(currentPage.toString())) { 
+                document.getElementById('jumpPageSelectRead').value = currentPage; 
+            }
+        }
+
+        function playSound(soundFile) {
+            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
+            let soundPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/${soundFile}`;
+            currentAudio = new Audio(soundPath);
+            currentAudio.play();
+        }
+
+        const scrollArea = document.getElementById('scrollArea');
+        if (scrollArea) {
+            scrollArea.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    if (!isPortrait()) {
+                        initialDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    }
+                    return;
+                }
+                if (e.touches.length === 1) {
+                    touchStartX = e.touches[0].clientX;
+                }
+            }, {passive: true});
+
+            scrollArea.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2 && !isPortrait() && initialDistance) {
+                    let currentDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    let zoomFactor = currentDistance / initialDistance;
+                    scale = Math.min(Math.max(1, scale * (zoomFactor > 1 ? 1.04 : 0.96)), 1.8);
+                    initialDistance = currentDistance;
+                    updateImageTransform();
+                }
+            }, {passive: true});
+
+            scrollArea.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) initialDistance = null;
+                touchEndX = e.changedTouches[0].clientX;
+                handleSwipeGesture();
+            }, {passive: true});
+
+            scrollArea.addEventListener('wheel', (e) => {
+                if (isPortrait()) return; 
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    let zoomIntensity = 0.15;
+                    if (e.deltaY < 0) { scale = Math.min(scale + zoomIntensity, 1.8); } 
+                    else { scale = Math.max(scale - zoomIntensity, 1); }
+                    updateImageTransform();
+                }
+            }, {passive: false});
+        }
+
+        function handleSwipeGesture() {
+            let distance = touchEndX - touchStartX;
+            if (scale > 1) return;
+
+            if (Math.abs(distance) >= minSwipeDistance) {
+                if (distance > 0) {
+                    changePage(-1);
+                } else {
+                    changePage(1);
+                }
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (appState === 'menu') {
+                if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+                if (e.key === 'ArrowRight') {
+                    selectedMenuCoverIndex = (selectedMenuCoverIndex + 1) % 6;
+                    updateMenuCoverFocus();
+                    e.preventDefault();
+                } else if (e.key === 'ArrowLeft') {
+                    selectedMenuCoverIndex = (selectedMenuCoverIndex - 1 + 6) % 6;
+                    updateMenuCoverFocus();
+                    e.preventDefault();
+                } else if (e.key === 'ArrowDown') {
+                    if (isPortrait()) {
+                        selectedMenuCoverIndex = (selectedMenuCoverIndex + 2) % 6;
+                        updateMenuCoverFocus();
+                        e.preventDefault();
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    if (isPortrait()) {
+                        selectedMenuCoverIndex = (selectedMenuCoverIndex - 2 + 6) % 6;
+                        updateMenuCoverFocus();
+                        e.preventDefault();
+                    }
+                } else if (e.key === 'Enter') {
+                    openJilid(selectedMenuCoverIndex + 1, 'a');
+                    e.preventDefault();
+                }
+                return;
+            }
+
+            if (appState === 'read') {
+                if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+                if (e.key === 'ArrowRight') {
+                    changePage(1);
+                } else if (e.key === 'ArrowLeft') {
+                    changePage(-1);
+                }
+            }
+        });
+
+        function resetRecording() {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+            audioChunks = []; recordedAudioBlob = null; generatedWhatsAppUrl = "";
+            const btnRec = document.getElementById('btnRec');
+            const btnStop = document.getElementById('btnStop');
+            const btnOk = document.getElementById('btnOk');
+            const btnSend = document.getElementById('btnSend');
+            const recordTitle = document.getElementById('recordTitle');
+            
+            if (btnRec) { 
+                btnRec.innerText = "Rekam"; 
+                btnRec.disabled = false; 
+                btnRec.classList.remove('is-recording'); 
+            }
+            if (btnStop) btnStop.disabled = true;
+            if (btnOk) btnOk.disabled = true;
+            if (btnSend) btnSend.disabled = true;
+            if (recordTitle) {
+                recordTitle.innerText = "Setoran membaca";
+                recordTitle.style.color = "var(--text-muted)";
+            }
+        }
+
+        async function startRecording() {
+            if (recordedAudioBlob) resetRecording();
+            const recordTitle = document.getElementById('recordTitle');
+            const btnRec = document.getElementById('btnRec');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 44100 } });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = event => { if (event.data.size > 0) audioChunks.push(event.data); };
+                mediaRecorder.onstop = () => {
+                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                    document.getElementById('btnOk').disabled = false;
+                    if (recordTitle) {
+                        recordTitle.innerText = "Klik Simpan";
+                        recordTitle.style.color = "#15803d";
+                    }
+                };
+                mediaRecorder.start();
+                btnRec.disabled = true;
+                btnRec.classList.add('is-recording');
+                document.getElementById('btnStop').disabled = false;
+                document.getElementById('btnOk').disabled = true;
+                document.getElementById('btnSend').disabled = true;
+                
+                if (recordTitle) {
+                    recordTitle.innerText = "🔴 Merekam audio...";
+                    recordTitle.style.color = "#ef4444";
+                }
+            } catch (err) { 
+                showToast("Gagal mengakses mikrofon.");
+                if (recordTitle) {
+                    recordTitle.innerText = "Gagal akses mic";
+                    recordTitle.style.color = "#ef4444";
+                }
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+            const btnRec = document.getElementById('btnRec');
+            if (btnRec) {
+                btnRec.disabled = false;
+                btnRec.innerText = "Rekam";
+                btnRec.classList.remove('is-recording');
+            }
+            document.getElementById('btnStop').disabled = true;
+        }
+
+        async function uploadRecordingToDrive() {
+            if (!recordedAudioBlob) return;
+            document.getElementById('btnOk').disabled = true;
+            const recordTitle = document.getElementById('recordTitle');
+            
+            if (recordTitle) {
+                recordTitle.innerText = "⏳ Menyimpan audio...";
+                recordTitle.style.color = "#d97706";
+            }
+
+            try {
+                const reader = new FileReader();
+                reader.readAsDataURL(recordedAudioBlob);
+                reader.onloadend = async function () {
+                    const base64data = reader.result.split(',')[1];
+                    const fileName = `Setoran_Jilid${currentJilid}_Hal${currentPage}_${Date.now()}.mp3`;
+                    
+                    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyySbRNNw4mbYj8hyTy8I0KKrh5w8_XrDJz6gR-UMGmDS3eouiABheOV3Ovill_so/exec";
+
+                    let formData = new URLSearchParams();
+                    formData.append("data", base64data);
+                    formData.append("mimetype", "audio/mp3");
+                    formData.append("filename", fileName);
+
+                    let response = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData });
+                    let fileUrl = await response.text();
+
+                    if (fileUrl.startsWith("http")) {
+                        let pesan = `Assalamu'alaikum Ustadz/Ustadzah, ini setoran Tartili saya (Jilid ${currentJilid} Halaman ${currentPage}):\n${fileUrl.trim()}\n\n_(Audio otomatis terhapus setelah 7 hari)_`;
+                        generatedWhatsAppUrl = `https://wa.me/?text=${encodeURIComponent(pesan)}`;
+                        document.getElementById('btnSend').disabled = false;
+                        
+                        if (recordTitle) {
+                            recordTitle.innerText = "Siap Kirim WA";
+                            recordTitle.style.color = "#15803d";
+                        }
+                        
+                        showToast('Audio berhasil disimpan!');
+                        window.open(generatedWhatsAppUrl, '_blank');
+                    } else {
+                        throw new Error(fileUrl);
+                    }
+                };
+            } catch (e) {
+                console.error(e);
+                if (recordTitle) {
+                    recordTitle.innerText = "Gagal. Coba lagi!";
+                    recordTitle.style.color = "#ef4444";
+                }
+                showToast('Gagal mengunggah rekaman.', true);
+                document.getElementById('btnOk').disabled = false;
+            }
+        }
+
+        function sendToWhatsApp() {
+            if (generatedWhatsAppUrl) { window.open(generatedWhatsAppUrl, '_blank'); }
+        }
+
+        function directOpen(context) {
+            let selectJilidId = 'jumpJilidMenu';
+            let selectPageId = 'jumpPageSelectMenu';
+            if (context === 'Read') {
+                selectJilidId = 'jumpJilidRead';
+                selectPageId = 'jumpPageSelectRead';
+            } else if (context === 'Bookmarks') {
+                selectJilidId = 'jumpJilidBookmarks';
+                selectPageId = 'jumpPageSelectBookmarks';
+            }
+            
+            let jilid = parseInt(document.getElementById(selectJilidId).value);
+            let page = document.getElementById(selectPageId).value;
+            openJilid(jilid, page);
+        }
+    </script>
+</body>
+</html>
