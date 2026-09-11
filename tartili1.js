@@ -1,4 +1,4 @@
-Const tartili1Config = {
+const tartili1Config = {
     "1": [
     [6, 37, 25, 11, "1.mp3"], // Judul
     [20, 8, 84, 9, "2.mp3"], // Penuh
