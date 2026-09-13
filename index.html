@@ -11,58 +11,58 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Amiri:wght@700&display=swap" rel="stylesheet">
     
     <!-- ==========================================
-         1. INISIALISASI SUPABASE & AUTENTIKASI
+         1. INISIALISASI FIREBASE & AUTENTIKASI
          ========================================== -->
     <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         
-        // Ganti dengan Project URL dan Anon/Public Key Supabase Anda yang sebenarnya
-        const supabaseUrl = 'https://xdicoipqprrkczagarra.supabase.co';
-        const supabaseKey = 'SUPABASE_ANON_KEY_ANDA';
+        const firebaseConfig = {
+            apiKey: "AIzaSyDCkiYKe-lKkbb0czz9y9ZBGN9SgOhbjmw",
+            authDomain: "tartili.firebaseapp.com",
+            projectId: "tartili",
+            storageBucket: "tartili.firebasestorage.app",
+            messagingSenderId: "677535626906",
+            appId: "1:677535626906:web:bc08dffdac958357e69123"
+        };
 
         try {
-            const supabase = createClient(supabaseUrl, supabaseKey);
-            window.supabaseClient = supabase;
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
 
-            // Cek sesi aktif saat pertama kali dimuat
-            supabase.auth.getSession().then(({ data: { session } }) => {
-                handleAuthState(session?.user ?? null);
-            });
+            window.firebaseAuth = auth;
+            window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+            window.signOut = signOut;
 
-            // Pantau perubahan status login/logout
-            supabase.auth.onAuthStateChange((event, session) => {
-                handleAuthState(session?.user ?? null);
+            onAuthStateChanged(auth, (user) => {
+                const loginScreen = document.getElementById('login-screen');
+                const menuScreen = document.getElementById('menu-screen');
+                const readScreen = document.getElementById('read-screen');
+                const bookmarksScreen = document.getElementById('bookmarks-screen');
+
+                if (user) {
+                    loginScreen.classList.remove('active');
+                    if (!readScreen.classList.contains('active') && !bookmarksScreen.classList.contains('active')) {
+                        menuScreen.classList.add('active');
+                    }
+                    if (readScreen.classList.contains('active')) {
+                        window.appState = 'read';
+                    } else if (bookmarksScreen.classList.contains('active')) {
+                        window.appState = 'bookmarks';
+                    } else {
+                        window.appState = 'menu';
+                        updateMenuCoverFocus();
+                    }
+                } else {
+                    loginScreen.classList.add('active');
+                    menuScreen.classList.remove('active');
+                    readScreen.classList.remove('active');
+                    bookmarksScreen.classList.remove('active');
+                    window.appState = 'login';
+                }
             });
         } catch (e) {
-            console.error("Gagal memuat Supabase:", e);
-        }
-
-        function handleAuthState(user) {
-            const loginScreen = document.getElementById('login-screen');
-            const menuScreen = document.getElementById('menu-screen');
-            const readScreen = document.getElementById('read-screen');
-            const bookmarksScreen = document.getElementById('bookmarks-screen');
-
-            if (user) {
-                loginScreen.classList.remove('active');
-                if (!readScreen.classList.contains('active') && !bookmarksScreen.classList.contains('active')) {
-                    menuScreen.classList.add('active');
-                }
-                if (readScreen.classList.contains('active')) {
-                    window.appState = 'read';
-                } else if (bookmarksScreen.classList.contains('active')) {
-                    window.appState = 'bookmarks';
-                } else {
-                    window.appState = 'menu';
-                    if (typeof updateMenuCoverFocus === 'function') updateMenuCoverFocus();
-                }
-            } else {
-                loginScreen.classList.add('active');
-                menuScreen.classList.remove('active');
-                readScreen.classList.remove('active');
-                bookmarksScreen.classList.remove('active');
-                window.appState = 'login';
-            }
+            console.error("Gagal memuat Firebase:", e);
         }
     </script>
 
@@ -760,7 +760,7 @@
             "6": typeof tartili6Config !== 'undefined' ? tartili6Config : {}
         };
 
-        async function handleLogin() {
+        function handleLogin() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             const errorDiv = document.getElementById('loginError');
@@ -771,26 +771,17 @@
                 return;
             }
 
-            const { data, error } = await window.supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
-
-            if (error) {
-                errorDiv.innerText = "Email atau kata sandi salah / belum terdaftar.";
-                errorDiv.style.display = 'block';
-            } else {
-                errorDiv.style.display = 'none';
-                showToast('Berhasil masuk!');
-            }
+            window.signInWithEmailAndPassword(window.firebaseAuth, email, password)
+                .then(() => { errorDiv.style.display = 'none'; showToast('Berhasil masuk!'); })
+                .catch(() => {
+                    errorDiv.innerText = "Email atau kata sandi salah / belum terdaftar.";
+                    errorDiv.style.display = 'block';
+                });
         }
 
-        async function handleLogout() {
+        function handleLogout() {
             if (confirm("Apakah Anda yakin ingin keluar dari akun?")) {
-                const { error } = await window.supabaseClient.auth.signOut();
-                if (error) {
-                    console.error("Gagal keluar", error);
-                }
+                window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
             }
         }
 
