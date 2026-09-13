@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tartili Digital - Next Gen</title>
+    <title>Tartili Digital - Modern & Elegant</title>
     
     <link rel="icon" href="img/favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -75,7 +75,7 @@
     <script src="tartili6.js"></script>
 
     <!-- ==========================================
-         2. PENGATURAN TAMPILAN (CSS / GLASS MORPHISM FUTURISTIK)
+         2. PENGATURAN TAMPILAN (CSS / GLASS MORPHISM)
          ========================================== -->
     <style>
         :root {
@@ -95,31 +95,31 @@
         }
         
         body.light-theme {
-            --bg-main: #f8fafc;
-            --bg-gradient: radial-gradient(circle at 15% 15%, rgba(14, 165, 233, 0.12) 0%, rgba(99, 102, 241, 0.06) 45%, rgba(248, 250, 252, 1) 90%);
-            --bg-card: rgba(255, 255, 255, 0.7);
-            --bg-panel: rgba(255, 255, 255, 0.85);
-            --border-color: rgba(226, 232, 240, 0.9);
-            --text-main: #090d16;
+            --bg-main: #f0f4f8;
+            --bg-gradient: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.08) 0%, rgba(2, 132, 199, 0.03) 90%), #f8fafc;
+            --bg-card: rgba(255, 255, 255, 0.75);
+            --bg-panel: rgba(255, 255, 255, 0.82);
+            --border-color: rgba(226, 232, 240, 0.8);
+            --text-main: #0f172a;
             --text-muted: #64748b;
-            --input-bg: rgba(241, 245, 249, 0.9);
-            --accent-gradient: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
-            --shadow: 0 20px 40px -15px rgba(14, 165, 233, 0.15), 0 0 1px 1px rgba(255, 255, 255, 0.8) inset;
-            --glow: 0 0 30px rgba(14, 165, 233, 0.25);
+            --input-bg: rgba(241, 245, 249, 0.8);
+            --accent-gradient: linear-gradient(135deg, #0ea5e9, #0284c7);
+            --shadow: 0 20px 40px -15px rgba(2, 132, 199, 0.1), 0 10px 15px -5px rgba(0, 0, 0, 0.03);
+            --glow: 0 0 20px rgba(14, 165, 233, 0.25);
         }
         
         body.dark-theme {
-            --bg-main: #020617;
-            --bg-gradient: radial-gradient(circle at 15% 15%, rgba(14, 165, 233, 0.18) 0%, rgba(99, 102, 241, 0.1) 45%, rgba(2, 6, 23, 1) 90%);
-            --bg-card: rgba(15, 23, 42, 0.75);
-            --bg-panel: rgba(11, 17, 32, 0.88);
+            --bg-main: #030712;
+            --bg-gradient: radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.12) 0%, rgba(3, 7, 18, 1) 90%);
+            --bg-card: rgba(17, 24, 39, 0.75);
+            --bg-panel: rgba(15, 23, 42, 0.85);
             --border-color: rgba(255, 255, 255, 0.08);
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --input-bg: rgba(30, 41, 59, 0.7);
-            --accent-gradient: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 1px 1px rgba(255, 255, 255, 0.06) inset;
-            --glow: 0 0 35px rgba(56, 189, 248, 0.25);
+            --input-bg: rgba(30, 41, 59, 0.6);
+            --accent-gradient: linear-gradient(135deg, #38bdf8, #0284c7);
+            --shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), 0 0 1px 1px rgba(255, 255, 255, 0.05) inset;
+            --glow: 0 0 25px rgba(56, 189, 248, 0.2);
         }
 
         body {
@@ -138,7 +138,7 @@
         /* --- LOGIN SCREEN --- */
         #login-screen { background: var(--bg-gradient); padding: 20px; z-index: 999; }
         .login-card {
-            background: var(--bg-panel); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding: 40px 30px; border-radius: 28px; border: 1px solid var(--border-color);
             box-shadow: var(--shadow); width: 100%; max-width: 400px;
             display: flex; flex-direction: column; gap: 16px; text-align: center;
@@ -161,7 +161,7 @@
             font-weight: 700; cursor: pointer; font-size: 15px;
             box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3); transition: var(--transition);
         }
-        .btn-login:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: var(--glow); }
+        .btn-login:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 12px 25px rgba(14, 165, 233, 0.4); }
         .login-error { color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 4px; display: none; }
 
         /* --- MENU SCREEN --- */
@@ -191,7 +191,7 @@
             background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 14px; cursor: pointer;
             transition: var(--transition);
         }
-        .bookmark-item:hover { border-color: #0ea5e9; background: var(--bg-card); transform: translateY(-2px); box-shadow: var(--glow); }
+        .bookmark-item:hover { border-color: #0ea5e9; background: var(--bg-card); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(14, 165, 233, 0.12); }
         
         .bookmark-item-content { display: flex; align-items: center; gap: 12px; width: 100%; }
         .bookmark-item-icon { 
@@ -212,13 +212,13 @@
         /* --- TOAST --- */
         #toastNotification {
             position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%) translateY(100px);
-            background: var(--bg-panel); backdrop-filter: blur(20px); color: var(--text-main); padding: 12px 24px; border-radius: 40px;
-            font-size: 13px; font-weight: 700; box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            background: var(--bg-panel); backdrop-filter: blur(16px); color: var(--text-main); padding: 12px 24px; border-radius: 40px;
+            font-size: 13px; font-weight: 700; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 9999; pointer-events: none;
             border: 1px solid var(--border-color);
         }
 
-        /* --- MEDIA QUERIES & RESPONSIVE LAYOUT (KOTAK ANGKA TIDAK BERUBAH & PANEL COMPACT) --- */
+        /* --- MEDIA QUERIES & RESPONSIVE LAYOUT --- */
         @media (orientation: portrait) {
             .menu-content-wrapper { max-width: 340px; }
             .grid-jilid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, auto); }
@@ -229,12 +229,12 @@
             .shortcut-panel { order: 3 !important; width: 100% !important; }
             .logout-wrapper { order: 4 !important; width: 100% !important; display: flex !important; justify-content: center !important; align-items: center !important; gap: 10px !important; margin-top: 4px !important; }
 
-            .image-scroll-area { flex: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 2px !important; overflow: hidden !important; }
+            .image-scroll-area { flex: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 4px !important; overflow: hidden !important; }
             .image-container { height: 100% !important; width: auto !important; aspect-ratio: 1 / 1.414 !important; max-width: 100% !important; max-height: 100% !important; margin-bottom: 0 !important; }
             .image-container img { width: 100% !important; height: 100% !important; object-fit: fill !important; }
 
-            .controls-wrapper { display: flex; flex-direction: column; width: 94% !important; max-width: 420px !important; gap: 3px !important; padding: 6px 8px !important; }
-            .page-nav-panel { order: 1 !important; padding: 3px 8px !important; }
+            .controls-wrapper { display: flex; flex-direction: column; width: 94% !important; max-width: 420px !important; gap: 4px !important; padding: 8px !important; }
+            .page-nav-panel { order: 1 !important; padding: 4px 10px !important; }
             .shortcut-panel { order: 2 !important; }
             .record-panel { order: 3 !important; }
             
@@ -242,23 +242,21 @@
             #read-screen .shortcut-panel .section-title,
             #bookmarks-screen .shortcut-panel .section-title { display: none !important; }
 
-            .page-nav-buttons { gap: 6px !important; }
-            .btn-page-nav-custom { height: 28px !important; }
-            .btn-prev-custom .nav-icon, .btn-next-custom .nav-icon { width: 22px !important; height: 22px !important; }
-            .nav-icon svg { width: 12px !important; height: 12px !important; }
-            .btn-prev-custom { padding-left: 28px !important; }
-            .btn-next-custom { padding-right: 28px !important; }
+            .page-nav-buttons { gap: 8px !important; }
+            .btn-page-nav-custom { height: 32px !important; }
+            .btn-prev-custom .nav-icon, .btn-next-custom .nav-icon { width: 26px !important; height: 26px !important; }
+            .nav-icon svg { width: 14px !important; height: 14px !important; }
+            .btn-prev-custom { padding-left: 32px !important; }
+            .btn-next-custom { padding-right: 32px !important; }
 
-            #menu-screen .shortcut-panel, #bookmarks-screen .shortcut-panel { padding: 6px 10px !important; }
-            #menu-screen .shortcut-container, #bookmarks-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; gap: 6px !important; width: 100% !important; }
-            #menu-screen .shortcut-left, #bookmarks-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 6px !important; flex: 1 !important; align-items: center !important; }
-            #menu-screen .shortcut-row, #bookmarks-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 4px !important; flex: 1 !important; margin: 0 !important; flex-direction: row !important; }
-            #menu-screen .shortcut-row span, #bookmarks-screen .shortcut-row span { font-size: 10px !important; width: auto !important; color: var(--text-muted); }
+            #menu-screen .shortcut-panel, #bookmarks-screen .shortcut-panel { padding: 8px 12px !important; }
+            #menu-screen .shortcut-container, #bookmarks-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; gap: 8px !important; width: 100% !important; }
+            #menu-screen .shortcut-left, #bookmarks-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 8px !important; flex: 1 !important; align-items: center !important; }
+            #menu-screen .shortcut-row, #bookmarks-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 6px !important; flex: 1 !important; margin: 0 !important; flex-direction: row !important; }
+            #menu-screen .shortcut-row span, #bookmarks-screen .shortcut-row span { font-size: 11px !important; width: auto !important; color: var(--text-muted); }
+            #menu-screen .shortcut-panel select, #bookmarks-screen .shortcut-panel select { width: 100% !important; height: 30px !important; font-size: 12px !important; padding: 2px 6px !important; flex: 1 !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 8px; }
             
-            /* KOTAK ANGKA TETAP PROPORTIONAL & TIDAK DIUBAH LEBARNYA */
-            #menu-screen .shortcut-panel select, #bookmarks-screen .shortcut-panel select, #read-screen .shortcut-panel select { height: 26px !important; font-size: 11px !important; padding: 2px 4px !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 6px; }
-            
-            #menu-screen .shortcut-panel .btn-open-menu, #bookmarks-screen .shortcut-panel .btn-open-target, #bookmarks-screen .shortcut-panel .btn-menu-back { width: 50px !important; flex: 0 0 50px !important; height: 26px !important; font-size: 10px !important; margin-top: 0 !important; border-radius: 6px !important; }
+            #menu-screen .shortcut-panel .btn-open-menu, #bookmarks-screen .shortcut-panel .btn-open-target, #bookmarks-screen .shortcut-panel .btn-menu-back { width: 55px !important; flex: 0 0 55px !important; height: 30px !important; font-size: 11px !important; margin-top: 0 !important; border-radius: 8px !important; }
         }
         
         @media (orientation: landscape) {
@@ -271,105 +269,104 @@
 
             #menu-screen h2 { font-size: 19px; text-align: center; width: 100%; order: 1 !important; }
             .grid-jilid { grid-template-columns: repeat(6, 1fr); grid-template-rows: 1fr; gap: 12px; order: 2 !important; }
-            .btn-cover { aspect-ratio: 3/4; max-height: 150px !important; }
+            .btn-cover { aspect-ratio: 3/4; max-height: 160px !important; }
             
             #menu-screen .shortcut-panel { 
                 width: 100% !important; max-width: 480px !important; height: auto !important; 
                 min-height: unset !important; max-height: none !important; flex-grow: 0 !important;
-                flex-shrink: 0 !important; padding: 6px 10px !important; order: 3 !important;
+                flex-shrink: 0 !important; padding: 8px 12px !important; order: 3 !important;
             }
-            #menu-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 8px !important; width: 100% !important; height: auto !important; }
-            #menu-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 8px !important; flex: 1 !important; align-items: center !important; }
-            #menu-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 4px !important; flex: 1 !important; margin: 0 !important; flex-direction: row !important; }
-            #menu-screen .shortcut-row span { width: auto !important; font-size: 10px !important; color: var(--text-muted); }
-            #menu-screen .shortcut-panel select { padding: 2px 6px !important; font-size: 11px !important; height: 26px !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 6px; }
+            #menu-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 10px !important; width: 100% !important; height: auto !important; }
+            #menu-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 10px !important; flex: 1 !important; align-items: center !important; }
+            #menu-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 6px !important; flex: 1 !important; margin: 0 !important; flex-direction: row !important; }
+            #menu-screen .shortcut-row span { width: auto !important; font-size: 11px !important; color: var(--text-muted); }
+            #menu-screen .shortcut-panel select { padding: 2px 8px !important; font-size: 12px !important; height: 30px !important; width: 100% !important; flex: 1 !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 8px; }
             
-            #menu-screen .shortcut-panel .btn-open-menu { width: 75px !important; flex: 0 0 75px !important; height: 26px !important; font-size: 10px !important; align-self: center !important; margin-top: 0 !important; border-radius: 6px !important; }
+            #menu-screen .shortcut-panel .btn-open-menu { width: 85px !important; flex: 0 0 85px !important; height: 30px !important; font-size: 11px !important; align-self: center !important; margin-top: 0 !important; border-radius: 8px !important; }
 
             .logout-wrapper { order: 4 !important; width: 100% !important; display: flex !important; justify-content: center !important; align-items: center !important; gap: 8px !important; }
 
             .image-scroll-area {
                 display: flex !important; flex-direction: column !important; align-items: center !important;
                 justify-content: flex-start !important; overflow-y: auto !important; overflow-x: hidden !important;
-                padding-top: 2px !important; padding-bottom: 2px !important;
+                padding-top: 4px !important; padding-bottom: 4px !important;
             }
             
             .image-container { 
-                max-width: 520px !important; height: auto !important; aspect-ratio: 1 / 1.414 !important; 
+                max-width: 550px !important; height: auto !important; aspect-ratio: 1 / 1.414 !important; 
                 margin: 0 auto !important; transform-origin: top center !important;
             }
             .image-container img { width: 100% !important; height: 100% !important; object-fit: fill !important; }
 
             .controls-wrapper {
                 position: relative !important; bottom: auto !important; left: auto !important;
-                transform: none !important; width: calc(520px * 1.8) !important; max-width: 98% !important;
-                margin: 2px auto; display: flex !important; flex-direction: row !important;
+                transform: none !important; width: calc(550px * 1.8) !important; max-width: 98% !important;
+                margin: 4px auto; display: flex !important; flex-direction: row !important;
                 flex-wrap: nowrap !important; justify-content: center !important; align-items: stretch !important;
-                gap: 6px !important; background: var(--bg-panel); backdrop-filter: blur(20px);
-                padding: 6px 10px; border-radius: 16px; box-shadow: var(--shadow); z-index: 100; border: 1px solid var(--border-color);
+                gap: 8px !important; background: var(--bg-panel); backdrop-filter: blur(20px);
+                padding: 8px 12px; border-radius: 18px; box-shadow: var(--shadow); z-index: 100; border: 1px solid var(--border-color);
             }
             
             .shortcut-panel { width: auto !important; flex: 1.8 !important; height: auto !important; display: flex; flex-direction: column; justify-content: center; }
             .record-panel { width: auto !important; flex: 1.4 !important; height: auto !important; order: 2 !important; display: flex; flex-direction: column; justify-content: center; }
             .page-nav-panel { 
                 width: auto !important; flex: 0.85 !important; height: auto !important; order: 3 !important;
-                background: var(--bg-card) !important; border: 1px solid var(--border-color) !important; border-radius: 10px !important; 
-                padding: 4px 6px !important; display: flex !important; flex-direction: column !important; 
-                justify-content: center !important; align-items: stretch !important; gap: 3px !important; 
+                background: var(--bg-card) !important; border: 1px solid var(--border-color) !important; border-radius: 12px !important; 
+                padding: 6px 8px !important; display: flex !important; flex-direction: column !important; 
+                justify-content: center !important; align-items: stretch !important; gap: 4px !important; 
                 box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important; 
             }
             
             #read-screen .page-nav-panel .section-title,
             #read-screen .shortcut-panel .section-title { display: block !important; }
 
-            #bookmarks-screen .bookmarks-content-wrapper { max-width: 520px !important; justify-content: flex-start !important; gap: 8px !important; }
-            #bookmarks-screen .bookmarks-list { max-height: calc(100vh - 100px) !important; }
+            #bookmarks-screen .bookmarks-content-wrapper { max-width: 550px !important; justify-content: flex-start !important; gap: 10px !important; }
+            #bookmarks-screen .bookmarks-list { max-height: calc(100vh - 120px) !important; }
             #bookmarks-screen .shortcut-panel { 
                 width: 100% !important; max-width: 100% !important; 
-                padding: 6px 10px !important; height: auto !important; 
+                padding: 8px 12px !important; height: auto !important; 
                 justify-content: center !important; flex: 0 0 auto !important;
             }
             #bookmarks-screen .shortcut-panel .section-title { display: none !important; }
 
-            .page-nav-buttons { gap: 4px !important; }
+            .page-nav-buttons { gap: 6px !important; }
             .btn-page-nav-custom {
-                height: 26px !important; flex: 1 !important; width: 100% !important; border-radius: 12px !important;
+                height: 28px !important; flex: 1 !important; width: 100% !important; border-radius: 14px !important;
             }
-            .btn-prev-custom .nav-icon, .btn-next-custom .nav-icon { width: 18px !important; height: 18px !important; }
-            .nav-icon svg { width: 10px !important; height: 10px !important; }
-            .btn-prev-custom { padding-left: 18px !important; }
-            .btn-next-custom { padding-right: 18px !important; }
+            .btn-prev-custom .nav-icon, .btn-next-custom .nav-icon { width: 20px !important; height: 20px !important; }
+            .nav-icon svg { width: 11px !important; height: 11px !important; }
+            .btn-prev-custom { padding-left: 20px !important; }
+            .btn-next-custom { padding-right: 20px !important; }
             
-            .universal-btn { height: 26px !important; font-size: 10px !important; border-radius: 6px !important; }
+            .universal-btn { height: 28px !important; font-size: 11px !important; border-radius: 8px !important; }
             
-            #read-screen .shortcut-container, #bookmarks-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 6px !important; width: 100% !important; }
-            #read-screen .shortcut-left, #bookmarks-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 6px !important; flex: 2.2 !important; align-items: center !important; min-width: 0 !important; }
-            #read-screen .shortcut-row, #bookmarks-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 3px !important; margin: 0 !important; flex-direction: row !important; min-width: 0 !important; }
-            #read-screen .shortcut-row span, #bookmarks-screen .shortcut-row span { width: auto !important; font-size: 10px !important; color: var(--text-muted); flex-shrink: 0; }
+            #read-screen .shortcut-container, #bookmarks-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 8px !important; width: 100% !important; }
+            #read-screen .shortcut-left, #bookmarks-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 8px !important; flex: 2.2 !important; align-items: center !important; min-width: 0 !important; }
+            #read-screen .shortcut-row, #bookmarks-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 4px !important; margin: 0 !important; flex-direction: row !important; min-width: 0 !important; }
+            #read-screen .shortcut-row span, #bookmarks-screen .shortcut-row span { width: auto !important; font-size: 11px !important; color: var(--text-muted); flex-shrink: 0; }
             
-            #bookmarks-screen .shortcut-row.row-tartili { flex: 0 0 65px !important; width: 65px !important; }
+            #bookmarks-screen .shortcut-row.row-tartili { flex: 0 0 75px !important; width: 75px !important; }
             #bookmarks-screen .shortcut-row.row-halaman { flex: 1 1 auto !important; min-width: 0 !important; width: auto !important; }
             
-            #read-screen .shortcut-row.row-tartili { flex: 0 0 65px !important; width: 65px !important; }
+            #read-screen .shortcut-row.row-tartili { flex: 0 0 75px !important; width: 75px !important; }
             #read-screen .shortcut-row.row-halaman { flex: 1 1 auto !important; min-width: 0 !important; width: auto !important; }
             
-            #read-screen .shortcut-panel select, #bookmarks-screen .shortcut-panel select { padding: 2px 4px !important; font-size: 10px !important; height: 26px !important; width: 100% !important; min-width: 0 !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 6px; }
-            #read-screen .btn-open-target, #bookmarks-screen .btn-open-target { width: 50px !important; flex: 0 0 50px !important; height: 26px !important; font-size: 10px !important; align-self: center !important; margin-top: 0 !important; border-radius: 6px !important; }
-            #read-screen .btn-menu-back, #bookmarks-screen .btn-menu-back { width: 50px !important; flex: 0 0 50px !important; height: 26px !important; font-size: 10px !important; align-self: center !important; margin-top: 0 !important; border-radius: 6px !important; }
+            #read-screen .shortcut-panel select, #bookmarks-screen .shortcut-panel select { padding: 2px 4px !important; font-size: 11px !important; height: 28px !important; width: 100% !important; min-width: 0 !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 8px; }
+            #read-screen .btn-open-target, #bookmarks-screen .btn-open-target { width: 55px !important; flex: 0 0 55px !important; height: 28px !important; font-size: 11px !important; align-self: center !important; margin-top: 0 !important; border-radius: 8px !important; }
+            #read-screen .btn-menu-back, #bookmarks-screen .btn-menu-back { width: 55px !important; flex: 0 0 55px !important; height: 28px !important; font-size: 11px !important; align-self: center !important; margin-top: 0 !important; border-radius: 8px !important; }
         }
 
-        /* --- COVER BUTTONS (Futuristik Glow) --- */
+        /* --- COVER BUTTONS --- */
         .btn-cover { 
             width: 100%; border: none; padding: 0; cursor: pointer; border-radius: 20px; 
             transition: var(--transition); transform: scale(0.96); background: transparent; 
             box-shadow: 0 10px 25px rgba(0,0,0,0.08); position: relative; overflow: hidden;
         }
-        .btn-cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 20px; display: block; transition: var(--transition); border: 1px solid var(--border-color); }
+        .btn-cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 20px; display: block; transition: var(--transition); }
         .btn-cover:hover, .btn-cover.keyboard-focused { 
             transform: translateY(-6px) scale(1.02); 
             outline: none; 
-            box-shadow: var(--glow); 
-            border-color: #0ea5e9;
+            box-shadow: 0 20px 35px rgba(14, 165, 233, 0.3); 
         }
         .btn-cover:hover img { transform: scale(1.03); }
         .btn-cover:active { transform: scale(1.0); }
@@ -377,13 +374,13 @@
         /* --- UTILITY BUTTONS (Theme, Bookmark) --- */
         .btn-theme-toggle, .btn-bookmark {
             background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
-            width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: var(--transition); flex-shrink: 0;
         }
-        .btn-theme-toggle:hover, .btn-bookmark:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; box-shadow: var(--glow); }
+        .btn-theme-toggle:hover, .btn-bookmark:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; }
         
         .btn-theme-toggle svg, .btn-bookmark svg {
-            width: 17px; height: 17px; fill: none; stroke: var(--text-muted);
+            width: 18px; height: 18px; fill: none; stroke: var(--text-muted);
             stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: var(--transition);
         }
         body.dark-theme .btn-theme-toggle svg { stroke: #38bdf8; }
@@ -393,24 +390,24 @@
 
         /* --- NAV BUTTONS --- */
         .btn-page-nav-custom {
-            flex: 1; height: 30px; border: none; border-radius: 15px; cursor: pointer;
-            display: flex; align-items: center; position: relative; font-weight: 700; font-size: 11px;
-            transition: var(--transition); box-shadow: 0 4px 15px rgba(14, 165, 233, 0.2); color: white;
+            flex: 1; height: 34px; border: none; border-radius: 17px; cursor: pointer;
+            display: flex; align-items: center; position: relative; font-weight: 700; font-size: 12px;
+            transition: var(--transition); box-shadow: 0 6px 20px rgba(14, 165, 233, 0.25); color: white;
         }
-        .btn-prev-custom { background: var(--accent-gradient); padding-left: 30px; justify-content: flex-start; }
+        .btn-prev-custom { background: var(--accent-gradient); padding-left: 34px; justify-content: flex-start; }
         .btn-prev-custom .nav-icon {
-            position: absolute; left: 3px; width: 24px; height: 24px; background: #ffffff; color: #0284c7;
+            position: absolute; left: 3px; width: 28px; height: 28px; background: #ffffff; color: #0284c7;
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15); transition: var(--transition);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: var(--transition);
         }
-        .btn-next-custom { background: var(--accent-gradient); padding-right: 30px; justify-content: flex-end; }
+        .btn-next-custom { background: var(--accent-gradient); padding-right: 34px; justify-content: flex-end; }
         .btn-next-custom .nav-icon {
-            position: absolute; right: 3px; width: 24px; height: 24px; background: #ffffff; color: #0284c7;
+            position: absolute; right: 3px; width: 28px; height: 28px; background: #ffffff; color: #0284c7;
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15); transition: var(--transition);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: var(--transition);
         }
-        .nav-icon svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-        .btn-page-nav-custom:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: var(--glow); }
+        .nav-icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+        .btn-page-nav-custom:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(14, 165, 233, 0.35); }
         .btn-page-nav-custom:active { transform: scale(0.97); }
 
         /* --- READ SCREEN --- */
@@ -420,24 +417,24 @@
         .image-scroll-area {
             flex: 1; width: 100%; overflow-y: auto; overflow-x: hidden;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            padding: 4px 0; position: relative;
+            padding: 6px 0; position: relative;
         }
 
         .loading-spinner {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 44px; height: 44px; border: 3px solid var(--border-color); border-top: 3px solid #0ea5e9;
+            width: 48px; height: 48px; border: 4px solid var(--border-color); border-top: 4px solid #0ea5e9;
             border-radius: 50%; animation: spin 0.8s linear infinite; z-index: 5; display: none;
         }
         @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
 
         .image-container { 
-            position: relative; display: block; border-radius: 16px; background: var(--bg-card);
-            box-shadow: var(--shadow); width: 92%; max-width: 420px;
+            position: relative; display: block; border-radius: 18px; background: var(--bg-card);
+            box-shadow: var(--shadow); width: 92%; max-width: 440px;
             aspect-ratio: 1 / 1.414; transform-origin: center center; will-change: transform;
             transition: transform 0.05s ease-out; border: 1px solid var(--border-color);
         }
 
-        .image-container img { width: 100%; height: 100%; display: block; border-radius: 16px; pointer-events: none; object-fit: fill; }
+        .image-container img { width: 100%; height: 100%; display: block; border-radius: 18px; pointer-events: none; object-fit: fill; }
         
         .sound-block { 
             position: absolute; cursor: pointer; background: rgba(14, 165, 233, 0.08); 
@@ -447,29 +444,29 @@
         .sound-block:active { background: rgba(14, 165, 233, 0.35); }
 
         .controls-wrapper {
-            width: calc(420px * 1.8); max-width: 96%; margin: 0 auto 4px auto; display: flex; flex-direction: column; gap: 4px;
+            width: calc(440px * 1.8); max-width: 96%; margin: 0 auto 6px auto; display: flex; flex-direction: column; gap: 6px;
             flex-shrink: 0; z-index: 100; background: var(--bg-panel); backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px); padding: 8px 10px; border-radius: 18px; box-shadow: var(--shadow); border: 1px solid var(--border-color);
+            -webkit-backdrop-filter: blur(20px); padding: 10px; border-radius: 20px; box-shadow: var(--shadow); border: 1px solid var(--border-color);
         }
 
         .section-title {
-            text-align: center; font-size: 9px; font-weight: 700; color: var(--text-muted);
-            margin-bottom: 1px; letter-spacing: 1px; text-transform: uppercase;
+            text-align: center; font-size: 10px; font-weight: 700; color: var(--text-muted);
+            margin-bottom: 2px; letter-spacing: 1px; text-transform: uppercase;
         }
 
-        .page-nav-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 4px 8px; display: flex; flex-direction: column; justify-content: center; gap: 3px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-        .page-nav-buttons { width: 100%; display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+        .page-nav-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        .page-nav-buttons { width: 100%; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
 
-        .record-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 4px 8px; display: flex; flex-direction: column; justify-content: center; gap: 3px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-        .record-buttons { display: flex; justify-content: space-between; align-items: stretch; gap: 5px; }
+        .record-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        .record-buttons { display: flex; justify-content: space-between; align-items: stretch; gap: 6px; }
         
         .universal-btn { 
-            height: 28px; border: none; border-radius: 7px; color: white; cursor: pointer; 
-            font-weight: 700; font-size: 10px; display: flex; align-items: center; justify-content: center; 
+            height: 32px; border: none; border-radius: 8px; color: white; cursor: pointer; 
+            font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; 
             flex: 1 !important; width: 0 !important; padding: 0 !important; margin: 0 !important;
-            transition: var(--transition); box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+            transition: var(--transition); box-shadow: 0 4px 12px rgba(0,0,0,0.06);
         }
-        .universal-btn:hover { opacity: 0.95; transform: translateY(-1px); box-shadow: var(--glow); }
+        .universal-btn:hover { opacity: 0.95; transform: translateY(-1px); }
         .btn-menu-back { background: linear-gradient(135deg, #10b981, #059669); }
         .btn-open-target { background: var(--accent-gradient); }
         .btn-record { background: linear-gradient(135deg, #f43f5e, #e11d48); }
@@ -480,7 +477,7 @@
 
         @keyframes pulse-animation {
             0% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            50% { opacity: 0.8; transform: scale(0.98); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+            50% { opacity: 0.8; transform: scale(0.98); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
             100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
         .is-recording {
@@ -488,14 +485,14 @@
             background: linear-gradient(135deg, #ef4444, #991b1b) !important;
         }
 
-        .shortcut-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 4px 8px; display: flex; flex-direction: column; justify-content: center; gap: 3px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-        .shortcut-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
-        .shortcut-row span { width: 45px; font-size: 10px; font-weight: 600; color: var(--text-muted); }
-        .shortcut-panel select { flex: 1; width: 0; padding: 3px 6px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 10px; background: var(--input-bg); color: var(--text-main); font-weight: 600; outline: none; transition: var(--transition); }
+        .shortcut-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        .shortcut-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .shortcut-row span { width: 50px; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+        .shortcut-panel select { flex: 1; width: 0; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 11px; background: var(--input-bg); color: var(--text-main); font-weight: 600; outline: none; transition: var(--transition); }
         .shortcut-panel select:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15); }
         
-        .shortcut-container { display: flex; gap: 6px; align-items: center; justify-content: space-between; }
-        .shortcut-left { flex: 2; display: flex; flex-direction: column; gap: 3px; }
+        .shortcut-container { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+        .shortcut-left { flex: 2; display: flex; flex-direction: column; gap: 4px; }
     </style>
 </head>
 <body class="light-theme">
@@ -547,7 +544,7 @@
                             <select id="jumpPageSelectMenu"></select>
                         </div>
                     </div>
-                    <button class="btn-open-menu" onclick="directOpen('Menu')" style="background: var(--accent-gradient); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; transition: var(--transition);">Buka</button>
+                    <button class="btn-open-menu" onclick="directOpen('Menu')" style="background: var(--accent-gradient); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: var(--transition);">Buka</button>
                 </div>
             </div>
 
@@ -555,7 +552,7 @@
                 <button class="btn-bookmark saved" onclick="openBookmarksScreen()" title="Halaman Tersimpan">
                     <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
                 </button>
-                <button onclick="handleLogout()" style="background: #ef4444; color: white; border: none; padding: 0 16px; height: 36px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25); display: flex; align-items: center; justify-content: center; gap: 6px; transition: var(--transition);" title="Keluar">Logout</button>
+                <button onclick="handleLogout()" style="background: #ef4444; color: white; border: none; padding: 0 16px; height: 38px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25); display: flex; align-items: center; justify-content: center; gap: 6px; transition: var(--transition);" title="Keluar">Logout</button>
                 
                 <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna">
                     <svg viewBox="0 0 24 24">
@@ -669,7 +666,7 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const swCode = `
-                    const CACHE_NAME = 'tartili-cache-v4';
+                    const CACHE_NAME = 'tartili-cache-v3';
                     self.addEventListener('install', (e) => { self.skipWaiting(); });
                     self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
                     self.addEventListener('fetch', (e) => {
