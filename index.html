@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tartili Digital</title>
+    <title>Tartili Digital - Modern & Elegant</title>
     
     <link rel="icon" href="img/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Amiri:wght@700&display=swap" rel="stylesheet">
     
     <!-- ==========================================
          1. INISIALISASI FIREBASE & AUTENTIKASI
@@ -72,7 +75,7 @@
     <script src="tartili6.js"></script>
 
     <!-- ==========================================
-         2. PENGATURAN TAMPILAN (CSS / STYLE MODERN & GLASS MORPHISM)
+         2. PENGATURAN TAMPILAN (CSS / GLASS MORPHISM)
          ========================================== -->
     <style>
         :root {
@@ -80,8 +83,9 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
         body { 
-            font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; 
             background: var(--bg-main); 
             color: var(--text-main); 
             overflow: hidden; 
@@ -92,81 +96,92 @@
         
         body.light-theme {
             --bg-main: #f0f4f8;
+            --bg-gradient: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.08) 0%, rgba(2, 132, 199, 0.03) 90%), #f8fafc;
             --bg-card: rgba(255, 255, 255, 0.75);
-            --bg-panel: rgba(255, 255, 255, 0.65);
+            --bg-panel: rgba(255, 255, 255, 0.82);
             --border-color: rgba(226, 232, 240, 0.8);
-            --text-main: #1e293b;
+            --text-main: #0f172a;
             --text-muted: #64748b;
             --input-bg: rgba(241, 245, 249, 0.8);
             --accent-gradient: linear-gradient(135deg, #0ea5e9, #0284c7);
-            --shadow: 0 20px 40px -15px rgba(2, 132, 199, 0.1), 0 0 1px 1px rgba(255, 255, 255, 0.8) inset;
-            --glow: 0 0 25px rgba(14, 165, 233, 0.25);
+            --shadow: 0 20px 40px -15px rgba(2, 132, 199, 0.1), 0 10px 15px -5px rgba(0, 0, 0, 0.03);
+            --glow: 0 0 20px rgba(14, 165, 233, 0.25);
         }
+        
         body.dark-theme {
-            --bg-main: #050507;
-            --bg-card: rgba(24, 24, 27, 0.7);
-            --bg-panel: rgba(18, 18, 22, 0.65);
-            --border-color: rgba(39, 39, 42, 0.8);
+            --bg-main: #030712;
+            --bg-gradient: radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.12) 0%, rgba(3, 7, 18, 1) 90%);
+            --bg-card: rgba(17, 24, 39, 0.75);
+            --bg-panel: rgba(15, 23, 42, 0.85);
+            --border-color: rgba(255, 255, 255, 0.08);
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --input-bg: rgba(39, 39, 42, 0.7);
+            --input-bg: rgba(30, 41, 59, 0.6);
             --accent-gradient: linear-gradient(135deg, #38bdf8, #0284c7);
-            --shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 1px 1px rgba(255, 255, 255, 0.05) inset;
-            --glow: 0 0 30px rgba(56, 189, 248, 0.3);
+            --shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), 0 0 1px 1px rgba(255, 255, 255, 0.05) inset;
+            --glow: 0 0 25px rgba(56, 189, 248, 0.2);
         }
 
-        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.4s ease; }
-        .screen.active { display: flex; opacity: 1; }
+        body {
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+        }
+
+        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; justify-content: center; align-items: center; }
+        .screen.active { display: flex; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
-        #login-screen { background: var(--bg-main); padding: 20px; z-index: 999; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* --- LOGIN SCREEN --- */
+        #login-screen { background: var(--bg-gradient); padding: 20px; z-index: 999; }
         .login-card {
-            background: var(--bg-panel); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-            padding: 40px 28px; border-radius: 28px; border: 1px solid var(--border-color);
-            box-shadow: var(--shadow); width: 100%; max-width: 380px;
+            background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 40px 30px; border-radius: 28px; border: 1px solid var(--border-color);
+            box-shadow: var(--shadow); width: 100%; max-width: 400px;
             display: flex; flex-direction: column; gap: 16px; text-align: center;
-            animation: floatCard 6s ease-in-out infinite;
+            position: relative; overflow: hidden;
         }
-        @keyframes floatCard {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-6px); }
+        .login-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: var(--accent-gradient);
         }
-        .login-card h2 { color: var(--text-main); font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+        .login-card h2 { color: var(--text-main); font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
         .login-card input {
             width: 100%; padding: 14px 18px; border: 1px solid var(--border-color);
             border-radius: 14px; font-size: 14px; outline: none; background: var(--input-bg); color: var(--text-main);
-            transition: var(--transition); backdrop-filter: blur(8px);
+            transition: var(--transition); font-weight: 500;
         }
-        .login-card input:focus { border-color: #0284c7; box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.15), var(--glow); }
+        .login-card input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15); }
         .btn-login {
             width: 100%; padding: 14px; border: none; border-radius: 14px;
             background: var(--accent-gradient); color: white;
             font-weight: 700; cursor: pointer; font-size: 15px;
-            box-shadow: 0 8px 20px rgba(2, 132, 199, 0.35); transition: var(--transition);
+            box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3); transition: var(--transition);
         }
-        .btn-login:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 12px 25px rgba(2, 132, 199, 0.45), var(--glow); }
-        .login-error { color: #ef4444; font-size: 12px; font-weight: 600; margin-top: 4px; display: none; }
+        .btn-login:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 12px 25px rgba(14, 165, 233, 0.4); }
+        .login-error { color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 4px; display: none; }
 
-        #menu-screen { background: var(--bg-main); overflow-y: auto; padding: 20px; display: none; flex-direction: column; justify-content: center; align-items: center; gap: 16px; }
-        #menu-screen.active { display: flex; }
-        
+        /* --- MENU SCREEN --- */
+        #menu-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; gap: 16px; }
         .menu-content-wrapper {
-            display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 400px; position: relative;
+            display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 420px; position: relative;
         }
-
         #menu-screen h2 { margin: 0; color: var(--text-main); font-size: 24px; font-weight: 800; letter-spacing: 2px; text-align: center; width: 100%; text-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .grid-jilid { display: grid; gap: 14px; width: 100%; margin: 0; }
         
-        #bookmarks-screen { background: var(--bg-main); overflow-y: auto; padding: 20px; display: none; flex-direction: column; justify-content: space-between; align-items: center; height: 100vh; height: 100dvh; }
-        #bookmarks-screen.active { display: flex; }
-        
+        /* --- BOOKMARKS SCREEN --- */
+        #bookmarks-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; justify-content: space-between; align-items: center; height: 100vh; height: 100dvh; }
         .bookmarks-content-wrapper {
             display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 420px; height: 100%; justify-content: space-between; padding: 10px 0;
         }
-        .bookmarks-header { width: 100%; display: flex; justify-content: center; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+        .bookmarks-header { width: 100%; display: flex; justify-content: center; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
         .bookmarks-header h2 { color: var(--text-main); font-size: 20px; font-weight: 700; text-align: center; width: 100%; }
         
         .bookmarks-list {
-            width: 100%; flex: 1; max-height: calc(100vh - 200px); overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 12px;
+            width: 100%; flex: 1; max-height: calc(100vh - 200px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px;
             border: 1px solid var(--border-color); border-radius: 20px; background: var(--bg-panel); backdrop-filter: blur(20px);
             box-shadow: var(--shadow); scrollbar-width: thin;
         }
@@ -174,38 +189,36 @@
         .bookmark-item {
             display: flex; justify-content: space-between; align-items: center; padding: 14px 18px;
             background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 14px; cursor: pointer;
-            transition: var(--transition); backdrop-filter: blur(10px);
+            transition: var(--transition);
         }
-        .bookmark-item:hover { border-color: #0284c7; background: var(--bg-card); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(2, 132, 199, 0.15); }
+        .bookmark-item:hover { border-color: #0ea5e9; background: var(--bg-card); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(14, 165, 233, 0.12); }
         
         .bookmark-item-content { display: flex; align-items: center; gap: 14px; width: 100%; }
         .bookmark-item-icon { 
-            width: 36px; height: 36px; border-radius: 10px; background: rgba(2, 132, 199, 0.12); color: #0284c7;
+            width: 36px; height: 36px; border-radius: 10px; background: rgba(14, 165, 233, 0.12); color: #0ea5e9;
             display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
         }
-        .bookmark-item-info { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+        .bookmark-item-info { display: flex; flex-direction: column; gap: 3px; width: 100%; }
         .bookmark-item-title { font-size: 14px; font-weight: 700; color: var(--text-main); }
         .bookmark-item-subtitle { font-size: 12px; font-weight: 600; color: var(--text-muted); }
         
         .bookmark-item-delete { 
-            background: rgba(239, 68, 68, 0.12); border: none; color: #ef4444; cursor: pointer; 
+            background: rgba(239, 68, 68, 0.1); border: none; color: #ef4444; cursor: pointer; 
             width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
             font-size: 13px; transition: var(--transition); flex-shrink: 0;
         }
-        .bookmark-item-delete:hover { background: #ef4444; color: white; transform: scale(1.1); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+        .bookmark-item-delete:hover { background: #ef4444; color: white; transform: scale(1.08); }
 
+        /* --- TOAST --- */
         #toastNotification {
-            position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%) translateY(120px);
-            background: var(--bg-card); color: var(--text-main); padding: 12px 24px; border-radius: 35px;
-            font-size: 13px; font-weight: 700; box-shadow: var(--shadow);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease; z-index: 9999; pointer-events: none;
-            border: 1px solid var(--border-color); backdrop-filter: blur(20px); opacity: 0;
-        }
-        #toastNotification.show {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
+            position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: var(--bg-panel); backdrop-filter: blur(16px); color: var(--text-main); padding: 12px 24px; border-radius: 40px;
+            font-size: 13px; font-weight: 700; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 9999; pointer-events: none;
+            border: 1px solid var(--border-color);
         }
 
+        /* --- MEDIA QUERIES & RESPONSIVE LAYOUT --- */
         @media (orientation: portrait) {
             .menu-content-wrapper { max-width: 340px; }
             .grid-jilid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, auto); }
@@ -238,10 +251,10 @@
 
             #menu-screen .shortcut-panel, #bookmarks-screen .shortcut-panel { padding: 10px 14px !important; }
             #menu-screen .shortcut-container, #bookmarks-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; gap: 10px !important; width: 100% !important; }
-            #menu-screen .shortcut-left, #bookmarks-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 8px !important; flex: 1 !important; align-items: center !important; }
-            #menu-screen .shortcut-row, #bookmarks-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 6px !important; flex: 1 !important; margin: 0 !important; flex-direction: row !important; }
+            #menu-screen .shortcut-left, #bookmarks-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 10px !important; flex: 1 !important; align-items: center !important; }
+            #menu-screen .shortcut-row, #bookmarks-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 8px !important; flex: 1 !important; margin: 0 !important; flex-direction: row !important; }
             #menu-screen .shortcut-row span, #bookmarks-screen .shortcut-row span { font-size: 12px !important; width: auto !important; color: var(--text-muted); }
-            #menu-screen .shortcut-panel select, #bookmarks-screen .shortcut-panel select { width: 100% !important; height: 34px !important; font-size: 13px !important; padding: 4px 8px !important; flex: 1 !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 10px; }
+            #menu-screen .shortcut-panel select, #bookmarks-screen .shortcut-panel select { width: 100% !important; height: 34px !important; font-size: 13px !important; padding: 2px 8px !important; flex: 1 !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 10px; }
             
             #menu-screen .shortcut-panel .btn-open-menu, #bookmarks-screen .shortcut-panel .btn-open-target, #bookmarks-screen .shortcut-panel .btn-menu-back { width: 65px !important; flex: 0 0 65px !important; height: 34px !important; font-size: 12px !important; margin-top: 0 !important; border-radius: 10px !important; }
         }
@@ -252,11 +265,11 @@
                 align-items: center !important; gap: 14px !important; padding: 14px !important; 
                 height: 100dvh !important; overflow: hidden !important;
             }
-            .menu-content-wrapper { max-width: 900px !important; gap: 16px !important; }
+            .menu-content-wrapper { max-width: 880px !important; gap: 16px !important; }
 
             #menu-screen h2 { font-size: 20px; text-align: center; width: 100%; order: 1 !important; }
-            .grid-jilid { grid-template-columns: repeat(6, 1fr); grid-template-rows: 1fr; gap: 16px; order: 2 !important; }
-            .btn-cover { aspect-ratio: 3/4; max-height: 185px !important; }
+            .grid-jilid { grid-template-columns: repeat(6, 1fr); grid-template-rows: 1fr; gap: 14px; order: 2 !important; }
+            .btn-cover { aspect-ratio: 3/4; max-height: 180px !important; }
             
             #menu-screen .shortcut-panel { 
                 width: 100% !important; max-width: 500px !important; height: auto !important; 
@@ -265,7 +278,7 @@
             }
             #menu-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 12px !important; width: 100% !important; height: auto !important; }
             #menu-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 12px !important; flex: 1 !important; align-items: center !important; }
-            #menu-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 6px !important; flex: 1 !important; margin: 0 !important; flex-direction: row !important; }
+            #menu-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 8px !important; flex: 1 !important; margin: 0 !important; flex-direction: row !important; }
             #menu-screen .shortcut-row span { width: auto !important; font-size: 12px !important; color: var(--text-muted); }
             #menu-screen .shortcut-panel select { padding: 4px 10px !important; font-size: 12px !important; height: 32px !important; width: 100% !important; flex: 1 !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 10px; }
             
@@ -280,17 +293,17 @@
             }
             
             .image-container { 
-                max-width: 580px !important; height: auto !important; aspect-ratio: 1 / 1.414 !important; 
+                max-width: 550px !important; height: auto !important; aspect-ratio: 1 / 1.414 !important; 
                 margin: 0 auto !important; transform-origin: top center !important;
             }
             .image-container img { width: 100% !important; height: 100% !important; object-fit: fill !important; }
 
             .controls-wrapper {
                 position: relative !important; bottom: auto !important; left: auto !important;
-                transform: none !important; width: calc(580px * 1.8) !important; max-width: 98% !important;
-                margin: 8px auto; display: flex !important; flex-direction: row !important;
+                transform: none !important; width: calc(550px * 1.8) !important; max-width: 98% !important;
+                margin: 6px auto; display: flex !important; flex-direction: row !important;
                 flex-wrap: nowrap !important; justify-content: center !important; align-items: stretch !important;
-                gap: 10px !important; background: var(--bg-panel); backdrop-filter: blur(24px);
+                gap: 10px !important; background: var(--bg-panel); backdrop-filter: blur(20px);
                 padding: 10px 14px; border-radius: 20px; box-shadow: var(--shadow); z-index: 100; border: 1px solid var(--border-color);
             }
             
@@ -300,14 +313,14 @@
                 width: auto !important; flex: 0.85 !important; height: auto !important; order: 3 !important;
                 background: var(--bg-card) !important; border: 1px solid var(--border-color) !important; border-radius: 14px !important; 
                 padding: 8px 10px !important; display: flex !important; flex-direction: column !important; 
-                justify-content: center !important; align-items: stretch !important; gap: 4px !important; 
+                justify-content: center !important; align-items: stretch !important; gap: 6px !important; 
                 box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important; 
             }
             
             #read-screen .page-nav-panel .section-title,
             #read-screen .shortcut-panel .section-title { display: block !important; }
 
-            #bookmarks-screen .bookmarks-content-wrapper { max-width: 580px !important; justify-content: flex-start !important; gap: 12px !important; }
+            #bookmarks-screen .bookmarks-content-wrapper { max-width: 550px !important; justify-content: flex-start !important; gap: 12px !important; }
             #bookmarks-screen .bookmarks-list { max-height: calc(100vh - 140px) !important; }
             #bookmarks-screen .shortcut-panel { 
                 width: 100% !important; max-width: 100% !important; 
@@ -322,14 +335,14 @@
             }
             .btn-prev-custom .nav-icon, .btn-next-custom .nav-icon { width: 22px !important; height: 22px !important; }
             .nav-icon svg { width: 12px !important; height: 12px !important; }
-            .btn-prev-custom { padding-left: 26px !important; }
-            .btn-next-custom { padding-right: 26px !important; }
+            .btn-prev-custom { padding-left: 24px !important; }
+            .btn-next-custom { padding-right: 24px !important; }
             
             .universal-btn { height: 32px !important; font-size: 12px !important; border-radius: 10px !important; }
             
             #read-screen .shortcut-container, #bookmarks-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 10px !important; width: 100% !important; }
             #read-screen .shortcut-left, #bookmarks-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 10px !important; flex: 2.2 !important; align-items: center !important; }
-            #read-screen .shortcut-row, #bookmarks-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 6px !important; margin: 0 !important; flex-direction: row !important; }
+            #read-screen .shortcut-row, #bookmarks-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 8px !important; margin: 0 !important; flex-direction: row !important; }
             #read-screen .shortcut-row span, #bookmarks-screen .shortcut-row span { width: auto !important; font-size: 12px !important; color: var(--text-muted); flex-shrink: 0; }
             
             #bookmarks-screen .shortcut-row.row-tartili { flex: 0.85 1 0% !important; width: auto !important; }
@@ -343,119 +356,74 @@
             #read-screen .btn-menu-back, #bookmarks-screen .btn-menu-back { width: 65px !important; flex: 0 0 65px !important; height: 32px !important; font-size: 12px !important; align-self: center !important; margin-top: 0 !important; border-radius: 10px !important; }
         }
 
-        .btn-cover { width: 100%; border: none; padding: 0; cursor: pointer; border-radius: 20px; transition: var(--transition); transform: scale(0.96); background: transparent; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
+        /* --- COVER BUTTONS --- */
+        .btn-cover { 
+            width: 100%; border: none; padding: 0; cursor: pointer; border-radius: 20px; 
+            transition: var(--transition); transform: scale(0.96); background: transparent; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08); position: relative; overflow: hidden;
+        }
         .btn-cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 20px; display: block; transition: var(--transition); }
-        .btn-cover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.3), transparent 60%); opacity: 0; transition: var(--transition); border-radius: 20px; }
-        .btn-cover:hover, .btn-cover.keyboard-focused { transform: translateY(-6px) scale(1.0); outline: none; box-shadow: 0 20px 35px rgba(2, 132, 199, 0.3), var(--glow); border: 2px solid #38bdf8; }
+        .btn-cover:hover, .btn-cover.keyboard-focused { 
+            transform: translateY(-6px) scale(1.02); 
+            outline: none; 
+            box-shadow: 0 20px 35px rgba(14, 165, 233, 0.3); 
+        }
         .btn-cover:hover img { transform: scale(1.03); }
-        .btn-cover:hover::after { opacity: 1; }
-        .btn-cover:active { transform: scale(1.02); }
+        .btn-cover:active { transform: scale(1.0); }
 
-        .btn-theme-toggle {
+        /* --- UTILITY BUTTONS (Theme, Bookmark) --- */
+        .btn-theme-toggle, .btn-bookmark {
             background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
             width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: var(--transition); backdrop-filter: blur(10px);
+            cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: var(--transition); flex-shrink: 0;
         }
-        .btn-theme-toggle:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0284c7; box-shadow: var(--glow); }
-        .btn-theme-toggle svg {
+        .btn-theme-toggle:hover, .btn-bookmark:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; }
+        
+        .btn-theme-toggle svg, .btn-bookmark svg {
             width: 20px; height: 20px; fill: none; stroke: var(--text-muted);
             stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: var(--transition);
         }
         body.dark-theme .btn-theme-toggle svg { stroke: #38bdf8; }
 
-        .btn-bookmark {
-            background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
-            width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: var(--transition); flex-shrink: 0; backdrop-filter: blur(10px);
-        }
-        .btn-bookmark:hover { transform: scale(1.08); border-color: #ef4444; }
-        .btn-bookmark svg {
-            width: 20px; height: 20px; fill: none; stroke: var(--text-muted);
-            stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: var(--transition);
-        }
-        .btn-bookmark.saved { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+        .btn-bookmark.saved { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); }
         .btn-bookmark.saved svg { fill: #ef4444; stroke: #ef4444; }
 
+        /* --- NAV BUTTONS --- */
         .btn-page-nav-custom {
-            flex: 1;
-            height: 40px;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            position: relative;
-            font-weight: bold;
-            transition: var(--transition);
-            box-shadow: 0 6px 16px rgba(2, 132, 199, 0.25);
-            color: white;
+            flex: 1; height: 40px; border: none; border-radius: 20px; cursor: pointer;
+            display: flex; align-items: center; position: relative; font-weight: 700; font-size: 13px;
+            transition: var(--transition); box-shadow: 0 6px 20px rgba(14, 165, 233, 0.25); color: white;
         }
-        .btn-prev-custom {
-            background: linear-gradient(135deg, #38bdf8, #0284c7);
-            padding-left: 40px;
-            justify-content: flex-start;
-        }
+        .btn-prev-custom { background: var(--accent-gradient); padding-left: 40px; justify-content: flex-start; }
         .btn-prev-custom .nav-icon {
-            position: absolute;
-            left: 5px;
-            width: 30px;
-            height: 30px;
-            background: #ffffff;
-            color: #0284c7;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            transition: var(--transition);
+            position: absolute; left: 4px; width: 32px; height: 32px; background: #ffffff; color: #0284c7;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: var(--transition);
         }
-        .btn-prev-custom:hover .nav-icon { transform: translateX(-2px); }
-        .btn-next-custom {
-            background: linear-gradient(135deg, #38bdf8, #0284c7);
-            padding-right: 40px;
-            justify-content: flex-end;
-        }
+        .btn-next-custom { background: var(--accent-gradient); padding-right: 40px; justify-content: flex-end; }
         .btn-next-custom .nav-icon {
-            position: absolute;
-            right: 5px;
-            width: 30px;
-            height: 30px;
-            background: #ffffff;
-            color: #0284c7;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            transition: var(--transition);
+            position: absolute; right: 4px; width: 32px; height: 32px; background: #ffffff; color: #0284c7;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: var(--transition);
         }
-        .btn-next-custom:hover .nav-icon { transform: translateX(2px); }
-        .nav-icon svg {
-            width: 16px;
-            height: 16px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 3;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-        .btn-page-nav-custom:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(2, 132, 199, 0.4), var(--glow); }
+        .nav-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+        .btn-page-nav-custom:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(14, 165, 233, 0.35); }
         .btn-page-nav-custom:active { transform: scale(0.97); }
 
-        #read-screen { position: relative; background: var(--bg-main); display: none; width: 100%; height: 100%; overflow: hidden; }
+        /* --- READ SCREEN --- */
+        #read-screen { position: relative; background: var(--bg-gradient); display: none; width: 100%; height: 100%; overflow: hidden; }
         #read-screen.active { display: flex; flex-direction: column; }
 
         .image-scroll-area {
             flex: 1; width: 100%; overflow-y: auto; overflow-x: hidden;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            padding: 10px 0; background: var(--bg-main); position: relative;
+            padding: 10px 0; position: relative;
         }
 
         .loading-spinner {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 48px; height: 48px; border: 4px solid var(--border-color); border-top: 4px solid #0284c7;
-            border-radius: 50%; animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; z-index: 5; display: none;
-            box-shadow: var(--glow);
+            width: 48px; height: 48px; border: 4px solid var(--border-color); border-top: 4px solid #0ea5e9;
+            border-radius: 50%; animation: spin 0.8s linear infinite; z-index: 5; display: none;
         }
         @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
 
@@ -464,65 +432,64 @@
             box-shadow: var(--shadow); width: 92%; max-width: 440px;
             aspect-ratio: 1 / 1.414; transform-origin: center center; will-change: transform;
             transition: transform 0.05s ease-out; border: 1px solid var(--border-color);
-            backdrop-filter: blur(10px);
         }
 
         .image-container img { width: 100%; height: 100%; display: block; border-radius: 18px; pointer-events: none; object-fit: fill; }
+        
         .sound-block { 
-            position: absolute; cursor: pointer; background: rgba(2, 132, 199, 0.1); border: 1.5px dashed rgba(2, 132, 199, 0.5); 
-            border-radius: 8px; transition: var(--transition); backdrop-filter: blur(2px);
+            position: absolute; cursor: pointer; background: rgba(14, 165, 233, 0.08); 
+            border: 1px dashed rgba(14, 165, 233, 0.4); border-radius: 8px; transition: var(--transition); 
         }
-        .sound-block:hover { background: rgba(2, 132, 199, 0.25); border-color: #0284c7; box-shadow: 0 0 12px rgba(2, 132, 199, 0.3); transform: scale(1.02); }
-        .sound-block:active { background: rgba(2, 132, 199, 0.4); transform: scale(0.98); }
+        .sound-block:hover { background: rgba(14, 165, 233, 0.22); border-color: #0ea5e9; transform: scale(1.02); }
+        .sound-block:active { background: rgba(14, 165, 233, 0.35); }
 
         .controls-wrapper {
             width: calc(440px * 1.8); max-width: 96%; margin: 0 auto 8px auto; display: flex; flex-direction: column; gap: 8px;
-            flex-shrink: 0; z-index: 100; background: var(--bg-panel); backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px); padding: 12px; border-radius: 22px; box-shadow: var(--shadow); border: 1px solid var(--border-color);
+            flex-shrink: 0; z-index: 100; background: var(--bg-panel); backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px); padding: 12px; border-radius: 22px; box-shadow: var(--shadow); border: 1px solid var(--border-color);
         }
 
         .section-title {
             text-align: center; font-size: 11px; font-weight: 700; color: var(--text-muted);
-            margin-bottom: 3px; letter-spacing: 1px; text-transform: uppercase;
+            margin-bottom: 2px; letter-spacing: 1px; text-transform: uppercase;
         }
 
-        .page-nav-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); backdrop-filter: blur(10px); }
-        .page-nav-buttons { width: 100%; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+        .page-nav-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        .page-nav-buttons { width: 100%; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
 
-        .record-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); backdrop-filter: blur(10px); }
+        .record-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
         .record-buttons { display: flex; justify-content: space-between; align-items: stretch; gap: 8px; }
         
         .universal-btn { 
             height: 36px; border: none; border-radius: 10px; color: white; cursor: pointer; 
             font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; 
             flex: 1 !important; width: 0 !important; padding: 0 !important; margin: 0 !important;
-            transition: var(--transition); box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: var(--transition); box-shadow: 0 4px 12px rgba(0,0,0,0.06);
         }
-        .universal-btn:hover { opacity: 0.95; transform: translateY(-2px); }
-        .btn-menu-back { background: linear-gradient(135deg, #22c55e, #15803d); box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); }
-        .btn-open-target { background: linear-gradient(135deg, #38bdf8, #0284c7); box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3); }
-        .btn-record { background: linear-gradient(135deg, #f87171, #dc2626); box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); }
-        .btn-stop { background: linear-gradient(135deg, #fbbf24, #d97706); box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3); }
-        .btn-ok { background: linear-gradient(135deg, #38bdf8, #0284c7); box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3); }
-        .btn-send { background: linear-gradient(135deg, #22c55e, #15803d); box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); }
-        .universal-btn:disabled { background: var(--border-color) !important; color: var(--text-muted) !important; cursor: not-allowed; box-shadow: none !important; transform: none !important; opacity: 0.6; }
+        .universal-btn:hover { opacity: 0.95; transform: translateY(-1px); }
+        .btn-menu-back { background: linear-gradient(135deg, #10b981, #059669); }
+        .btn-open-target { background: var(--accent-gradient); }
+        .btn-record { background: linear-gradient(135deg, #f43f5e, #e11d48); }
+        .btn-stop { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .btn-ok { background: var(--accent-gradient); }
+        .btn-send { background: linear-gradient(135deg, #10b981, #059669); }
+        .universal-btn:disabled { background: var(--border-color) !important; color: var(--text-muted) !important; cursor: not-allowed; box-shadow: none !important; transform: none !important; opacity: 0.7; }
 
         @keyframes pulse-animation {
-            0% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+            0% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
             50% { opacity: 0.8; transform: scale(0.98); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
             100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
         .is-recording {
             animation: pulse-animation 1.5s infinite ease-in-out;
             background: linear-gradient(135deg, #ef4444, #991b1b) !important;
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5) !important;
         }
 
-        .shortcut-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); backdrop-filter: blur(10px); }
-        .shortcut-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-        .shortcut-row span { width: 55px; font-size: 12px; font-weight: 600; color: var(--text-muted); }
-        .shortcut-panel select { flex: 1; width: 0; padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 12px; background: var(--input-bg); color: var(--text-main); font-weight: 600; outline: none; transition: var(--transition); backdrop-filter: blur(8px); }
-        .shortcut-panel select:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
+        .shortcut-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        .shortcut-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .shortcut-row span { width: 60px; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+        .shortcut-panel select { flex: 1; width: 0; padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 12px; background: var(--input-bg); color: var(--text-main); font-weight: 600; outline: none; transition: var(--transition); }
+        .shortcut-panel select:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15); }
         
         .shortcut-container { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
         .shortcut-left { flex: 2; display: flex; flex-direction: column; gap: 6px; }
@@ -541,10 +508,10 @@
     <div id="login-screen" class="screen">
         <div class="login-card">
             <h2>Tartili Digital</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 6px;">Silakan masuk dengan akun terdaftar.</p>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 6px;">Silakan masuk dengan akun terdaftar Anda.</p>
             <input type="email" id="loginEmail" placeholder="Email Anda" />
             <input type="password" id="loginPassword" placeholder="Kata Sandi" />
-            <button class="btn-login" onclick="handleLogin()">Masuk</button>
+            <button class="btn-login" onclick="handleLogin()">Masuk Sekarang</button>
             <div id="loginError" class="login-error">Email atau kata sandi salah.</div>
         </div>
     </div>
@@ -552,7 +519,7 @@
     <!-- Halaman Menu Utama -->
     <div id="menu-screen" class="screen">
         <div class="menu-content-wrapper">
-            <h2>TARTILI</h2>
+            <h2>TARTILI DIGITAL</h2>
             <div class="grid-jilid">
                 <button class="btn-cover" id="cover-btn-0" onclick="openJilid(1, 'a')" onmouseenter="selectedMenuCoverIndex=0; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover1.jpg"></button>
                 <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover2.jpg"></button>
@@ -577,7 +544,7 @@
                             <select id="jumpPageSelectMenu"></select>
                         </div>
                     </div>
-                    <button class="btn-open-menu" onclick="directOpen('Menu')" style="background: var(--accent-gradient); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; transition: var(--transition); box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">Buka</button>
+                    <button class="btn-open-menu" onclick="directOpen('Menu')" style="background: var(--accent-gradient); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; transition: var(--transition);">Buka</button>
                 </div>
             </div>
 
@@ -585,7 +552,7 @@
                 <button class="btn-bookmark saved" onclick="openBookmarksScreen()" title="Halaman Tersimpan">
                     <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
                 </button>
-                <button onclick="handleLogout()" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 0 18px; height: 44px; border-radius: 14px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; gap: 4px; transition: var(--transition);" title="Keluar">Logout</button>
+                <button onclick="handleLogout()" style="background: #ef4444; color: white; border: none; padding: 0 18px; height: 44px; border-radius: 14px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25); display: flex; align-items: center; justify-content: center; gap: 6px; transition: var(--transition);" title="Keluar">Logout</button>
                 
                 <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna">
                     <svg viewBox="0 0 24 24">
@@ -764,14 +731,12 @@
             }
         }
 
-        let toastTimeout = null;
         function showToast(message) {
             const toast = document.getElementById('toastNotification');
             toast.innerText = message;
-            toast.classList.add('show');
-            if (toastTimeout) clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toast.classList.remove('show');
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+            setTimeout(() => {
+                toast.style.transform = 'translateX(-50%) translateY(100px)';
             }, 3000);
         }
 
@@ -893,7 +858,7 @@
                 item.innerHTML = `
                     <div class="bookmark-item-content">
                         <div class="bookmark-item-icon">
-                            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:#0284c7;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
+                            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:#0ea5e9;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
                         </div>
                         <div class="bookmark-item-info">
                             <span class="bookmark-item-title">Tartili Jilid ${b.jilid}</span>
@@ -1063,7 +1028,7 @@
             };
             img.onerror = function() {
                 if (spinner) spinner.style.display = 'none';
-                container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:12px;">Gagal memuat halaman</div>`;
+                container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;">Gagal memuat halaman</div>`;
             };
 
             document.getElementById('jumpJilidRead').value = currentJilid;
@@ -1217,7 +1182,7 @@
                     document.getElementById('btnOk').disabled = false;
                     if (recordTitle) {
                         recordTitle.innerText = "Klik Simpan";
-                        recordTitle.style.color = "#15803d";
+                        recordTitle.style.color = "#059669";
                     }
                 };
                 mediaRecorder.start();
@@ -1288,7 +1253,7 @@
                         
                         if (recordTitle) {
                             recordTitle.innerText = "Siap Kirim WA";
-                            recordTitle.style.color = "#15803d";
+                            recordTitle.style.color = "#059669";
                         }
                         
                         showToast('Audio berhasil disimpan!');
@@ -1303,7 +1268,7 @@
                     recordTitle.innerText = "Gagal. Coba lagi!";
                     recordTitle.style.color = "#ef4444";
                 }
-                showToast('Gagal mengunggah rekaman.');
+                showToast('Gagal mengunggah rekaman.', true);
                 document.getElementById('btnOk').disabled = false;
             }
         }
