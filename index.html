@@ -1327,7 +1327,7 @@
                     recordedAudioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
                     document.getElementById('btnOk').disabled = false;
                     if (recordTitle) {
-                        recordTitle.innerText = "Klik Simpan";
+                        recordTitle.innerText = "Simpan atau rekam ulang?";
                         recordTitle.style.color = "#059669";
                     }
                 };
@@ -1398,7 +1398,7 @@
                         document.getElementById('btnSend').disabled = false;
                         
                         if (recordTitle) {
-                            recordTitle.innerText = "Siap Kirim WA";
+                            recordTitle.innerText = "Audio siap dikirim";
                             recordTitle.style.color = "#059669";
                         }
                         
