@@ -1,1828 +1,1075 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tartili - Kurniapedia</title>
+    <title>Tartili Digital - Platform Belajar & Setoran Mengaji Interaktif</title>
     
-    <link rel="icon" href="favicon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Amiri:wght@700&display=swap" rel="stylesheet">
-    
-    <!-- ==========================================
-         1. INISIALISASI FIREBASE & AUTENTIKASI
-         ========================================== -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyDCkiYKe-lKkbb0czz9y9ZBGN9SgOhbjmw",
-            authDomain: "tartili.firebaseapp.com",
-            projectId: "tartili",
-            storageBucket: "tartili.firebasestorage.app",
-            messagingSenderId: "677535626906",
-            appId: "1:677535626906:web:bc08dffdac958357e69123"
-        };
-
-        try {
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            const db = getFirestore(app);
-
-            window.firebaseAuth = auth;
-            window.firebaseDb = db;
-            window.signInWithEmailAndPassword = signInWithEmailAndPassword;
-            window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
-            window.signOut = signOut;
-            window.doc = doc;
-            window.setDoc = setDoc;
-            window.getDoc = getDoc;
-            window.updateDoc = updateDoc;
-            window.deleteDoc = deleteDoc;
-            window.collection = collection;
-            window.query = query;
-            window.where = where;
-            window.getDocs = getDocs;
-
-            onAuthStateChanged(auth, async (user) => {
-                const loginScreen = document.getElementById('login-screen');
-                const verifyScreen = document.getElementById('verify-screen');
-                const menuScreen = document.getElementById('menu-screen');
-                const readScreen = document.getElementById('read-screen');
-                const bookmarksScreen = document.getElementById('bookmarks-screen');
-                const adminScreen = document.getElementById('admin-screen');
-                const teacherAdminScreen = document.getElementById('teacher-admin-screen');
-                const classMembersScreen = document.getElementById('class-members-screen');
-
-                if (user) {
-                    try {
-                        const userDocRef = doc(db, "users", user.uid);
-                        const userSnap = await getDoc(userDocRef);
-                        
-                        if (userSnap.exists()) {
-                            window.currentUserProfile = userSnap.data();
-                        } else {
-                            window.currentUserProfile = { 
-                                name: user.email.split('@')[0], 
-                                role: 'Siswa', 
-                                classCode: '', 
-                                isMasterApproved: false,
-                                isTeacherApproved: false 
-                            };
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
                         }
-
-                        const profile = window.currentUserProfile;
-
-                        // Level 1 Check: Master Admin Approval (Applies to everyone)
-                        if (!profile.isMasterApproved) {
-                            hideAllScreens();
-                            verifyScreen.classList.add('active');
-                            const verifyTitle = document.getElementById('verifyTitle');
-                            const verifyDesc = document.getElementById('verifyEmailTarget');
-                            if (verifyTitle) verifyTitle.innerText = "Menunggu Persetujuan Master Admin";
-                            if (verifyDesc) verifyDesc.innerText = `Akun ${user.email} sedang menunggu verifikasi awal dari Master Admin.`;
-                            window.appState = 'verify';
-                            return;
-                        }
-
-                        // Level 2 Check: If user is a Student, they need Teacher Approval based on classCode
-                        if (profile.role === 'Siswa' && !profile.isTeacherApproved) {
-                            hideAllScreens();
-                            verifyScreen.classList.add('active');
-                            const verifyTitle = document.getElementById('verifyTitle');
-                            const verifyDesc = document.getElementById('verifyEmailTarget');
-                            if (verifyTitle) verifyTitle.innerText = "Menunggu Persetujuan Guru";
-                            if (verifyDesc) verifyDesc.innerText = `Akun Anda telah disetujui Admin Utama, namun sedang menunggu konfirmasi dari Guru (Kode Kelas: ${profile.classCode || '-'}).`;
-                            window.appState = 'verify';
-                            return;
-                        }
-
-                        await updateUserGreeting();
-                        setupDashboardAccess();
-
-                        hideAllScreens();
-                        if (readScreen.classList.contains('active')) {
-                            window.appState = 'read';
-                        } else if (bookmarksScreen.classList.contains('active')) {
-                            window.appState = 'bookmarks';
-                        } else if (classMembersScreen.classList.contains('active')) {
-                            window.appState = 'class-members';
-                        } else {
-                            menuScreen.classList.add('active');
-                            window.appState = 'menu';
-                            updateMenuCoverFocus();
-                        }
-
-                    } catch (err) {
-                        console.error("Gagal memuat profil pengguna:", err);
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        arabic: ['Amiri', 'serif']
                     }
-                } else {
-                    window.currentUserProfile = null;
-                    hideAllScreens();
-                    loginScreen.classList.add('active');
-                    window.appState = 'login';
                 }
-            });
-        } catch (e) {
-            console.error("Gagal memuat Firebase:", e);
-        }
-
-        function hideAllScreens() {
-            ['login-screen', 'verify-screen', 'menu-screen', 'read-screen', 'bookmarks-screen', 'admin-screen', 'teacher-admin-screen', 'class-members-screen'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.classList.remove('active');
-            });
+            }
         }
     </script>
 
-    <!-- Berkas Konfigurasi Data Buku Tartili (Jilid 1-6) -->
-    <script src="tartili1.js"></script>
-    <script src="tartili2.js"></script>
-    <script src="tartili3.js"></script>
-    <script src="tartili4.js"></script>
-    <script src="tartili5.js"></script>
-    <script src="tartili6.js"></script>
+    <!-- Font & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- ==========================================
-         2. PENGATURAN TAMPILAN (CSS / GLASS MORPHISM)
-         ========================================== -->
+    <!-- Firebase SDK (Modular v9) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, query, where, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
+        
+        window.firebaseModules = { initializeApp, getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, query, where, addDoc, serverTimestamp, getStorage, storageRef, uploadBytes, getDownloadURL };
+    </script>
+
     <style>
-        :root {
-            --transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        
-        body { 
-            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; 
-            background: var(--bg-main); 
-            color: var(--text-main); 
-            overflow: hidden; 
-            height: 100vh; 
-            height: 100dvh; 
-            transition: background 0.5s ease, color 0.5s ease; 
-        }
-        
-        body.light-theme {
-            --bg-main: #f0f4f8;
-            --bg-gradient: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.08) 0%, rgba(2, 132, 199, 0.03) 90%), #f8fafc;
-            --bg-card: rgba(255, 255, 255, 0.75);
-            --bg-panel: rgba(255, 255, 255, 0.82);
-            --border-color: rgba(226, 232, 240, 0.8);
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --input-bg: rgba(241, 245, 249, 0.8);
-            --accent-gradient: linear-gradient(135deg, #0ea5e9, #0284c7);
-            --shadow: 0 20px 40px -15px rgba(2, 132, 199, 0.1), 0 10px 15px -5px rgba(0, 0, 0, 0.03);
-            --glow: 0 0 20px rgba(14, 165, 233, 0.25);
-        }
-        
-        body.dark-theme {
-            --bg-main: #030712;
-            --bg-gradient: radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.12) 0%, rgba(3, 7, 18, 1) 90%);
-            --bg-card: rgba(17, 24, 39, 0.75);
-            --bg-panel: rgba(15, 23, 42, 0.85);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --input-bg: rgba(30, 41, 59, 0.6);
-            --accent-gradient: linear-gradient(135deg, #38bdf8, #0284c7);
-            --shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), 0 0 1px 1px rgba(255, 255, 255, 0.05) inset;
-            --glow: 0 0 25px rgba(56, 189, 248, 0.2);
-        }
-
-        body {
-            background: var(--bg-gradient);
-            background-attachment: fixed;
-        }
-
-        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; justify-content: center; align-items: center; }
-        .screen.active { display: flex; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.98); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        #login-screen, #verify-screen, #admin-screen, #teacher-admin-screen, #class-members-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
-        .login-card {
-            background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            padding: 30px 24px; border-radius: 28px; border: 1px solid var(--border-color);
-            box-shadow: var(--shadow); width: 100%; max-width: 420px;
-            display: flex; flex-direction: column; gap: 12px; text-align: center;
-            position: relative; overflow: hidden; margin: auto;
-        }
-        .login-card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-            background: var(--accent-gradient);
-        }
-        .login-card h2 { color: var(--text-main); font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
-        
-        .auth-mode-toggle {
-            display: flex; background: var(--input-bg); border-radius: 12px; padding: 4px; margin-bottom: 4px;
-        }
-        .auth-mode-btn {
-            flex: 1; padding: 8px; border: none; background: transparent; font-size: 12px; font-weight: 700;
-            color: var(--text-muted); cursor: pointer; border-radius: 10px; transition: var(--transition);
-        }
-        .auth-mode-btn.active { background: var(--bg-card); color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-
-        .login-card input, .login-card select {
-            width: 100%; padding: 12px 16px; border: 1px solid var(--border-color);
-            border-radius: 14px; font-size: 14px; outline: none; background: var(--input-bg); color: var(--text-main);
-            transition: var(--transition); font-weight: 500; font-family: inherit;
-        }
-        .login-card input:focus, .login-card select:focus { border-color: #0ea5e9; box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15); }
-        .login-card select option { background: var(--bg-panel); color: var(--text-main); }
-        
-        .register-only-field { display: none; flex-direction: column; gap: 12px; }
-        .register-only-field.show { display: flex; }
-
-        .btn-login {
-            width: 100%; padding: 13px; border: none; border-radius: 14px;
-            background: var(--accent-gradient); color: white;
-            font-weight: 700; cursor: pointer; font-size: 15px;
-            box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3); transition: var(--transition); margin-top: 4px;
-        }
-        .btn-login:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 12px 25px rgba(14, 165, 233, 0.4); }
-        .login-error { color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 2px; display: none; }
-
-        #menu-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; justify-content: flex-start; align-items: center; }
-        .menu-content-wrapper {
-            display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 880px; position: relative; margin: auto;
-        }
-        
-        .landing-hero-card {
-            width: 100%; background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--border-color); border-radius: 24px; padding: 20px 24px;
-            display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow);
-        }
-        .landing-hero-info { display: flex; flex-direction: column; gap: 4px; text-align: left; }
-        .landing-hero-greeting { font-size: 16px; font-weight: 700; color: var(--text-muted); }
-        .landing-hero-username { font-size: 20px; font-weight: 800; color: var(--text-main); }
-        .landing-hero-motivation { font-size: 12px; font-weight: 600; color: var(--text-muted); font-style: italic; margin-top: 2px; }
-        .landing-hero-subtitle { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; gap: 8px; align-items: center; margin-top: 2px; flex-wrap: wrap; }
-        .badge-role { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 3px; }
-        .badge-role:hover { background: rgba(14, 165, 233, 0.25); }
-        
-        .landing-hero-actions { display: flex; gap: 10px; align-items: center; }
-
-        .menu-section-title { width: 100%; text-align: left; font-size: 14px; font-weight: 800; color: var(--text-main); letter-spacing: 0.5px; margin-top: 4px; }
-        .grid-jilid { display: grid; gap: 16px; width: 100%; margin: 0; grid-template-columns: repeat(6, 1fr); }
-        
-        #bookmarks-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; justify-content: space-between; align-items: center; height: 100vh; height: 100dvh; }
-        .bookmarks-content-wrapper {
-            display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 480px; height: 100%; justify-content: space-between; padding: 10px 0;
-        }
-        .bookmarks-header { width: 100%; display: flex; justify-content: center; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
-        .bookmarks-header h2 { color: var(--text-main); font-size: 20px; font-weight: 700; text-align: center; width: 100%; }
-        
-        .bookmarks-list {
-            width: 100%; flex: 1; max-height: calc(100vh - 180px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px;
-            border: 1px solid var(--border-color); border-radius: 20px; background: var(--bg-panel); backdrop-filter: blur(20px);
-            box-shadow: var(--shadow); scrollbar-width: thin;
-        }
-        
-        .bookmark-item {
-            display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;
-            background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 14px; cursor: pointer;
-            transition: var(--transition);
-        }
-        .bookmark-item:hover { border-color: #0ea5e9; background: var(--bg-card); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(14, 165, 233, 0.12); }
-        
-        .bookmark-item-content { display: flex; align-items: center; gap: 12px; width: 100%; }
-        .bookmark-item-icon { 
-            width: 34px; height: 34px; border-radius: 10px; background: rgba(14, 165, 233, 0.12); color: #0ea5e9;
-            display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;
-        }
-        .bookmark-item-info { display: flex; flex-direction: column; gap: 2px; width: 100%; }
-        .bookmark-item-title { font-size: 13px; font-weight: 700; color: var(--text-main); }
-        .bookmark-item-subtitle { font-size: 11px; font-weight: 600; color: var(--text-muted); }
-        
-        .bookmark-item-delete { 
-            background: rgba(239, 68, 68, 0.1); border: none; color: #ef4444; cursor: pointer; 
-            width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
-            font-size: 12px; transition: var(--transition); flex-shrink: 0;
-        }
-        .bookmark-item-delete:hover { background: #ef4444; color: white; transform: scale(1.08); }
-
-        #toastNotification {
-            position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%) translateY(100px);
-            background: var(--bg-panel); backdrop-filter: blur(16px); color: var(--text-main); padding: 12px 24px; border-radius: 40px;
-            font-size: 13px; font-weight: 700; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 9999; pointer-events: none;
-            border: 1px solid var(--border-color);
-        }
-
-        @media (orientation: portrait) {
-            .menu-content-wrapper { max-width: 420px; }
-            .grid-jilid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, auto); }
-            .btn-cover { aspect-ratio: 3/4; }
-            
-            .landing-hero-card { flex-direction: row; align-items: center; gap: 12px; padding: 16px; }
-            .landing-hero-actions { width: auto; justify-content: flex-end; }
-
-            .image-scroll-area { flex: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 4px !important; overflow: hidden !important; }
-            .image-container { height: 100% !important; width: auto !important; aspect-ratio: 1 / 1.414 !important; max-width: 100% !important; max-height: 100% !important; margin-bottom: 0 !important; }
-            .image-container img { width: 100% !important; height: 100% !important; object-fit: fill !important; }
-
-            .controls-wrapper { display: flex; flex-direction: column; width: 94% !important; max-width: 420px !important; gap: 4px !important; padding: 8px !important; }
-            .page-nav-panel { order: 1 !important; padding: 4px 10px !important; }
-            .shortcut-panel { order: 2 !important; }
-            .record-panel { order: 3 !important; }
-            
-            #read-screen .page-nav-panel .section-title,
-            #read-screen .shortcut-panel .section-title,
-            #bookmarks-screen .shortcut-panel .section-title { display: none !important; }
-
-            .page-nav-buttons { gap: 8px !important; }
-            .btn-page-nav-custom { height: 32px !important; }
-            .btn-prev-custom .nav-icon, .btn-next-custom .nav-icon { width: 26px !important; height: 26px !important; }
-            .nav-icon svg { width: 14px !important; height: 14px !important; }
-            .btn-prev-custom { padding-left: 32px !important; }
-            .btn-next-custom { padding-right: 32px !important; }
-
-            #menu-screen .shortcut-panel, #bookmarks-screen .shortcut-panel { padding: 8px 12px !important; }
-            #menu-screen .shortcut-container, #bookmarks-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; gap: 8px !important; width: 100% !important; }
-            #menu-screen .shortcut-left, #bookmarks-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 8px !important; flex: 1 !important; align-items: center !important; }
-            #menu-screen .shortcut-row, #bookmarks-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 6px !important; flex: 1 !important; margin: 0 !important; flex-direction: row !important; }
-            #menu-screen .shortcut-row span, #bookmarks-screen .shortcut-row span { font-size: 11px !important; width: auto !important; color: var(--text-muted); }
-            #menu-screen .shortcut-panel select, #bookmarks-screen .shortcut-panel select { width: 100% !important; height: 30px !important; font-size: 12px !important; padding: 2px 6px !important; flex: 1 !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 8px; }
-            
-            #menu-screen .shortcut-panel .btn-open-menu, #bookmarks-screen .shortcut-panel .btn-open-target, #bookmarks-screen .shortcut-panel .btn-menu-back { width: 55px !important; flex: 0 0 55px !important; height: 30px !important; font-size: 11px !important; margin-top: 0 !important; border-radius: 8px !important; }
-        }
-        
-        @media (orientation: landscape) {
-            #menu-screen { 
-                flex-direction: column !important; justify-content: center !important; 
-                align-items: center !important; gap: 12px !important; padding: 12px !important; 
-                height: 100dvh !important; overflow: hidden !important;
-            }
-            .menu-content-wrapper { max-width: 880px !important; gap: 12px !important; }
-
-            .landing-hero-card { padding: 14px 20px; }
-            .grid-jilid { grid-template-columns: repeat(6, 1fr); grid-template-rows: 1fr; gap: 12px; }
-            .btn-cover { aspect-ratio: 3/4; max-height: 150px !important; }
-            
-            #menu-screen .shortcut-panel { 
-                width: 100% !important; max-width: 480px !important; height: auto !important; 
-                min-height: unset !important; max-height: none !important; flex-grow: 0 !important;
-                flex-shrink: 0 !important; padding: 8px 12px !important;
-            }
-            #menu-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 10px !important; width: 100% !important; height: auto !important; }
-            #menu-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 10px !important; flex: 1 !important; align-items: center !important; }
-            #menu-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 6px !important; flex: 1 !important; margin: 0 !important; flex-direction: row !important; }
-            #menu-screen .shortcut-row span { width: auto !important; font-size: 11px !important; color: var(--text-muted); }
-            #menu-screen .shortcut-panel select { padding: 2px 8px !important; font-size: 12px !important; height: 30px !important; width: 100% !important; flex: 1 !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 8px; }
-            
-            #menu-screen .shortcut-panel .btn-open-menu { width: 85px !important; flex: 0 0 85px !important; height: 30px !important; font-size: 11px !important; align-self: center !important; margin-top: 0 !important; border-radius: 8px !important; }
-
-            .image-scroll-area {
-                display: flex !important; flex-direction: column !important; align-items: center !important;
-                justify-content: flex-start !important; overflow-y: auto !important; overflow-x: hidden !important;
-                padding-top: 4px !important; padding-bottom: 4px !important;
-            }
-            
-            .image-container { 
-                max-width: 550px !important; height: auto !important; aspect-ratio: 1 / 1.414 !important; 
-                margin: 0 auto !important; transform-origin: top center !important;
-            }
-            .image-container img { width: 100% !important; height: 100% !important; object-fit: fill !important; }
-
-            .controls-wrapper {
-                position: relative !important; bottom: auto !important; left: auto !important;
-                transform: none !important; width: calc(550px * 1.8) !important; max-width: 98% !important;
-                margin: 4px auto; display: flex !important; flex-direction: row !important;
-                flex-wrap: nowrap !important; justify-content: center !important; align-items: stretch !important;
-                gap: 8px !important; background: var(--bg-panel); backdrop-filter: blur(20px);
-                padding: 8px 12px; border-radius: 18px; box-shadow: var(--shadow); z-index: 100; border: 1px solid var(--border-color);
-            }
-            
-            .shortcut-panel { width: auto !important; flex: 1.8 !important; height: auto !important; display: flex; flex-direction: column; justify-content: center; }
-            .record-panel { width: auto !important; flex: 1.4 !important; height: auto !important; order: 2 !important; display: flex; flex-direction: column; justify-content: center; }
-            .page-nav-panel { 
-                width: auto !important; flex: 0.85 !important; height: auto !important; order: 3 !important;
-                background: var(--bg-card) !important; border: 1px solid var(--border-color) !important; border-radius: 12px !important; 
-                padding: 6px 8px !important; display: flex !important; flex-direction: column !important; 
-                justify-content: center !important; align-items: stretch !important; gap: 4px !important; 
-                box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important; 
-            }
-            
-            #read-screen .page-nav-panel .section-title,
-            #read-screen .shortcut-panel .section-title { display: block !important; }
-
-            #bookmarks-screen .bookmarks-content-wrapper { max-width: 550px !important; justify-content: flex-start !important; gap: 10px !important; }
-            #bookmarks-screen .bookmarks-list { max-height: calc(100vh - 120px) !important; }
-            #bookmarks-screen .shortcut-panel { 
-                width: 100% !important; max-width: 100% !important; 
-                padding: 8px 12px !important; height: auto !important; 
-                justify-content: center !important; flex: 0 0 auto !important;
-            }
-            #bookmarks-screen .shortcut-panel .section-title { display: none !important; }
-
-            .page-nav-buttons { gap: 6px !important; }
-            .btn-page-nav-custom {
-                height: 28px !important; flex: 1 !important; width: 100% !important; border-radius: 14px !important;
-            }
-            .btn-prev-custom .nav-icon, .btn-next-custom .nav-icon { width: 20px !important; height: 20px !important; }
-            .nav-icon svg { width: 11px !important; height: 11px !important; }
-            .btn-prev-custom { padding-left: 20px !important; }
-            .btn-next-custom { padding-right: 20px !important; }
-            
-            .universal-btn { height: 28px !important; font-size: 11px !important; border-radius: 8px !important; }
-            
-            #read-screen .shortcut-container, #bookmarks-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 8px !important; width: 100% !important; }
-            #read-screen .shortcut-left, #bookmarks-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 8px !important; flex: 2.2 !important; align-items: center !important; min-width: 0 !important; }
-            #read-screen .shortcut-row, #bookmarks-screen .shortcut-row { display: flex !important; align-items: center !important; gap: 4px !important; margin: 0 !important; flex-direction: row !important; min-width: 0 !important; }
-            #read-screen .shortcut-row span, #bookmarks-screen .shortcut-row span { width: auto !important; font-size: 11px !important; color: var(--text-muted); flex-shrink: 0; }
-            
-            #bookmarks-screen .shortcut-row.row-tartili { flex: 0 0 75px !important; width: 75px !important; }
-            #bookmarks-screen .shortcut-row.row-halaman { flex: 1 1 auto !important; min-width: 0 !important; width: auto !important; }
-            
-            #read-screen .shortcut-row.row-tartili { flex: 0 0 75px !important; width: 75px !important; }
-            #read-screen .shortcut-row.row-halaman { flex: 1 1 auto !important; min-width: 0 !important; width: auto !important; }
-            
-            #read-screen .shortcut-panel select, #bookmarks-screen .shortcut-panel select { padding: 2px 4px !important; font-size: 11px !important; height: 28px !important; width: 100% !important; min-width: 0 !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 8px; }
-            #read-screen .btn-open-target, #bookmarks-screen .btn-open-target { width: 55px !important; flex: 0 0 55px !important; height: 28px !important; font-size: 11px !important; align-self: center !important; margin-top: 0 !important; border-radius: 8px !important; }
-            #read-screen .btn-menu-back, #bookmarks-screen .btn-menu-back { width: 55px !important; flex: 0 0 55px !important; height: 28px !important; font-size: 11px !important; align-self: center !important; margin-top: 0 !important; border-radius: 8px !important; }
-        }
-
-        .btn-cover { 
-            width: 100%; border: none; padding: 0; cursor: pointer; border-radius: 20px; 
-            transition: var(--transition); transform: scale(0.96); background: transparent; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08); position: relative; overflow: hidden;
-        }
-        .btn-cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 20px; display: block; transition: var(--transition); }
-        .btn-cover:hover, .btn-cover.keyboard-focused { 
-            transform: translateY(-6px) scale(1.02); 
-            outline: none; 
-            box-shadow: 0 20px 35px rgba(14, 165, 233, 0.3); 
-        }
-        .btn-cover:hover img { transform: scale(1.03); }
-        .btn-cover:active { transform: scale(1.0); }
-
-        .btn-theme-toggle, .btn-bookmark, .btn-logout, .btn-admin, .btn-teacher-panel {
-            background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
-            width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: var(--transition); flex-shrink: 0;
-        }
-        .btn-theme-toggle:hover, .btn-bookmark:hover, .btn-admin:hover, .btn-teacher-panel:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; }
-        
-        .btn-logout {
-            background: rgba(239, 68, 68, 0.12);
-            border-color: rgba(239, 68, 68, 0.3);
-        }
-        .btn-logout:hover { transform: scale(1.08); background: #ef4444; border-color: #ef4444; }
-        .btn-logout:hover svg { stroke: white; }
-
-        .btn-theme-toggle svg, .btn-bookmark svg, .btn-logout svg, .btn-admin svg, .btn-teacher-panel svg {
-            width: 18px; height: 18px; fill: none; stroke: var(--text-muted);
-            stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: var(--transition);
-        }
-        body.dark-theme .btn-theme-toggle svg { stroke: #38bdf8; }
-        .btn-logout svg { stroke: #ef4444; }
-        .btn-admin, .btn-teacher-panel { display: none; }
-
-        .btn-bookmark.saved { background: var(--bg-card); border-color: var(--border-color); }
-        .btn-bookmark.saved svg { fill: #0ea5e9; stroke: #0ea5e9; }
-        body.dark-theme .btn-bookmark.saved svg { fill: #38bdf8; stroke: #38bdf8; }
-
-        .btn-page-nav-custom {
-            flex: 1; height: 34px; border: none; border-radius: 17px; cursor: pointer;
-            display: flex; align-items: center; position: relative; font-weight: 700; font-size: 12px;
-            transition: var(--transition); box-shadow: 0 6px 20px rgba(14, 165, 233, 0.25); color: white;
-        }
-        .btn-prev-custom { background: var(--accent-gradient); padding-left: 34px; justify-content: flex-start; }
-        .btn-prev-custom .nav-icon {
-            position: absolute; left: 3px; width: 28px; height: 28px; background: #ffffff; color: #0284c7;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: var(--transition);
-        }
-        .btn-next-custom { background: var(--accent-gradient); padding-right: 34px; justify-content: flex-end; }
-        .btn-next-custom .nav-icon {
-            position: absolute; right: 3px; width: 28px; height: 28px; background: #ffffff; color: #0284c7;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: var(--transition);
-        }
-        .nav-icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-        .btn-page-nav-custom:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(14, 165, 233, 0.35); }
-        .btn-page-nav-custom:active { transform: scale(0.97); }
-
-        #read-screen { position: relative; background: var(--bg-gradient); display: none; width: 100%; height: 100%; overflow: hidden; }
-        #read-screen.active { display: flex; flex-direction: column; }
-
-        .image-scroll-area {
-            flex: 1; width: 100%; overflow-y: auto; overflow-x: hidden;
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            padding: 6px 0; position: relative;
-        }
-
-        .loading-spinner {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 48px; height: 48px; border: 4px solid var(--border-color); border-top: 4px solid #0ea5e9;
-            border-radius: 50%; animation: spin 0.8s linear infinite; z-index: 5; display: none;
-        }
-        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-
-        .image-container { 
-            position: relative; display: block; border-radius: 18px; background: var(--bg-card);
-            box-shadow: var(--shadow); width: 92%; max-width: 440px;
-            aspect-ratio: 1 / 1.414; transform-origin: center center; will-change: transform;
-            transition: transform 0.05s ease-out; border: 1px solid var(--border-color);
-        }
-
-        .image-container img { width: 100%; height: 100%; display: block; border-radius: 18px; pointer-events: none; object-fit: fill; }
-        
-        .sound-block { 
-            position: absolute; cursor: pointer; background: rgba(14, 165, 233, 0.08); 
-            border: 1px dashed rgba(14, 165, 233, 0.4); border-radius: 8px; transition: var(--transition); 
-        }
-        .sound-block:hover { background: rgba(14, 165, 233, 0.22); border-color: #0ea5e9; transform: scale(1.02); }
-        .sound-block:active { background: rgba(14, 165, 233, 0.35); }
-
-        .controls-wrapper {
-            width: calc(440px * 1.8); max-width: 96%; margin: 0 auto 6px auto; display: flex; flex-direction: column; gap: 6px;
-            flex-shrink: 0; z-index: 100; background: var(--bg-panel); backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px); padding: 10px; border-radius: 20px; box-shadow: var(--shadow); border: 1px solid var(--border-color);
-        }
-
-        .section-title {
-            text-align: center; font-size: 10px; font-weight: 700; color: var(--text-muted);
-            margin-bottom: 2px; letter-spacing: 1px; text-transform: uppercase;
-        }
-
-        .page-nav-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-        .page-nav-buttons { width: 100%; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
-
-        .record-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-        .record-buttons { display: flex; justify-content: space-between; align-items: stretch; gap: 6px; }
-        
-        .universal-btn { 
-            height: 32px; border: none; border-radius: 8px; color: white; cursor: pointer; 
-            font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; 
-            flex: 1 !important; width: 0 !important; padding: 0 !important; margin: 0 !important;
-            transition: var(--transition); box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-        }
-        .universal-btn:hover { opacity: 0.95; transform: translateY(-1px); }
-        .btn-menu-back { background: linear-gradient(135deg, #10b981, #059669); }
-        .btn-open-target { background: var(--accent-gradient); }
-        .btn-record { background: linear-gradient(135deg, #f43f5e, #e11d48); }
-        .btn-stop { background: linear-gradient(135deg, #f59e0b, #d97706); }
-        .btn-ok { background: var(--accent-gradient); }
-        .btn-send { background: linear-gradient(135deg, #10b981, #059669); }
-        .universal-btn:disabled { background: var(--border-color) !important; color: var(--text-muted) !important; cursor: not-allowed; box-shadow: none !important; transform: none !important; opacity: 0.7; }
-
-        @keyframes pulse-animation {
-            0% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            50% { opacity: 0.8; transform: scale(0.98); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        .light .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
         }
         .is-recording {
-            animation: pulse-animation 1.5s infinite ease-in-out;
-            background: linear-gradient(135deg, #ef4444, #991b1b) !important;
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3) !important;
+            animation: pulse-recording 1.2s infinite ease-in-out;
         }
-
-        .shortcut-panel { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-        .shortcut-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-        .shortcut-row span { width: 50px; font-size: 11px; font-weight: 600; color: var(--text-muted); }
-        .shortcut-panel select { flex: 1; width: 0; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 11px; background: var(--input-bg); color: var(--text-main); font-weight: 600; outline: none; transition: var(--transition); }
-        .shortcut-panel select:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15); }
-        
-        .shortcut-container { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
-        .shortcut-left { flex: 2; display: flex; flex-direction: column; gap: 4px; }
+        @keyframes pulse-recording {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+            70% { transform: scale(1.03); box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(156, 163, 175, 0.7); }
     </style>
 </head>
-<body class="light-theme">
+<body class="bg-gray-950 text-slate-100 font-sans min-h-screen selection:bg-brand-500 selection:text-white transition-colors duration-300">
 
-    <div id="toastNotification">Pemberitahuan</div>
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- ==========================================
-         3. STRUKTUR HTML (ANTARMUKA / TAMPILAN)
-         ========================================== -->
+    <!-- MAIN APP CONTAINER -->
+    <div id="app" class="flex flex-col min-h-screen">
 
-    <!-- Halaman Login / Pendaftaran Akun -->
-    <div id="login-screen" class="screen">
-        <div class="login-card">
-            <h2>Tartili Digital</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 2px;">Metode Praktis Belajar Membaca Al-Qur'an</p>
-            
-            <div class="auth-mode-toggle">
-                <button class="auth-mode-btn active" id="modeLoginBtn" onclick="switchAuthMode('login')">Masuk</button>
-                <button class="auth-mode-btn" id="modeRegisterBtn" onclick="switchAuthMode('register')">Buat Akun</button>
-            </div>
-
-            <input type="email" id="authEmail" placeholder="Email Anda" />
-            <input type="password" id="authPassword" placeholder="Kata Sandi (Min. 6 Karakter)" />
-            
-            <div id="registerFields" class="register-only-field">
-                <input type="text" id="authName" placeholder="Nama Lengkap" />
-                <select id="authRole" onchange="toggleRoleFields()">
-                    <option value="Siswa">Daftar sebagai Siswa</option>
-                    <option value="Guru">Daftar sebagai Guru / Pengajar</option>
-                </select>
-                <!-- Input khusus Siswa untuk memasukkan Kode Kelas dari Guru -->
-                <input type="text" id="authClassCode" placeholder="Kode Kelas dari Guru (Contoh: KLS-A1)" />
-                <!-- Input khusus Guru untuk menentukan Nama/Kode Kelas yang ingin dibuat -->
-                <input type="text" id="authTeacherClassName" placeholder="Nama/Kode Kelas Anda (Contoh: 5A - Al-Qur'an)" style="display:none;" />
-            </div>
-
-            <button class="btn-login" id="authSubmitBtn" onclick="handleAuthSubmit()">Masuk Sekarang</button>
-            <div id="loginError" class="login-error">Terjadi kesalahan pada data yang dimasukkan.</div>
-        </div>
-    </div>
-
-    <!-- Halaman Menunggu Persetujuan (Level 1 atau Level 2) -->
-    <div id="verify-screen" class="screen">
-        <div class="login-card">
-            <div style="font-size: 42px; margin-bottom: 2px;">⏳</div>
-            <h2 id="verifyTitle">Menunggu Persetujuan</h2>
-            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;" id="verifyEmailTarget">
-                Akun Anda sedang menunggu verifikasi.
-            </p>
-            <p style="font-size: 12px; color: var(--text-muted);">
-                Silakan hubungi Master Admin atau Guru pengampu kelas Anda agar akun segera disetujui.
-            </p>
-
-            <button class="btn-login" onclick="window.location.reload()" style="margin-top: 10px;">Cek Status Akun</button>
-            <button class="auth-mode-btn" onclick="handleLogout()" style="width: 100%; padding: 8px; margin-top: 4px; color: #ef4444; font-weight: 600;">Keluar / Ganti Akun</button>
-        </div>
-    </div>
-
-    <!-- Halaman Panel Master Admin (Menyetujui Pendaftaran Akun Baru Global) -->
-    <div id="admin-screen" class="screen">
-        <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
-            <h2>Panel Master Admin</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Daftar akun baru (Siswa & Guru) yang menunggu verifikasi awal:</p>
-            
-            <div id="pendingMasterUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
-                <!-- Diisi dinamis via JS -->
-            </div>
-
-            <button class="auth-mode-btn" onclick="goToMenu()" style="width: 100%; padding: 10px; background: var(--input-bg); border-radius: 12px; color: var(--text-main); font-weight: 700; margin-top: 8px;">Kembali ke Menu Utama</button>
-        </div>
-    </div>
-
-    <!-- Halaman Panel Guru (Manajemen Kelas & Menyetujui Siswa di Kelasnya) -->
-    <div id="teacher-admin-screen" class="screen">
-        <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
-            <h2>Panel Kelas Guru</h2>
-            <div style="background: var(--input-bg); padding: 10px; border-radius: 12px; text-align: left; margin-bottom: 8px;">
-                <div style="font-size: 11px; color: var(--text-muted);">Kode Kelas Anda untuk dibagikan ke Siswa:</div>
-                <div id="teacherClassCodeDisplay" style="font-size: 16px; font-weight: 800; color: #0ea5e9; margin-top: 2px;">-</div>
-            </div>
-            
-            <!-- Tombol Anggota Kelas untuk Guru -->
-            <button onclick="openClassMembersScreen()" style="width: 100%; padding: 10px; background: var(--accent-gradient); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-bottom: 8px;">👥 Lihat Daftar Siswa di Kelas</button>
-
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-align: left;">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
-            <div id="pendingStudentContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
-                <!-- Diisi dinamis via JS -->
-            </div>
-
-            <button class="auth-mode-btn" onclick="goToMenu()" style="width: 100%; padding: 10px; background: var(--input-bg); border-radius: 12px; color: var(--text-main); font-weight: 700; margin-top: 8px;">Kembali ke Menu Utama</button>
-        </div>
-    </div>
-
-    <!-- Halaman Daftar Anggota Kelas (Siswa & Guru) -->
-    <div id="class-members-screen" class="screen">
-        <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
-            <h2 id="classMembersTitle">Daftar Anggota Kelas</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;" id="classMembersSubtitle">Daftar siswa yang tergabung dalam kelas ini:</p>
-            
-            <div id="classMembersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
-                <!-- Diisi dinamis via JS -->
-            </div>
-
-            <button class="auth-mode-btn" onclick="goBackFromClassMembers()" style="width: 100%; padding: 10px; background: var(--input-bg); border-radius: 12px; color: var(--text-main); font-weight: 700; margin-top: 8px;">Kembali</button>
-        </div>
-    </div>
-
-    <!-- Halaman Menu Utama (Landing Page Style) -->
-    <div id="menu-screen" class="screen">
-        <div class="menu-content-wrapper">
-            <div class="landing-hero-card">
-                <div class="landing-hero-info">
-                    <div class="landing-hero-greeting" id="userGreetingText">Assalaamu'alaikum.. 👋</div>
-                    <div class="landing-hero-username" id="userUsernameText">Pengguna</div>
-                    <div class="landing-hero-motivation">Semangat belajar membaca tartili ya..</div>
-                    <div class="landing-hero-subtitle">
-                        <span id="userClassText">Kelas: -</span>
-                        <span id="userTeacherNameText">Guru: -</span>
-                        <span class="badge-role" id="userRoleBadge" onclick="openClassMembersScreen()" title="Lihat Daftar Anggota Kelas">Siswa 👥</span>
+        <!-- HEADER / NAVIGATION -->
+        <header class="sticky top-0 z-40 glass-panel border-b border-gray-800 px-4 py-3">
+            <div class="max-w-7xl mx-auto flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+                        <i class="fa-solid fa-quran text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight tracking-tight bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">Tartili Digital</h1>
+                        <p class="text-xs text-slate-400" id="headerSubtitle">Platform Belajar & Setoran Mengaji</p>
                     </div>
                 </div>
-                <div class="landing-hero-actions">
-                    <button class="btn-admin" id="btnMasterAdminPanel" onclick="openMasterAdminScreen()" title="Panel Master Admin">
-                        <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                    </button>
-                    <button class="btn-teacher-panel" id="btnTeacherPanel" onclick="openTeacherAdminScreen()" title="Panel Guru / Kelas">
-                        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                    </button>
-                    <button class="btn-bookmark" onclick="openBookmarksScreen()" title="Halaman Tersimpan">
-                        <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
-                    </button>
-                    <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna">
-                        <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                    </button>
-                    <button class="btn-logout" onclick="handleLogout()" title="Keluar Akun">
-                        <svg viewBox="0 0 24 24"><path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                    </button>
-                </div>
-            </div>
 
-            <div class="menu-section-title">TARTILI 1 - 6</div>
-            
-            <div class="grid-jilid">
-                <button class="btn-cover" id="cover-btn-0" onclick="openJilid(1, 'a')" onmouseenter="selectedMenuCoverIndex=0; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover1.jpg"></button>
-                <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover2.jpg"></button>
-                <button class="btn-cover" id="cover-btn-2" onclick="openJilid(3, 'a')" onmouseenter="selectedMenuCoverIndex=2; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover3.jpg"></button>
-                <button class="btn-cover" id="cover-btn-3" onclick="openJilid(4, 'a')" onmouseenter="selectedMenuCoverIndex=3; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover4.jpg"></button>
-                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=4; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover5.jpg"></button>
-                <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover6.jpg"></button>
-            </div>
-            
-            <div class="shortcut-panel" style="width: 100%; max-width: 100%;">
-                <div class="section-title">Pintasan</div>
-                <div class="shortcut-container">
-                    <div class="shortcut-left">
-                        <div class="shortcut-row">
-                            <span>Tartili</span>
-                            <select id="jumpJilidMenu" onchange="updatePageOptions('Menu')">
-                                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-                                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
-                            </select>
+                <div class="flex items-center gap-3">
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl bg-gray-800/60 hover:bg-gray-800 border border-gray-700/50 flex items-center justify-center text-slate-300 transition-all">
+                        <i id="themeIcon" class="fa-solid fa-moon text-sm"></i>
+                    </button>
+
+                    <!-- Profile / Auth Info (Hidden when logged out) -->
+                    <div id="userNavInfo" class="hidden items-center gap-3 pl-2 border-l border-gray-800">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-xs font-semibold text-slate-200" id="navUserName">Pengguna</p>
+                            <span class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-brand-500/20 text-emerald-400 font-medium" id="navUserRole">Siswa</span>
                         </div>
-                        <div class="shortcut-row">
-                            <span>Halaman</span>
-                            <select id="jumpPageSelectMenu"></select>
-                        </div>
+                        <button onclick="handleLogout()" class="w-9 h-9 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 flex items-center justify-center text-rose-400 transition-all" title="Keluar">
+                            <i class="fa-solid fa-power-off text-sm"></i>
+                        </button>
                     </div>
-                    <button class="btn-open-menu" onclick="directOpen('Menu')" style="background: var(--accent-gradient); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: var(--transition); height: 32px; width: 80px;">Buka</button>
                 </div>
             </div>
-        </div>
-    </div>
+        </header>
 
-    <!-- Halaman Daftar Bookmark -->
-    <div id="bookmarks-screen" class="screen">
-        <div class="bookmarks-content-wrapper">
-            <div class="bookmarks-header">
-                <h2>Halaman Tersimpan</h2>
-            </div>
-            
-            <div class="bookmarks-list" id="bookmarksListContainer"></div>
-            
-            <div class="shortcut-panel">
-                <div class="section-title">Pintasan</div>
-                <div class="shortcut-container">
-                    <button class="universal-btn btn-menu-back" onclick="goToMenu()">Menu</button>
-                    <div class="shortcut-left">
-                        <div class="shortcut-row row-tartili">
-                            <span>Tartili</span>
-                            <select id="jumpJilidBookmarks" onchange="updatePageOptions('Bookmarks')">
-                                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-                                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
-                            </select>
-                        </div>
-                        <div class="shortcut-row row-halaman">
-                            <span>Halaman</span>
-                            <select id="jumpPageSelectBookmarks"></select>
-                        </div>
-                    </div>
-                    <button class="universal-btn btn-open-target" onclick="directOpen('Bookmarks')">Buka</button>
-                </div>
-            </div>
-        </div>
-    </div>
+        <!-- DYNAMIC CONTENT VIEW CONTAINER -->
+        <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6">
 
-    <!-- Halaman Membaca Buku -->
-    <div id="read-screen" class="screen">
-        <div class="image-scroll-area" id="scrollArea">
-            <div class="loading-spinner" id="loadingSpinner"></div>
-            <div class="image-container" id="imageContainer"></div>
-        </div>
-        
-        <div class="controls-wrapper">
-            <div class="page-nav-panel">
-                <div class="section-title">Halaman</div>
-                <div class="page-nav-buttons">
-                    <button class="btn-page-nav-custom btn-prev-custom" onclick="changePage(-1)" title="Sebelumnya">
-                        <span class="nav-icon">
-                            <svg viewBox="0 0 24 24"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
-                        </span>
-                    </button>
+            <!-- VIEW: LOGIN & CONFIGURATION -->
+            <section id="viewLogin" class="view-section flex items-center justify-center min-h-[75vh]">
+                <div class="glass-panel w-full max-w-md p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+                    <div class="absolute -top-24 -right-24 w-48 h-48 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
                     
-                    <button class="btn-bookmark" id="btnBookmark" onclick="toggleBookmark()" title="Simpan Halaman">
-                        <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
-                    </button>
-                    
-                    <button class="btn-page-nav-custom btn-next-custom" onclick="changePage(1)" title="Berikutnya">
-                        <span class="nav-icon">
-                            <svg viewBox="0 0 24 24"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>
-                        </span>
-                    </button>
-                </div>
-            </div>
+                    <div class="text-center mb-8">
+                        <div class="inline-flex w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-600 to-emerald-400 items-center justify-center text-white text-2xl shadow-xl shadow-brand-500/30 mb-4">
+                            <i class="fa-solid fa-book-quran"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">Selamat Datang</h2>
+                        <p class="text-sm text-slate-400">Masuk untuk melanjutkan setoran atau kelola kelas</p>
+                    </div>
 
-            <div class="shortcut-panel">
-                <div class="section-title">Pintasan</div>
-                <div class="shortcut-container">
-                    <button class="universal-btn btn-menu-back" onclick="goToMenu()">Menu</button>
-                    <div class="shortcut-left">
-                        <div class="shortcut-row row-tartili">
-                            <span>Tartili</span>
-                            <select id="jumpJilidRead" onchange="updatePageOptions('Read')">
-                                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-                                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                    <!-- Setup Firebase Warning / Config Trigger -->
+                    <div id="firebaseConfigNotice" class="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs leading-relaxed hidden">
+                        <div class="flex items-start gap-2">
+                            <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                            <div>
+                                <span class="font-semibold">Konfigurasi Firebase Diperlukan:</span> Masukkan kredensial Firebase Anda pada tombol di bawah sebelum masuk aplikasi.
+                            </div>
+                        </div>
+                        <button onclick="openConfigModal()" class="mt-3 w-full py-2 bg-amber-500 hover:bg-amber-600 text-gray-950 font-semibold rounded-lg text-xs transition-colors">
+                            Atur Kredensial Firebase
+                        </button>
+                    </div>
+
+                    <!-- Auth Form -->
+                    <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1.5">Email Akun</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400"><i class="fa-solid fa-envelope text-xs"></i></span>
+                                <input type="email" id="authEmail" required placeholder="nama@email.com" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3.5 py-3 pl-10 text-sm text-slate-100 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1.5">Kata Sandi</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400"><i class="fa-solid fa-lock text-xs"></i></span>
+                                <input type="password" id="authPassword" required placeholder="••••••••" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3.5 py-3 pl-10 text-sm text-slate-100 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
+                            </div>
+                        </div>
+
+                        <!-- Role Selector for Register or Switch -->
+                        <div id="registerRoleContainer" class="hidden space-y-1.5">
+                            <label class="block text-xs font-medium text-slate-300">Pendaftaran Sebagai</label>
+                            <select id="authRole" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3.5 py-3 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+                                <option value="student">Siswa / Santri</option>
+                                <option value="teacher">Guru / Pengampu</option>
+                                <option value="admin">Master Admin</option>
                             </select>
                         </div>
-                        <div class="shortcut-row row-halaman">
-                            <span>Halaman</span>
-                            <select id="jumpPageSelectRead"></select>
+
+                        <button type="submit" id="authSubmitBtn" class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-emerald-500 hover:from-brand-500 hover:to-emerald-400 text-white font-semibold rounded-xl text-sm shadow-lg shadow-brand-600/25 transition-all">
+                            Masuk Aplikasi
+                        </button>
+                    </form>
+
+                    <div class="mt-6 text-center">
+                        <button type="button" onclick="toggleAuthMode()" id="authModeToggleBtn" class="text-xs text-brand-400 hover:text-brand-300 font-medium transition-colors">
+                            Belum punya akun? Daftar akun baru
+                        </button>
+                    </div>
+
+                    <div class="mt-8 pt-4 border-t border-gray-800/80 text-center">
+                        <button onclick="openConfigModal()" class="text-[11px] text-slate-400 hover:text-slate-200 transition-colors inline-flex items-center gap-1.5">
+                            <i class="fa-solid fa-gear"></i> Konfigurasi Firebase / Pengaturan Sistem
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: STUDENT DASHBOARD -->
+            <section id="viewStudent" class="view-section hidden space-y-6">
+                <!-- Welcome Banner -->
+                <div class="glass-panel p-6 rounded-3xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div class="absolute right-0 top-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div>
+                        <span class="inline-block px-2.5 py-1 rounded-full bg-brand-500/20 text-emerald-400 text-xs font-semibold mb-2">Siswa Aktif</span>
+                        <h2 class="text-2xl font-bold text-white" id="studentWelcomeName">Halo, Santri</h2>
+                        <p class="text-sm text-slate-400">Pilih Jilid Buku Tartili untuk mulai belajar atau mengirim setoran bacaan.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-3 text-center min-w-[100px]">
+                            <span class="text-[10px] text-slate-400 block uppercase">Total Setoran</span>
+                            <span class="text-lg font-bold text-emerald-400" id="studentTotalSetoran">0</span>
                         </div>
                     </div>
-                    <button class="universal-btn btn-open-target" onclick="directOpen('Read')">Buka</button>
                 </div>
+
+                <!-- Jilid Selection Grid -->
+                <div>
+                    <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-book-open text-brand-400"></i> Pilih Buku Jilid Tartili (1 - 6)
+                    </h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4" id="jilidGrid">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- History Setoran Siswa -->
+                <div class="glass-panel p-6 rounded-3xl">
+                    <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-brand-400"></i> Riwayat Setoran Anda
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-800 text-slate-400 text-xs">
+                                    <th class="py-3 px-4 font-medium">Jilid / Materi</th>
+                                    <th class="py-3 px-4 font-medium">Tanggal</th>
+                                    <th class="py-3 px-4 font-medium">Rekaman Audio</th>
+                                    <th class="py-3 px-4 font-medium">Status Penilaian</th>
+                                    <th class="py-3 px-4 font-medium">Catatan Guru</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentHistoryTable" class="divide-y divide-gray-800/60 text-slate-300 text-xs">
+                                <!-- Rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: TEACHER / ADMIN DASHBOARD -->
+            <section id="viewTeacher" class="view-section hidden space-y-6">
+                <!-- Top Dashboard Stats -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="glass-panel p-5 rounded-2xl flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-brand-500/20 text-emerald-400 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400">Total Siswa Terdaftar</span>
+                            <h4 class="text-xl font-bold text-white" id="statTotalStudents">0</h4>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-microphone-lines"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400">Setoran Menunggu Nilai</span>
+                            <h4 class="text-xl font-bold text-white" id="statPendingSubmissions">0</h4>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400">Setoran Dinilai</span>
+                            <h4 class="text-xl font-bold text-white" id="statGradedSubmissions">0</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teacher Submission Verification Queue -->
+                <div class="glass-panel p-6 rounded-3xl">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-clipboard-check text-brand-400"></i> Antrean Setoran Mengaji Siswa
+                            </h3>
+                            <p class="text-xs text-slate-400">Dengarkan rekaman audio siswa dan berikan penilaian langsung.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="loadTeacherData()" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-medium rounded-xl text-slate-300 transition-colors">
+                                <i class="fa-solid fa-rotate mr-1"></i> Perbarui Data
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-800 text-slate-400 text-xs">
+                                    <th class="py-3 px-4 font-medium">Nama Siswa</th>
+                                    <th class="py-3 px-4 font-medium">Materi / Jilid</th>
+                                    <th class="py-3 px-4 font-medium">Waktu Kirim</th>
+                                    <th class="py-3 px-4 font-medium">Audio Setoran</th>
+                                    <th class="py-3 px-4 font-medium">Status</th>
+                                    <th class="py-3 px-4 font-medium text-right">Aksi Penilaian</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teacherSubmissionsTable" class="divide-y divide-gray-800/60 text-slate-300 text-xs">
+                                <!-- Rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="mt-auto py-6 text-center text-xs text-slate-500 border-t border-gray-900">
+            &copy; 2026 Tartili Digital &bull; Platform Pendidikan Al-Quran Berbasis Web Modern
+        </footer>
+    </div>
+
+    <!-- MODAL: READER / LEARNING & RECORDING (STUDENT) -->
+    <div id="modalReader" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="glass-panel w-full max-w-4xl p-6 rounded-3xl relative max-h-[90vh] flex flex-col">
+            <!-- Header Modal -->
+            <div class="flex items-center justify-between pb-4 border-b border-gray-800 mb-4">
+                <div class="flex items-center gap-3">
+                    <div id="readerJilidBadge" class="w-10 h-10 rounded-xl bg-brand-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm">
+                        J1
+                    </div>
+                    <div>
+                        <h3 id="readerTitle" class="text-base font-bold text-white">Buku Tartili Jilid 1</h3>
+                        <p id="readerSubtitle" class="text-xs text-slate-400">Halaman & Materi Pembelajaran</p>
+                    </div>
+                </div>
+                <button onclick="closeReaderModal()" class="w-9 h-9 rounded-xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
 
-            <div class="record-panel">
-                <div class="section-title" id="recordTitle">Setoran membaca</div>
-                <div class="record-buttons">
-                    <button class="universal-btn btn-record" id="btnRec" onclick="startRecording()">Rekam</button>
-                    <button class="universal-btn btn-stop" id="btnStop" onclick="stopRecording()" disabled>Stop</button>
-                    <button class="universal-btn btn-ok" id="btnOk" onclick="uploadRecordingToDrive()" disabled>Simpan</button>
-                    <button class="universal-btn btn-send" id="btnSend" onclick="sendToWhatsApp()" disabled>Kirim WA</button>
+            <!-- Content Area (Reader Pages & Audio Recording) -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow overflow-y-auto pr-1">
+                <!-- Viewer / Halaman Buku (Simulasi Visual Teks Arab) -->
+                <div class="lg:col-span-2 bg-gray-900/60 border border-gray-800/80 rounded-2xl p-6 flex flex-col items-center justify-center text-center relative min-h-[300px]">
+                    <div class="absolute top-4 left-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Halaman Pembelajaran</div>
+                    <div class="my-auto space-y-4">
+                        <div class="font-arabic text-3xl sm:text-4xl text-emerald-300 leading-loose tracking-wide" id="readerArabicText">
+                            ب ت ث ج ح خ د ذ ر ز س ش ص ض
+                        </div>
+                        <p class="text-sm text-slate-400" id="readerPageDesc">Lafalkan huruf-huruf hijaiyah di atas dengan tartil dan makhraj yang benar.</p>
+                    </div>
+                    <div class="absolute bottom-4 flex items-center gap-3">
+                        <button onclick="prevReaderPage()" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs text-slate-300"><i class="fa-solid fa-chevron-left mr-1"></i> Sebelumnya</button>
+                        <span id="readerPageIndicator" class="text-xs text-slate-400 font-medium">Halaman 1 / 5</span>
+                        <button onclick="nextReaderPage()" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs text-slate-300">Berikutnya <i class="fa-solid fa-chevron-right ml-1"></i></button>
+                    </div>
+                </div>
+
+                <!-- Panel Rekaman Suara Setoran -->
+                <div class="bg-gray-900/60 border border-gray-800/80 rounded-2xl p-5 flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-sm font-bold text-white mb-1 flex items-center gap-2">
+                            <i class="fa-solid fa-microphone text-brand-400"></i> Rekam Setoran Mengaji
+                        </h4>
+                        <p class="text-xs text-slate-400 mb-6">Rekam suara bacaan Anda pada halaman ini untuk dikirim ke guru.</p>
+                        
+                        <!-- Status / Timer Record -->
+                        <div class="text-center py-6 bg-gray-950/50 rounded-xl border border-gray-800/60 mb-4">
+                            <div id="recordTimer" class="text-2xl font-bold font-mono text-slate-200 mb-1">00:00</div>
+                            <div id="recordTitle" class="text-xs text-slate-400">Siap Merekam</div>
+                        </div>
+
+                        <!-- Audio Preview Player (Hidden until recorded) -->
+                        <div id="audioPreviewContainer" class="hidden mb-4">
+                            <span class="text-[11px] text-slate-400 block mb-1">Pratinjau Rekaman:</span>
+                            <audio id="audioPreviewPlayer" controls class="w-full h-10"></audio>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <button id="btnStartRecord" onclick="toggleRecording()" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-brand-600/20">
+                            <i class="fa-solid fa-circle-dot"></i> Mulai Rekam Audio
+                        </button>
+                        <button id="btnSubmitSubmission" onclick="submitAudioSubmission()" disabled class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-slate-600 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-2 transition-all">
+                            <i class="fa-solid fa-paper-plane"></i> Kirim Setoran ke Guru
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ==========================================
-         4. LOGIKA APLIKASI UTAMA (JAVASCRIPT)
-         ========================================== -->
+    <!-- MODAL: GRADE / PENILAIAN GURU -->
+    <div id="modalGrade" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md p-6 rounded-3xl relative">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-800 mb-4">
+                <h3 class="text-base font-bold text-white">Beri Penilaian Setoran</h3>
+                <button onclick="closeGradeModal()" class="w-8 h-8 rounded-xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="gradeForm" onsubmit="handleGradeSubmit(event)" class="space-y-4">
+                <input type="hidden" id="gradeSubmissionId">
+                <div>
+                    <span class="text-xs text-slate-400 block mb-1">Santri: <strong id="gradeStudentName" class="text-slate-200"></strong></span>
+                    <span class="text-xs text-slate-400 block mb-3">Materi: <strong id="gradeMateriTitle" class="text-slate-200"></strong></span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Putar Audio Setoran</label>
+                    <audio id="gradeAudioPlayer" controls class="w-full h-10 mb-3"></audio>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Status Penilaian</label>
+                    <select id="gradeStatusSelect" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+                        <option value="Lulus / Bagus">Lulus / Bagus (Lanjut Materi)</option>
+                        <option value="Ulangi / Perbaiki">Ulangi / Perbaiki (Kurang Tartil)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Catatan / Saran Guru</label>
+                    <textarea id="gradeNotesInput" rows="3" placeholder="Tuliskan masukan makhraj atau panjang pendek bacaan..." class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500 resize-none"></textarea>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl text-xs transition-all shadow-lg shadow-brand-600/20">
+                    Simpan & Kirim Nilai
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: FIREBASE CONFIGURATION SETUP -->
+    <div id="modalConfig" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md p-6 rounded-3xl relative">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-800 mb-4">
+                <h3 class="text-base font-bold text-white">Konfigurasi Firebase SDK</h3>
+                <button onclick="closeConfigModal()" class="w-8 h-8 rounded-xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+                Masukkan konfigurasi objek Firebase Anda untuk menghubungkan aplikasi ini ke database Firestore dan Storage.
+            </p>
+
+            <form onsubmit="handleConfigSubmit(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">API Key</label>
+                    <input type="text" id="cfgApiKey" placeholder="AIzaSy..." class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Auth Domain</label>
+                    <input type="text" id="cfgAuthDomain" placeholder="project.firebaseapp.com" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Project ID</label>
+                    <input type="text" id="cfgProjectId" placeholder="project-id" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Storage Bucket</label>
+                    <input type="text" id="cfgStorageBucket" placeholder="project.appspot.com" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Messaging Sender ID</label>
+                    <input type="text" id="cfgMessagingSenderId" placeholder="123456789" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">App ID</label>
+                    <input type="text" id="cfgAppId" placeholder="1:123:web:abc" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
+                </div>
+
+                <button type="submit" class="w-full mt-2 py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl text-xs transition-all">
+                    Simpan Konfigurasi & Hubungkan
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APPLICATION CORE SCRIPT -->
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                const swCode = `
-                    const CACHE_NAME = 'tartili-cache-v7';
-                    self.addEventListener('install', (e) => { self.skipWaiting(); });
-                    self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
-                    self.addEventListener('fetch', (e) => {
-                        e.respondWith(
-                            caches.match(e.request).then((cachedResponse) => {
-                                if (cachedResponse) return cachedResponse;
-                                return fetch(e.request).then((response) => {
-                                    if(!response || response.status !== 200 || response.type !== 'basic') return response;
-                                    let responseToCache = response.clone();
-                                    caches.open(CACHE_NAME).then((cache) => { cache.put(e.request, responseToCache); });
-                                    return response;
-                                }).catch(() => {});
-                            })
-                        );
-                    });
-                `;
-                const blob = new Blob([swCode], { type: 'text/javascript' });
-                const swUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed', err));
-            });
+        // Global App State
+        let db = null, auth = null, storage = null;
+        let currentUser = null;
+        let currentUserRole = 'student';
+        let isRegisterMode = false;
+        
+        // Audio Recorder State
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordedBlob = null;
+        let recordingTimerInterval = null;
+        let recordingSeconds = 0;
+        let currentSelectedJilid = 1;
+        let currentReaderPage = 1;
+
+        // Default Jilid Content Data
+        const jilidData = [
+            { id: 1, title: "Jilid 1", desc: "Pengenalan Huruf Hijaiyah Berharakat Fathah", arabic: "ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن و هـ ء ي" },
+            { id: 2, title: "Jilid 2", desc: "Kasroh, Dhommah, & Bacaan Panjang (Mad Thabi'i)", arabic: "بِ بُ بَا تِ تُ تَا ثِ ثُ ثَا جِ جُ جَا حِ حُ حَا خِ خُ خَا" },
+            { id: 3, title: "Jilid 3", desc: "Tanwin (Fathatain, Kasrotain, Dhommatain)", arabic: "بًا بٍ بٌ تًا تٍ تٌ ثًا ثٍ ثٌ جًا جٍ جٌ حًا حٍ حٌ خًا خٍ خٌ" },
+            { id: 4, title: "Jilid 4", desc: "Sukun (Mati), Qalqalah, & Huruf Bersambung", arabic: "أَبْ أَبْ تَفْ تَفْ جَعْ جَعْ حَدْ حَدْ خَرْ خَرْ سَلْ سَلْ" },
+            { id: 5, title: "Jilid 5", desc: "Tasydid (Penekanan Bacaan) & Huruf Qomariyah/Syamsiyah", arabic: "رَبَّ رَبِّ رَبُّ جَنَّةً جَنَّةٍ جَنَّةٌ الرَّحْمٰنِ الْحَمْدُ" },
+            { id: 6, title: "Jilid 6", desc: "Ayat Pendek & Praktik Tartil Al-Quran Sempurna", arabic: "بِسْمِ اللَّهِ الرَّحْمٰنِ الرَّحِيمِ الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ" }
+        ];
+
+        // Initialize App on DOM Load
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            checkStoredFirebaseConfig();
+        });
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const bgColors = {
+                success: 'bg-emerald-900/90 border-emerald-500/50 text-emerald-200',
+                error: 'bg-rose-900/90 border-rose-500/50 text-rose-200',
+                info: 'bg-blue-900/90 border-blue-500/50 text-blue-200'
+            };
+
+            const icons = {
+                success: 'fa-circle-check text-emerald-400',
+                error: 'fa-circle-exclamation text-rose-400',
+                info: 'fa-circle-info text-blue-400'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border backdrop-blur-md shadow-xl text-xs font-medium transition-all duration-300 translate-y-2 opacity-0 ${bgColors[type] || bgColors.success}`;
+            toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.success} text-sm"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
         }
 
-        const savedTheme = localStorage.getItem('tartili_theme') || 'light-theme';
-        document.body.className = savedTheme;
-        updateThemeToggleIcon();
+        // Theme Toggle Handler
+        function initTheme() {
+            const isDark = localStorage.getItem('tartili_theme') !== 'light';
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('themeIcon').className = 'fa-solid fa-moon text-sm';
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('themeIcon').className = 'fa-solid fa-sun text-sm';
+            }
+        }
 
         function toggleTheme() {
-            if (document.body.classList.contains('light-theme')) {
-                document.body.className = 'dark-theme';
-                localStorage.setItem('tartili_theme', 'dark-theme');
-            } else {
-                document.body.className = 'light-theme';
-                localStorage.setItem('tartili_theme', 'light-theme');
-            }
-            updateThemeToggleIcon();
-            showToast(document.body.classList.contains('dark-theme') ? 'Mode Gelap diaktifkan' : 'Mode Terang diaktifkan');
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('tartili_theme', isDark ? 'dark' : 'light');
+            document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-moon text-sm' : 'fa-solid fa-sun text-sm';
         }
 
-        function updateThemeToggleIcon() {
-            const btn = document.querySelector('.btn-theme-toggle');
-            if (btn) {
-                const isDark = document.body.classList.contains('dark-theme');
-                if (isDark) {
-                    btn.innerHTML = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
-                } else {
-                    btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+        // Firebase Config Management
+        function checkStoredFirebaseConfig() {
+            const stored = localStorage.getItem('tartili_fb_config');
+            if (stored) {
+                try {
+                    const cfg = JSON.parse(stored);
+                    initFirebase(cfg);
+                    document.getElementById('firebaseConfigNotice').classList.add('hidden');
+                } catch (e) {
+                    document.getElementById('firebaseConfigNotice').classList.remove('hidden');
                 }
+            } else {
+                document.getElementById('firebaseConfigNotice').classList.remove('hidden');
             }
         }
 
-        function showToast(message) {
-            const toast = document.getElementById('toastNotification');
-            toast.innerText = message;
-            toast.style.transform = 'translateX(-50%) translateY(0)';
-            setTimeout(() => {
-                toast.style.transform = 'translateX(-50%) translateY(100px)';
-            }, 3000);
+        function openConfigModal() {
+            const stored = localStorage.getItem('tartili_fb_config');
+            if (stored) {
+                try {
+                    const cfg = JSON.parse(stored);
+                    document.getElementById('cfgApiKey').value = cfg.apiKey || '';
+                    document.getElementById('cfgAuthDomain').value = cfg.authDomain || '';
+                    document.getElementById('cfgProjectId').value = cfg.projectId || '';
+                    document.getElementById('cfgStorageBucket').value = cfg.storageBucket || '';
+                    document.getElementById('cfgMessagingSenderId').value = cfg.messagingSenderId || '';
+                    document.getElementById('cfgAppId').value = cfg.appId || '';
+                } catch(e) {}
+            }
+            document.getElementById('modalConfig').classList.remove('hidden');
         }
 
-        let isRegisterMode = false;
-        function switchAuthMode(mode) {
-            isRegisterMode = (mode === 'register');
-            const loginBtn = document.getElementById('modeLoginBtn');
-            const regBtn = document.getElementById('modeRegisterBtn');
-            const regFields = document.getElementById('registerFields');
+        function closeConfigModal() {
+            document.getElementById('modalConfig').classList.add('hidden');
+        }
+
+        function handleConfigSubmit(e) {
+            e.preventDefault();
+            const cfg = {
+                apiKey: document.getElementById('cfgApiKey').value.trim(),
+                authDomain: document.getElementById('cfgAuthDomain').value.trim(),
+                projectId: document.getElementById('cfgProjectId').value.trim(),
+                storageBucket: document.getElementById('cfgStorageBucket').value.trim(),
+                messagingSenderId: document.getElementById('cfgMessagingSenderId').value.trim(),
+                appId: document.getElementById('cfgAppId').value.trim()
+            };
+
+            localStorage.setItem('tartili_fb_config', JSON.stringify(cfg));
+            initFirebase(cfg);
+            closeConfigModal();
+            showToast('Konfigurasi Firebase berhasil disimpan!', 'success');
+            document.getElementById('firebaseConfigNotice').classList.add('hidden');
+        }
+
+        function initFirebase(config) {
+            try {
+                const { initializeApp, getAuth, getFirestore, getStorage, onAuthStateChanged } = window.firebaseModules;
+                const app = initializeApp(config);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                storage = getStorage(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        currentUser = user;
+                        await fetchUserRoleAndRedirect(user.uid);
+                    } else {
+                        currentUser = null;
+                        switchView('viewLogin');
+                        document.getElementById('userNavInfo').classList.add('hidden');
+                    }
+                });
+            } catch (err) {
+                console.error("Firebase Init Error:", err);
+                showToast('Gagal menginisialisasi Firebase. Periksa kembali konfigurasi Anda.', 'error');
+            }
+        }
+
+        // Auth Mode Switcher (Login / Register)
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+            const btnToggle = document.getElementById('authModeToggleBtn');
             const submitBtn = document.getElementById('authSubmitBtn');
+            const roleContainer = document.getElementById('registerRoleContainer');
 
             if (isRegisterMode) {
-                loginBtn.classList.remove('active');
-                regBtn.classList.add('active');
-                regFields.classList.add('show');
-                submitBtn.innerText = "Daftar Akun";
+                btnToggle.textContent = "Sudah punya akun? Masuk di sini";
+                submitBtn.textContent = "Daftar Akun Baru";
+                roleContainer.classList.remove('hidden');
             } else {
-                regBtn.classList.remove('active');
-                loginBtn.classList.add('active');
-                regFields.classList.remove('show');
-                submitBtn.innerText = "Masuk Sekarang";
-            }
-            toggleRoleFields();
-        }
-
-        function toggleRoleFields() {
-            const role = document.getElementById('authRole').value;
-            const classCodeInput = document.getElementById('authClassCode');
-            const teacherClassNameInput = document.getElementById('authTeacherClassName');
-
-            if (role === 'Guru') {
-                classCodeInput.style.display = 'none';
-                teacherClassNameInput.style.display = 'block';
-            } else {
-                classCodeInput.style.display = 'block';
-                teacherClassNameInput.style.display = 'none';
+                btnToggle.textContent = "Belum punya akun? Daftar akun baru";
+                submitBtn.textContent = "Masuk Aplikasi";
+                roleContainer.classList.add('hidden');
             }
         }
 
-        async function handleAuthSubmit() {
-            const email = document.getElementById('authEmail').value;
-            const password = document.getElementById('authPassword').value;
-            const errorDiv = document.getElementById('loginError');
-
-            if (!email || !password) {
-                errorDiv.innerText = "Email dan kata sandi wajib diisi.";
-                errorDiv.style.display = 'block';
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            if (!auth) {
+                showToast('Konfigurasi Firebase belum diatur!', 'error');
+                openConfigModal();
                 return;
             }
+
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            const { signInWithEmailAndPassword, createUserWithEmailAndPassword, setDoc, doc, serverTimestamp } = window.firebaseModules;
 
             try {
                 if (isRegisterMode) {
-                    const name = document.getElementById('authName').value || email.split('@')[0];
                     const role = document.getElementById('authRole').value;
-                    
-                    let classCode = "";
-                    let teacherClassName = "";
-
-                    if (role === 'Guru') {
-                        teacherClassName = document.getElementById('authTeacherClassName').value || 'Kelas Guru';
-                        classCode = 'KLS-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-                    } else {
-                        classCode = document.getElementById('authClassCode').value.trim();
-                        if (!classCode) {
-                            errorDiv.innerText = "Kode kelas dari guru wajib diisi bagi siswa.";
-                            errorDiv.style.display = 'block';
-                            return;
-                        }
-                    }
-
-                    const userCredential = await window.createUserWithEmailAndPassword(window.firebaseAuth, email, password);
-                    const user = userCredential.user;
-
-                    await window.setDoc(window.doc(window.firebaseDb, "users", user.uid), {
-                        name: name,
+                    const res = await createUserWithEmailAndPassword(auth, email, password);
+                    // Save user profile to Firestore
+                    await setDoc(doc(db, "users", res.user.uid), {
+                        uid: res.user.uid,
                         email: email,
                         role: role,
-                        classCode: classCode,
-                        teacherClassName: teacherClassName,
-                        isMasterApproved: false,
-                        isTeacherApproved: (role === 'Guru'),
-                        createdAt: new Date().toISOString()
+                        name: email.split('@')[0],
+                        createdAt: serverTimestamp()
                     });
-
-                    errorDiv.style.display = 'none';
-                    showToast('Pendaftaran berhasil! Akun menunggu persetujuan Master Admin.');
+                    showToast('Akun berhasil didaftarkan!', 'success');
                 } else {
-                    await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
-                    errorDiv.style.display = 'none';
-                    showToast('Berhasil masuk!');
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showToast('Berhasil masuk ke aplikasi!', 'success');
                 }
             } catch (err) {
-                console.error(err);
-                errorDiv.innerText = isRegisterMode ? "Gagal mendaftar (Email sudah terpakai / sandi terlalu pendek)." : "Email atau kata sandi salah.";
-                errorDiv.style.display = 'block';
+                showToast(err.message, 'error');
             }
         }
 
-        async function updateUserGreeting() {
-            if (!window.currentUserProfile) return;
-            const profile = window.currentUserProfile;
-            
-            const usernameEl = document.getElementById('userUsernameText');
-            const classEl = document.getElementById('userClassText');
-            const teacherNameEl = document.getElementById('userTeacherNameText');
-            const roleEl = document.getElementById('userRoleBadge');
-
-            if (usernameEl) usernameEl.innerText = profile.name || 'Pengguna';
-            if (roleEl) roleEl.innerHTML = `${profile.role || 'Siswa'} 👥`;
-
-            if (profile.role === 'Guru') {
-                if (classEl) classEl.innerText = `Kelas: ${profile.teacherClassName}`;
-                if (teacherNameEl) teacherNameEl.style.display = 'none';
-            } else {
-                if (classEl) classEl.innerText = `Kode Kelas: ${profile.classCode || '-'}`;
-                if (teacherNameEl) {
-                    teacherNameEl.style.display = 'inline';
-                    teacherNameEl.innerText = "Guru: Memuat...";
-                    // Cari nama guru berdasarkan classCode
-                    try {
-                        const q = window.query(window.collection(window.firebaseDb, "users"), window.where("role", "==", "Guru"), window.where("classCode", "==", profile.classCode));
-                        const snap = await window.getDocs(q);
-                        if (!snap.empty) {
-                            const teacherData = snap.docs[0].data();
-                            teacherNameEl.innerText = `Guru: ${teacherData.name}`;
-                        } else {
-                            teacherNameEl.innerText = `Guru: -`;
-                        }
-                    } catch (e) {
-                        teacherNameEl.innerText = `Guru: -`;
-                    }
-                }
-            }
+        async function handleLogout() {
+            if (!auth) return;
+            const { signOut } = window.firebaseModules;
+            await signOut(auth);
+            showToast('Berhasil keluar akun.', 'info');
         }
 
-        function setupDashboardAccess() {
-            const btnMaster = document.getElementById('btnMasterAdminPanel');
-            const btnTeacher = document.getElementById('btnTeacherPanel');
-            if (!btnMaster || !btnTeacher) return;
-
-            const profile = window.currentUserProfile;
-            const isMaster = profile.email === 'admin@tartili.com' || profile.isMasterAdmin === true;
-
-            if (isMaster) {
-                btnMaster.style.display = 'flex';
-            } else {
-                btnMaster.style.display = 'none';
-            }
-
-            if (profile.role === 'Guru') {
-                btnTeacher.style.display = 'flex';
-            } else {
-                btnTeacher.style.display = 'none';
-            }
-        }
-
-        // --- MASTER ADMIN PANEL ---
-        async function openMasterAdminScreen() {
-            appState = 'admin';
-            document.getElementById('menu-screen').classList.remove('active');
-            document.getElementById('admin-screen').classList.add('active');
-            await loadMasterPendingUsers();
-        }
-
-        async function loadMasterPendingUsers() {
-            const container = document.getElementById('pendingMasterUsersContainer');
-            if (!container) return;
-            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat data...</div>`;
-
+        async function fetchUserRoleAndRedirect(uid) {
+            const { getDoc, doc } = window.firebaseModules;
             try {
-                const q = window.query(window.collection(window.firebaseDb, "users"), window.where("isMasterApproved", "==", false));
-                const querySnapshot = await window.getDocs(q);
-                
-                container.innerHTML = "";
-                if (querySnapshot.empty) {
-                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada akun yang menunggu persetujuan Master.</div>`;
-                    return;
-                }
-
-                querySnapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    const userId = docSnap.id;
-
-                    let item = document.createElement('div');
-                    item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
-                    item.innerHTML = `
-                        <div>
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${data.name} <span class="badge-role" style="margin-left: 6px;">${data.role}</span></div>
-                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${data.email} ${data.role === 'Guru' ? '| Kelas: ' + data.teacherClassName : '| Kode Kelas: ' + data.classCode}</div>
-                        </div>
-                        <button onclick="approveMasterUser('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Setujui</button>
-                    `;
-                    container.appendChild(item);
-                });
-            } catch (e) {
-                console.error(e);
-                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat data.</div>`;
-            }
-        }
-
-        async function approveMasterUser(userId) {
-            try {
-                await window.updateDoc(window.doc(window.firebaseDb, "users", userId), { isMasterApproved: true });
-                showToast('Akun berhasil disetujui Master Admin!');
-                loadMasterPendingUsers();
-            } catch (e) {
-                console.error(e);
-                showToast('Gagal menyetujui akun.');
-            }
-        }
-
-        // --- TEACHER PANEL ---
-        async function openTeacherAdminScreen() {
-            appState = 'teacher-admin';
-            document.getElementById('menu-screen').classList.remove('active');
-            document.getElementById('teacher-admin-screen').classList.add('active');
-            
-            const profile = window.currentUserProfile;
-            const codeDisplay = document.getElementById('teacherClassCodeDisplay');
-            if (codeDisplay) codeDisplay.innerText = profile.classCode || '-';
-
-            await loadTeacherPendingStudents();
-        }
-
-        async function loadTeacherPendingStudents() {
-            const container = document.getElementById('pendingStudentContainer');
-            if (!container) return;
-            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat data siswa...</div>`;
-
-            try {
-                const teacherClassCode = window.currentUserProfile.classCode;
-                const q = window.query(
-                    window.collection(window.firebaseDb, "users"), 
-                    window.where("role", "==", "Siswa"),
-                    window.where("classCode", "==", teacherClassCode),
-                    window.where("isTeacherApproved", "==", false)
-                );
-                const querySnapshot = await window.getDocs(q);
-                
-                container.innerHTML = "";
-                if (querySnapshot.empty) {
-                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada siswa baru yang mendaftar ke kelas Anda.</div>`;
-                    return;
-                }
-
-                querySnapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    const userId = docSnap.id;
-
-                    let item = document.createElement('div');
-                    item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
-                    item.innerHTML = `
-                        <div>
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${data.name}</div>
-                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${data.email}</div>
-                        </div>
-                        <button onclick="approveStudent('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Terima</button>
-                    `;
-                    container.appendChild(item);
-                });
-            } catch (e) {
-                console.error(e);
-                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat siswa kelas.</div>`;
-            }
-        }
-
-        async function approveStudent(userId) {
-            try {
-                await window.updateDoc(window.doc(window.firebaseDb, "users", userId), { isTeacherApproved: true });
-                showToast('Siswa berhasil diterima di kelas!');
-                loadTeacherPendingStudents();
-            } catch (e) {
-                console.error(e);
-                showToast('Gagal menerima siswa.');
-            }
-        }
-
-        // --- CLASS MEMBERS SCREEN (Siswa & Guru) ---
-        let previousScreenBeforeMembers = 'menu';
-
-        async function openClassMembersScreen() {
-            if (appState === 'teacher-admin') {
-                previousScreenBeforeMembers = 'teacher-admin';
-                document.getElementById('teacher-admin-screen').classList.remove('active');
-            } else {
-                previousScreenBeforeMembers = 'menu';
-                document.getElementById('menu-screen').classList.remove('active');
-            }
-
-            appState = 'class-members';
-            document.getElementById('class-members-screen').classList.add('active');
-
-            const container = document.getElementById('classMembersContainer');
-            const titleEl = document.getElementById('classMembersTitle');
-            const subtitleEl = document.getElementById('classMembersSubtitle');
-            if (!container) return;
-
-            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat anggota kelas...</div>`;
-
-            try {
-                const profile = window.currentUserProfile;
-                const classCode = profile.classCode;
-
-                if (titleEl) titleEl.innerText = profile.role === 'Guru' ? `Anggota Kelas (${profile.teacherClassName})` : `Anggota Kelas`;
-                if (subtitleEl) subtitleEl.innerText = profile.role === 'Guru' ? `Daftar siswa yang aktif di kelas Anda:` : `Daftar siswa dan guru dalam kelas Anda:`;
-
-                // Ambil guru kelas
-                const qTeacher = window.query(window.collection(window.firebaseDb, "users"), window.where("role", "==", "Guru"), window.where("classCode", "==", classCode));
-                const snapTeacher = await window.getDocs(qTeacher);
-
-                // Ambil semua siswa yang sudah disetujui di kelas ini
-                const qStudents = window.query(
-                    window.collection(window.firebaseDb, "users"), 
-                    window.where("role", "==", "Siswa"),
-                    window.where("classCode", "==", classCode),
-                    window.where("isTeacherApproved", "==", true)
-                );
-                const snapStudents = await window.getDocs(qStudents);
-
-                container.innerHTML = "";
-
-                // Tampilkan info Guru
-                if (!snapTeacher.empty) {
-                    snapTeacher.forEach(docSnap => {
-                        const tData = docSnap.data();
-                        let item = document.createElement('div');
-                        item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(14, 165, 233, 0.1); border: 1px solid #0ea5e9; border-radius: 12px;";
-                        item.innerHTML = `
-                            <div>
-                                <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👨‍🏫 ${tData.name} <span class="badge-role" style="margin-left: 6px;">Guru Pengampu</span></div>
-                                <div style="font-size: 11px; color: var(--text-muted);">Email: ${tData.email}</div>
-                            </div>
-                        `;
-                        container.appendChild(item);
-                    });
-                }
-
-                if (snapStudents.empty) {
-                    let emptyItem = document.createElement('div');
-                    emptyItem.style.cssText = "text-align:center; color:var(--text-muted); padding:15px; font-size:12px;";
-                    emptyItem.innerText = "Belum ada siswa lain yang aktif di kelas ini.";
-                    container.appendChild(emptyItem);
-                    return;
-                }
-
-                snapStudents.forEach((docSnap) => {
-                    const sData = docSnap.data();
-                    let item = document.createElement('div');
-                    item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
-                    item.innerHTML = `
-                        <div>
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👤 ${sData.name}</div>
-                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${sData.email}</div>
-                        </div>
-                        <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 6px;">Aktif</span>
-                    `;
-                    container.appendChild(item);
-                });
-
-            } catch (e) {
-                console.error(e);
-                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat daftar anggota kelas.</div>`;
-            }
-        }
-
-        function goBackFromClassMembers() {
-            document.getElementById('class-members-screen').classList.remove('active');
-            if (previousScreenBeforeMembers === 'teacher-admin') {
-                document.getElementById('teacher-admin-screen').classList.add('active');
-                appState = 'teacher-admin';
-            } else {
-                document.getElementById('menu-screen').classList.add('active');
-                appState = 'menu';
-            }
-        }
-
-        function handleLogout() {
-            window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
-        }
-
-        let savedLastRead = JSON.parse(localStorage.getItem('tartili_last_read')) || { jilid: 1, page: 'a' };
-        let savedBookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks')) || [];
-        
-        let currentJilid = savedLastRead.jilid, currentPage = savedLastRead.page, appState = 'menu', selectedMenuCoverIndex = 0, currentAudio = null;
-        let mediaRecorder, audioChunks = [], recordedAudioBlob = null, generatedWhatsAppUrl = ""; 
-        
-        const baseUrl = "https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/";
-        let scale = 1, initialDistance = null;
-        let touchStartX = 0, touchEndX = 0;
-        const minSwipeDistance = 50;
-
-        const allAudioConfig = {
-            "1": typeof tartili1Config !== 'undefined' ? tartili1Config : {},
-            "2": typeof tartili2Config !== 'undefined' ? tartili2Config : {},
-            "3": typeof tartili3Config !== 'undefined' ? tartili3Config : {},
-            "4": typeof tartili4Config !== 'undefined' ? tartili4Config : {},
-            "5": typeof tartili5Config !== 'undefined' ? tartili5Config : {},
-            "6": typeof tartili6Config !== 'undefined' ? tartili6Config : {}
-        };
-
-        history.replaceState({ screen: 'menu' }, '', '');
-
-        window.addEventListener('popstate', function(event) {
-            if (appState === 'read') {
-                if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-                resetRecording();
-                goToMenu();
-            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin' || appState === 'class-members') {
-                goToMenu();
-            } else {
-                history.back();
-            }
-        });
-
-        function isPortrait() { return window.innerHeight > window.innerWidth; }
-
-        window.addEventListener('resize', () => {
-            if (isPortrait()) { resetZoom(); }
-            const container = document.getElementById('imageContainer');
-            if (appState === 'read' && (!container.innerHTML || container.innerHTML.trim() === '')) {
-                loadPageData();
-            }
-        });
-
-        updatePageOptions('Menu');
-        updatePageOptions('Read'); 
-        updatePageOptions('Bookmarks');
-        updateMenuCoverFocus();
-
-        function openBookmarksScreen() {
-            appState = 'bookmarks';
-            document.getElementById('menu-screen').classList.remove('active');
-            document.getElementById('read-screen').classList.remove('active');
-            document.getElementById('bookmarks-screen').classList.add('active');
-            renderBookmarksList();
-            updatePageOptions('Bookmarks');
-            history.pushState({ screen: 'bookmarks' }, '', '');
-        }
-
-        function renderBookmarksList() {
-            const container = document.getElementById('bookmarksListContainer');
-            if (!container) return;
-            container.innerHTML = "";
-
-            if (savedBookmarks.length === 0) {
-                container.innerHTML = `<div style="display:flex; flex-direction: column; align-items:center; justify-content:center; height: 180px; color:var(--text-muted); font-size:13px; padding:20px; text-align:center; gap: 8px;"><span style="font-size: 36px;">📖</span><span>Belum ada halaman tersimpan.</span></div>`;
-                return;
-            }
-
-            const reversedBookmarks = [...savedBookmarks].reverse();
-
-            reversedBookmarks.forEach((b, revIndex) => {
-                const originalIndex = savedBookmarks.length - 1 - revIndex;
-
-                let item = document.createElement('div');
-                item.className = 'bookmark-item';
-                item.setAttribute('onclick', `openJilid(${b.jilid}, '${b.page}')`);
-                item.innerHTML = `
-                    <div class="bookmark-item-content">
-                        <div class="bookmark-item-icon">
-                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:#0ea5e9;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
-                        </div>
-                        <div class="bookmark-item-info">
-                            <span class="bookmark-item-title">Tartili Jilid ${b.jilid}</span>
-                            <span class="bookmark-item-subtitle">Halaman ${b.page}</span>
-                        </div>
-                    </div>
-                    <button class="bookmark-item-delete" onclick="removeBookmark(${originalIndex}, event)" title="Hapus">✕</button>
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        function removeBookmark(index, event) {
-            event.stopPropagation();
-            savedBookmarks.splice(index, 1);
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
-            renderBookmarksList();
-            updateBookmarkButtonState();
-            showToast('Halaman dihapus dari simpanan');
-        }
-
-        function goToMenu() {
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            resetRecording();
-            appState = 'menu';
-            document.getElementById('read-screen').classList.remove('active');
-            document.getElementById('bookmarks-screen').classList.remove('active');
-            document.getElementById('admin-screen').classList.remove('active');
-            document.getElementById('teacher-admin-screen').classList.remove('active');
-            document.getElementById('class-members-screen').classList.remove('active');
-            document.getElementById('menu-screen').classList.add('active');
-            updateMenuCoverFocus();
-            history.replaceState({ screen: 'menu' }, '', '');
-        }
-
-        function updateMenuCoverFocus() {
-            for (let i = 0; i < 6; i++) {
-                let btn = document.getElementById('cover-btn-' + i);
-                if (btn) {
-                    if (i === selectedMenuCoverIndex) btn.classList.add('keyboard-focused');
-                    else btn.classList.remove('keyboard-focused');
-                }
-            }
-        }
-
-        function getNumericPageList(jilid) {
-            let list = [], max = (jilid === 6) ? 48 : 44;
-            for (let i = 1; i <= max; i++) list.push(i.toString());
-            return list;
-        }
-
-        function getFullPageList(jilid) {
-            let list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', '0'];
-            return list.concat(getNumericPageList(jilid));
-        }
-
-        function updatePageOptions(context) {
-            let selectId = 'jumpJilidMenu';
-            let targetSelectId = 'jumpPageSelectMenu';
-            if (context === 'Read') {
-                selectId = 'jumpJilidRead';
-                targetSelectId = 'jumpPageSelectRead';
-            } else if (context === 'Bookmarks') {
-                selectId = 'jumpJilidBookmarks';
-                targetSelectId = 'jumpPageSelectBookmarks';
-            }
-            
-            let jilidEl = document.getElementById(selectId);
-            let select = document.getElementById(targetSelectId);
-            if (!jilidEl || !select) return;
-            
-            let jilid = parseInt(jilidEl.value);
-            select.innerHTML = "";
-            getNumericPageList(jilid).forEach(p => { 
-                let opt = document.createElement('option'); 
-                opt.value = p; opt.text = p; 
-                select.appendChild(opt); 
-            });
-        }
-
-        function openJilid(jilid, page) {
-            currentJilid = jilid; currentPage = page; appState = 'read';
-            document.getElementById('read-screen').classList.add('active');
-            document.getElementById('menu-screen').classList.remove('active');
-            document.getElementById('bookmarks-screen').classList.remove('active');
-            document.getElementById('admin-screen').classList.remove('active');
-            document.getElementById('teacher-admin-screen').classList.remove('active');
-            document.getElementById('class-members-screen').classList.remove('active');
-            updatePageOptions('Read');
-            
-            let numList = getNumericPageList(currentJilid);
-            let targetPage = numList.includes(currentPage.toString()) ? currentPage.toString() : "1";
-            document.getElementById('jumpPageSelectRead').value = targetPage;
-            
-            resetZoom();
-            loadPageData();
-            history.pushState({ screen: 'read' }, '', '');
-        }
-
-        function resetZoom() { scale = 1; updateImageTransform(); }
-
-        function updateImageTransform() {
-            const container = document.getElementById('imageContainer');
-            if (container) container.style.transform = `scale(${scale})`;
-        }
-
-        function changePage(delta) {
-            let pages = getFullPageList(currentJilid);
-            let currentIndex = pages.indexOf(currentPage.toString());
-            let newIndex = currentIndex + delta;
-            if (newIndex >= 0 && newIndex < pages.length) {
-                currentPage = pages[newIndex];
-                resetZoom();
-                loadPageData();
-            }
-        }
-
-        function toggleBookmark() {
-            let index = savedBookmarks.findIndex(b => b.jilid === currentJilid && b.page === currentPage);
-            
-            if (index > -1) {
-                savedBookmarks.splice(index, 1);
-                showToast('Halaman dihapus dari simpanan');
-            } else {
-                savedBookmarks.push({ jilid: currentJilid, page: currentPage });
-                showToast('Halaman berhasil disimpan!');
-            }
-            
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
-            updateBookmarkButtonState();
-        }
-
-        function updateBookmarkButtonState() {
-            const btn = document.getElementById('btnBookmark');
-            if (!btn) return;
-            let isSaved = savedBookmarks.some(b => b.jilid === currentJilid && b.page === currentPage);
-            if (isSaved) {
-                btn.classList.add('saved');
-                btn.title = "Hapus Simpanan (Unsave)";
-            } else {
-                btn.classList.remove('saved');
-                btn.title = "Simpan Halaman (Save)";
-            }
-        }
-
-        function loadPageData() {
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            resetRecording();
-            
-            localStorage.setItem('tartili_last_read', JSON.stringify({ jilid: currentJilid, page: currentPage }));
-            updateBookmarkButtonState();
-
-            const container = document.getElementById('imageContainer');
-            const spinner = document.getElementById('loadingSpinner');
-            const imgPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/halaman${currentPage}.jpg`;
-            
-            if (spinner) spinner.style.display = 'block';
-            container.innerHTML = "";
-
-            let img = new Image();
-            img.src = imgPath;
-            img.onload = function() {
-                if (spinner) spinner.style.display = 'none';
-                let htmlContent = `<img src="${imgPath}">`;
-                
-                if (allAudioConfig[currentJilid] && allAudioConfig[currentJilid][currentPage]) {
-                    allAudioConfig[currentJilid][currentPage].forEach(block => {
-                        let [top, left, width, height, soundFile] = block;
-                        htmlContent += `<div class="sound-block" style="top: ${top}%; left: ${left}%; width: ${width}%; height: ${height}%;" onclick="playSound('${soundFile}')"></div>`;
-                    });
-                }
-                container.innerHTML = htmlContent;
-            };
-            img.onerror = function() {
-                if (spinner) spinner.style.display = 'none';
-                container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;">Gagal memuat halaman</div>`;
-            };
-
-            document.getElementById('jumpJilidRead').value = currentJilid;
-            let numList = getNumericPageList(currentJilid);
-            if (numList.includes(currentPage.toString())) { 
-                document.getElementById('jumpPageSelectRead').value = currentPage; 
-            }
-        }
-
-        function playSound(soundFile) {
-            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
-            let soundPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/${soundFile}`;
-            currentAudio = new Audio(soundPath);
-            currentAudio.play();
-        }
-
-        const scrollArea = document.getElementById('scrollArea');
-        if (scrollArea) {
-            scrollArea.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 2) {
-                    if (!isPortrait()) {
-                        initialDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                    }
-                    return;
-                }
-                if (e.touches.length === 1) {
-                    touchStartX = e.touches[0].clientX;
-                }
-            }, {passive: true});
-
-            scrollArea.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 2 && !isPortrait() && initialDistance) {
-                    let currentDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                    let zoomFactor = currentDistance / initialDistance;
-                    scale = Math.min(Math.max(1, scale * (zoomFactor > 1 ? 1.04 : 0.96)), 1.8);
-                    initialDistance = currentDistance;
-                    updateImageTransform();
-                }
-            }, {passive: true});
-
-            scrollArea.addEventListener('touchend', (e) => {
-                if (e.touches.length < 2) initialDistance = null;
-                touchEndX = e.changedTouches[0].clientX;
-                handleSwipeGesture();
-            }, {passive: true});
-
-            scrollArea.addEventListener('wheel', (e) => {
-                if (isPortrait()) return; 
-                if (e.ctrlKey) {
-                    e.preventDefault();
-                    let zoomIntensity = 0.15;
-                    if (e.deltaY < 0) { scale = Math.min(scale + zoomIntensity, 1.8); } 
-                    else { scale = Math.max(scale - zoomIntensity, 1); }
-                    updateImageTransform();
-                }
-            }, {passive: false});
-        }
-
-        function handleSwipeGesture() {
-            let distance = touchEndX - touchStartX;
-            if (scale > 1) return;
-
-            if (Math.abs(distance) >= minSwipeDistance) {
-                if (distance > 0) {
-                    changePage(-1);
-                } else {
-                    changePage(1);
-                }
-            }
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (appState === 'menu') {
-                if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-
-                if (e.key === 'ArrowRight') {
-                    selectedMenuCoverIndex = (selectedMenuCoverIndex + 1) % 6;
-                    updateMenuCoverFocus();
-                    e.preventDefault();
-                } else if (e.key === 'ArrowLeft') {
-                    selectedMenuCoverIndex = (selectedMenuCoverIndex - 1 + 6) % 6;
-                    updateMenuCoverFocus();
-                    e.preventDefault();
-                } else if (e.key === 'ArrowDown') {
-                    if (isPortrait()) {
-                        selectedMenuCoverIndex = (selectedMenuCoverIndex + 2) % 6;
-                        updateMenuCoverFocus();
-                        e.preventDefault();
-                    }
-                } else if (e.key === 'ArrowUp') {
-                    if (isPortrait()) {
-                        selectedMenuCoverIndex = (selectedMenuCoverIndex - 2 + 6) % 6;
-                        updateMenuCoverFocus();
-                        e.preventDefault();
-                    }
-                } else if (e.key === 'Enter') {
-                    openJilid(selectedMenuCoverIndex + 1, 'a');
-                    e.preventDefault();
-                }
-                return;
-            }
-
-            if (appState === 'read') {
-                if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-
-                if (e.key === 'ArrowRight') {
-                    changePage(1);
-                } else if (e.key === 'ArrowLeft') {
-                    changePage(-1);
-                }
-            }
-        });
-
-        function resetRecording() {
-            if (mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
-            }
-            audioChunks = []; recordedAudioBlob = null; generatedWhatsAppUrl = "";
-            const btnRec = document.getElementById('btnRec');
-            const btnStop = document.getElementById('btnStop');
-            const btnOk = document.getElementById('btnOk');
-            const btnSend = document.getElementById('btnSend');
-            const recordTitle = document.getElementById('recordTitle');
-            
-            if (btnRec) { 
-                btnRec.innerText = "Rekam"; 
-                btnRec.disabled = false; 
-                btnRec.classList.remove('is-recording'); 
-            }
-            if (btnStop) btnStop.disabled = true;
-            if (btnOk) btnOk.disabled = true;
-            if (btnSend) btnSend.disabled = true;
-            if (recordTitle) {
-                recordTitle.innerText = "Setoran membaca";
-                recordTitle.style.color = "var(--text-muted)";
-            }
-        }
-
-        async function startRecording() {
-            if (recordedAudioBlob) resetRecording();
-            const recordTitle = document.getElementById('recordTitle');
-            const btnRec = document.getElementById('btnRec');
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 44100 } });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                mediaRecorder.ondataavailable = event => { if (event.data.size > 0) audioChunks.push(event.data); };
-                mediaRecorder.onstop = () => {
-                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-                    document.getElementById('btnOk').disabled = false;
-                    if (recordTitle) {
-                        recordTitle.innerText = "Simpan atau rekam ulang?";
-                        recordTitle.style.color = "#059669";
-                    }
-                };
-                mediaRecorder.start();
-                btnRec.disabled = true;
-                btnRec.classList.add('is-recording');
-                document.getElementById('btnStop').disabled = false;
-                document.getElementById('btnOk').disabled = true;
-                document.getElementById('btnSend').disabled = true;
-                
-                if (recordTitle) {
-                    recordTitle.innerText = "🔴 Merekam audio...";
-                    recordTitle.style.color = "#ef4444";
-                }
-            } catch (err) { 
-                showToast("Gagal mengakses mikrofon.");
-                if (recordTitle) {
-                    recordTitle.innerText = "Gagal akses mic";
-                    recordTitle.style.color = "#ef4444";
-                }
-            }
-        }
-
-        function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
-            }
-            const btnRec = document.getElementById('btnRec');
-            if (btnRec) {
-                btnRec.disabled = false;
-                btnRec.innerText = "Rekam";
-                btnRec.classList.remove('is-recording');
-            }
-            document.getElementById('btnStop').disabled = true;
-        }
-
-        async function uploadRecordingToDrive() {
-            if (!recordedAudioBlob) return;
-            document.getElementById('btnOk').disabled = true;
-            const recordTitle = document.getElementById('recordTitle');
-            
-            if (recordTitle) {
-                recordTitle.innerText = "⏳ Menyimpan audio...";
-                recordTitle.style.color = "#d97706";
-            }
-
-            try {
-                const reader = new FileReader();
-                reader.readAsDataURL(recordedAudioBlob);
-                reader.onloadend = async function () {
-                    const base64data = reader.result.split(',')[1];
-                    const fileName = `Setoran_Jilid${currentJilid}_Hal${currentPage}_${Date.now()}.mp3`;
+                const userDoc = await getDoc(doc(db, "users", uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    currentUserRole = data.role || 'student';
                     
-                    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyySbRNNw4mbYj8hyTy8I0KKrh5w8_XrDJz6gR-UMGmDS3eouiABheOV3Ovill_so/exec";
+                    document.getElementById('navUserName').textContent = data.name || currentUser.email.split('@')[0];
+                    document.getElementById('navUserRole').textContent = currentUserRole.toUpperCase();
+                    document.getElementById('userNavInfo').classList.remove('hidden');
 
-                    let formData = new URLSearchParams();
-                    formData.append("data", base64data);
-                    formData.append("mimetype", "audio/mp3");
-                    formData.append("filename", fileName);
-
-                    let response = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData });
-                    let fileUrl = await response.text();
-
-                    if (fileUrl.startsWith("http")) {
-                        let pesan = `Assalamu'alaikum Ustadz/Ustadzah, ini setoran Tartili saya (Jilid ${currentJilid} Halaman ${currentPage}):\n${fileUrl.trim()}\n\n_(Audio otomatis terhapus setelah 7 hari)_`;
-                        generatedWhatsAppUrl = `https://wa.me/?text=${encodeURIComponent(pesan)}`;
-                        document.getElementById('btnSend').disabled = false;
-                        
-                        if (recordTitle) {
-                            recordTitle.innerText = "Audio siap dikirim";
-                            recordTitle.style.color = "#059669";
-                        }
-                        
-                        showToast('Audio berhasil disimpan!');
-                        window.open(generatedWhatsAppUrl, '_blank');
+                    if (currentUserRole === 'student') {
+                        switchView('viewStudent');
+                        loadStudentData();
                     } else {
-                        throw new Error(fileUrl);
+                        switchView('viewTeacher');
+                        loadTeacherData();
                     }
-                };
-            } catch (e) {
-                console.error(e);
-                if (recordTitle) {
-                    recordTitle.innerText = "Gagal. Coba lagi!";
-                    recordTitle.style.color = "#ef4444";
+                } else {
+                    // Default fallback
+                    currentUserRole = 'student';
+                    switchView('viewStudent');
+                    loadStudentData();
                 }
-                showToast('Gagal mengunggah rekaman.', true);
-                document.getElementById('btnOk').disabled = false;
+            } catch (err) {
+                console.error("Fetch Role Error:", err);
+                switchView('viewStudent');
             }
         }
 
-        function sendToWhatsApp() {
-            if (generatedWhatsAppUrl) { window.open(generatedWhatsAppUrl, '_blank'); }
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
         }
 
-        function directOpen(context) {
-            let selectJilidId = 'jumpJilidMenu';
-            let selectPageId = 'jumpPageSelectMenu';
-            if (context === 'Read') {
-                selectJilidId = 'jumpJilidRead';
-                selectPageId = 'jumpPageSelectRead';
-            } else if (context === 'Bookmarks') {
-                selectJilidId = 'jumpJilidBookmarks';
-                selectPageId = 'jumpPageSelectBookmarks';
+        // --- STUDENT DASHBOARD LOGIC ---
+        function loadStudentData() {
+            renderJilidGrid();
+            fetchStudentSubmissions();
+        }
+
+        function renderJilidGrid() {
+            const grid = document.getElementById('jilidGrid');
+            grid.innerHTML = '';
+
+            jilidData.forEach(jilid => {
+                const card = document.createElement('div');
+                card.className = "glass-panel p-5 rounded-2xl flex flex-col justify-between hover:border-emerald-500/50 transition-all cursor-pointer group";
+                card.onclick = () => openReaderModal(jilid.id);
+                card.innerHTML = `
+                    <div>
+                        <div class="w-10 h-10 rounded-xl bg-brand-500/10 group-hover:bg-brand-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm mb-3 transition-colors">
+                            J${jilid.id}
+                        </div>
+                        <h4 class="font-bold text-white text-sm mb-1">${jilid.title}</h4>
+                        <p class="text-[11px] text-slate-400 line-clamp-2">${jilid.desc}</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-800/80 flex items-center justify-between text-xs text-brand-400 font-medium">
+                        <span>Buka Buku</span>
+                        <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        async function fetchStudentSubmissions() {
+            const { collection, query, where, getDocs } = window.firebaseModules;
+            const tableBody = document.getElementById('studentHistoryTable');
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500">Memuat riwayat setoran...</td></tr>`;
+
+            try {
+                const q = query(collection(db, "submissions"), where("studentId", "==", currentUser.uid));
+                const snapshot = await getDocs(q);
+                
+                document.getElementById('studentTotalSetoran').textContent = snapshot.size;
+
+                if (snapshot.empty) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500">Belum ada riwayat setoran mengaji. Pilih jilid di atas untuk mulai merekam.</td></tr>`;
+                    return;
+                }
+
+                tableBody.innerHTML = '';
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const dateStr = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Baru saja';
+                    
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-gray-900/30 transition-colors";
+                    row.innerHTML = `
+                        <td class="py-3 px-4 font-semibold text-white">Jilid ${data.jilidId} - ${data.materiTitle || ''}</td>
+                        <td class="py-3 px-4 text-slate-400">${dateStr}</td>
+                        <td class="py-3 px-4">
+                            <audio controls src="${data.audioUrl}" class="h-8 w-36 sm:w-48"></audio>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold ${data.status === 'Lulus / Bagus' ? 'bg-emerald-500/20 text-emerald-400' : data.status === 'Ulangi / Perbaiki' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}">
+                                ${data.status || 'Menunggu Dinilai'}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 text-slate-400 italic">${data.notes || '-'}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (err) {
+                console.error("Fetch Student Submissions Error:", err);
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-rose-400">Gagal memuat riwayat.</td></tr>`;
             }
-            
-            let jilid = parseInt(document.getElementById(selectJilidId).value);
-            let page = document.getElementById(selectPageId).value;
-            openJilid(jilid, page);
+        }
+
+        // --- READER & AUDIO RECORDER MODAL ---
+        function openReaderModal(jilidId) {
+            currentSelectedJilid = jilidId;
+            currentReaderPage = 1;
+            const jilid = jilidData.find(j => j.id === jilidId);
+
+            document.getElementById('readerJilidBadge').textContent = `J${jilidId}`;
+            document.getElementById('readerTitle').textContent = jilid.title;
+            document.getElementById('readerSubtitle').textContent = jilid.desc;
+            document.getElementById('readerArabicText').textContent = jilid.arabic;
+            document.getElementById('readerPageDesc').textContent = `Halaman ${currentReaderPage} - Berlatih bacaan tartil dengan makhraj yang fasih.`;
+            document.getElementById('readerPageIndicator').textContent = `Halaman ${currentReaderPage} / 5`;
+
+            resetRecorderState();
+            document.getElementById('modalReader').classList.remove('hidden');
+        }
+
+        function closeReaderModal() {
+            stopRecordingSession();
+            document.getElementById('modalReader').classList.add('hidden');
+        }
+
+        function prevReaderPage() {
+            if (currentReaderPage > 1) {
+                currentReaderPage--;
+                updateReaderPageDisplay();
+            }
+        }
+
+        function nextReaderPage() {
+            if (currentReaderPage < 5) {
+                currentReaderPage++;
+                updateReaderPageDisplay();
+            }
+        }
+
+        function updateReaderPageDisplay() {
+            document.getElementById('readerPageIndicator').textContent = `Halaman ${currentReaderPage} / 5`;
+            document.getElementById('readerPageDesc').textContent = `Halaman ${currentReaderPage} - Berlatih bacaan tartil dengan makhraj yang fasih.`;
+        }
+
+        // Audio Recording Functions
+        async function toggleRecording() {
+            if (!mediaRecorder || mediaRecorder.state === "inactive") {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    audioChunks = [];
+                    mediaRecorder = new MediaRecorder(stream);
+
+                    mediaRecorder.ondataavailable = event => {
+                        if (event.data.size > 0) audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(recordedBlob);
+                        const player = document.getElementById('audioPreviewPlayer');
+                        player.src = audioUrl;
+                        document.getElementById('audioPreviewContainer').classList.remove('hidden');
+                        document.getElementById('btnSubmitSubmission').removeAttribute('disabled');
+                    };
+
+                    mediaRecorder.start();
+                    startRecordingTimer();
+                    
+                    const btn = document.getElementById('btnStartRecord');
+                    btn.innerHTML = `<i class="fa-solid fa-stop"></i> Selesai Merekam`;
+                    btn.classList.add('is-recording');
+                    document.getElementById('recordTitle').textContent = "Sedang Merekam Suara...";
+                } catch (err) {
+                    showToast('Akses mikrofon ditolak atau tidak didukung browser.', 'error');
+                }
+            } else {
+                stopRecordingSession();
+            }
+        }
+
+        function stopRecordingSession() {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+            stopRecordingTimer();
+            const btn = document.getElementById('btnStartRecord');
+            btn.innerHTML = `<i class="fa-solid fa-circle-dot"></i> Mulai Rekam Audio`;
+            btn.classList.remove('is-recording');
+            document.getElementById('recordTitle').textContent = "Rekaman Selesai Disimpan";
+        }
+
+        function startRecordingTimer() {
+            recordingSeconds = 0;
+            const timerEl = document.getElementById('recordTimer');
+            timerEl.textContent = "00:00";
+            recordingTimerInterval = setInterval(() => {
+                recordingSeconds++;
+                const mins = String(Math.floor(recordingSeconds / 60)).padStart(2, '0');
+                const secs = String(recordingSeconds % 60).padStart(2, '0');
+                timerEl.textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function stopRecordingTimer() {
+            if (recordingTimerInterval) clearInterval(recordingTimerInterval);
+        }
+
+        function resetRecorderState() {
+            stopRecordingTimer();
+            recordedBlob = null;
+            audioChunks = [];
+            document.getElementById('recordTimer').textContent = "00:00";
+            document.getElementById('recordTitle').textContent = "Siap Merekam";
+            document.getElementById('audioPreviewContainer').classList.add('hidden');
+            document.getElementById('audioPreviewPlayer').src = "";
+            document.getElementById('btnSubmitSubmission').setAttribute('disabled', 'true');
+        }
+
+        async function submitAudioSubmission() {
+            if (!recordedBlob) {
+                showToast('Belum ada rekaman suara!', 'error');
+                return;
+            }
+
+            showToast('Mengunggah setoran ke server...', 'info');
+            const { ref: storageRef, uploadBytes, getDownloadURL } = window.firebaseModules;
+            const { collection, addDoc, serverTimestamp, getDoc, doc } = window.firebaseModules;
+
+            try {
+                // Fetch student name first
+                const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+                const studentName = userDoc.exists() ? userDoc.data().name : currentUser.email.split('@')[0];
+
+                const fileName = `submissions/${currentUser.uid}_jilid${currentSelectedJilid}_${Date.now()}.webm`;
+                const fileRef = storageRef(storage, fileName);
+                
+                await uploadBytes(fileRef, recordedBlob);
+                const audioUrl = await getDownloadURL(fileRef);
+
+                const jilidObj = jilidData.find(j => j.id === currentSelectedJilid);
+
+                await addDoc(collection(db, "submissions"), {
+                    studentId: currentUser.uid,
+                    studentName: studentName,
+                    jilidId: currentSelectedJilid,
+                    materiTitle: jilidObj ? jilidObj.title : `Jilid ${currentSelectedJilid}`,
+                    audioUrl: audioUrl,
+                    status: 'Menunggu Dinilai',
+                    notes: '',
+                    createdAt: serverTimestamp()
+                });
+
+                showToast('Setoran mengaji berhasil dikirim!', 'success');
+                closeReaderModal();
+                fetchStudentSubmissions();
+            } catch (err) {
+                console.error("Upload Submission Error:", err);
+                showToast('Gagal mengunggah setoran. Periksa Storage Rules Firebase Anda.', 'error');
+            }
+        }
+
+        // --- TEACHER / ADMIN DASHBOARD LOGIC ---
+        async function loadTeacherData() {
+            const { collection, getDocs } = window.firebaseModules;
+            const tableBody = document.getElementById('teacherSubmissionsTable');
+            tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500">Memuat data setoran siswa...</td></tr>`;
+
+            try {
+                const snapshot = await getDocs(collection(db, "submissions"));
+                const usersSnap = await getDocs(collection(db, "users"));
+                
+                let totalStudents = 0;
+                usersSnap.forEach(d => { if (d.data().role === 'student') totalStudents++; });
+                document.getElementById('statTotalStudents').textContent = totalStudents;
+
+                let pendingCount = 0;
+                let gradedCount = 0;
+
+                tableBody.innerHTML = '';
+                if (snapshot.empty) {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500">Belum ada setoran masuk dari siswa.</td></tr>`;
+                    document.getElementById('statPendingSubmissions').textContent = 0;
+                    document.getElementById('statGradedSubmissions').textContent = 0;
+                    return;
+                }
+
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const subId = docSnap.id;
+
+                    if (data.status === 'Menunggu Dinilai' || !data.status) {
+                        pendingCount++;
+                    } else {
+                        gradedCount++;
+                    }
+
+                    const dateStr = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Baru saja';
+
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-gray-900/35 transition-colors";
+                    row.innerHTML = `
+                        <td class="py-3 px-4 font-semibold text-white">${data.studentName || 'Siswa'}</td>
+                        <td class="py-3 px-4 text-slate-300">Jilid ${data.jilidId} - ${data.materiTitle || ''}</td>
+                        <td class="py-3 px-4 text-slate-400">${dateStr}</td>
+                        <td class="py-3 px-4">
+                            <audio controls src="${data.audioUrl}" class="h-8 w-36 sm:w-44"></audio>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold ${data.status === 'Lulus / Bagus' ? 'bg-emerald-500/20 text-emerald-400' : data.status === 'Ulangi / Perbaiki' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}">
+                                ${data.status || 'Menunggu Dinilai'}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <button onclick="openGradeModal('${subId}', '${data.studentName || 'Siswa'}', '${data.materiTitle || 'Jilid'}', '${data.audioUrl}', '${data.status || ''}', '${data.notes || ''}')" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-xl text-xs transition-all">
+                                <i class="fa-solid fa-pen-to-square mr-1"></i> Nilai
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                document.getElementById('statPendingSubmissions').textContent = pendingCount;
+                document.getElementById('statGradedSubmissions').textContent = gradedCount;
+
+            } catch (err) {
+                console.error("Load Teacher Data Error:", err);
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-rose-400">Gagal memuat data setoran.</td></tr>`;
+            }
+        }
+
+        function openGradeModal(subId, studentName, materiTitle, audioUrl, status, notes) {
+            document.getElementById('gradeSubmissionId').value = subId;
+            document.getElementById('gradeStudentName').textContent = studentName;
+            document.getElementById('gradeMateriTitle').textContent = materiTitle;
+            document.getElementById('gradeAudioPlayer').src = audioUrl;
+            document.getElementById('gradeStatusSelect').value = status || 'Lulus / Bagus';
+            document.getElementById('gradeNotesInput').value = notes || '';
+            document.getElementById('modalGrade').classList.remove('hidden');
+        }
+
+        function closeGradeModal() {
+            document.getElementById('modalGrade').classList.add('hidden');
+        }
+
+        async function handleGradeSubmit(e) {
+            e.preventDefault();
+            const subId = document.getElementById('gradeSubmissionId').value;
+            const status = document.getElementById('gradeStatusSelect').value;
+            const notes = document.getElementById('gradeNotesInput').value;
+
+            const { doc, updateDoc } = window.firebaseModules;
+            try {
+                await updateDoc(doc(db, "submissions", subId), {
+                    status: status,
+                    notes: notes
+                });
+
+                showToast('Penilaian berhasil disimpan!', 'success');
+                closeGradeModal();
+                loadTeacherData();
+            } catch (err) {
+                console.error("Grade Submit Error:", err);
+                showToast('Gagal menyimpan penilaian.', 'error');
+            }
         }
     </script>
 </body>
