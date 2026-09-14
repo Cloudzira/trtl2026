@@ -16,7 +16,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyDCkiYKe-lKkbb0czz9y9ZBGN9SgOhbjmw",
@@ -41,6 +41,7 @@
             window.setDoc = setDoc;
             window.getDoc = getDoc;
             window.updateDoc = updateDoc;
+            window.deleteDoc = deleteDoc;
             window.collection = collection;
             window.query = query;
             window.where = where;
@@ -53,6 +54,7 @@
                 const readScreen = document.getElementById('read-screen');
                 const bookmarksScreen = document.getElementById('bookmarks-screen');
                 const adminScreen = document.getElementById('admin-screen');
+                const teacherAdminScreen = document.getElementById('teacher-admin-screen');
 
                 if (user) {
                     try {
@@ -62,38 +64,45 @@
                         if (userSnap.exists()) {
                             window.currentUserProfile = userSnap.data();
                         } else {
-                            // Fallback if profile missing in Firestore
                             window.currentUserProfile = { 
                                 name: user.email.split('@')[0], 
                                 role: 'Siswa', 
-                                className: '-', 
-                                isApproved: false 
+                                classCode: '', 
+                                isMasterApproved: false,
+                                isTeacherApproved: false 
                             };
                         }
 
-                        // Cek Persetujuan Admin (BERLAKU UNTUK SEMUA ROLE: Siswa & Guru)
-                        if (!window.currentUserProfile.isApproved) {
-                            loginScreen.classList.remove('active');
-                            menuScreen.classList.remove('active');
-                            readScreen.classList.remove('active');
-                            bookmarksScreen.classList.remove('active');
-                            if (adminScreen) adminScreen.classList.remove('active');
+                        const profile = window.currentUserProfile;
+
+                        // Level 1 Check: Master Admin Approval (Applies to everyone)
+                        if (!profile.isMasterApproved) {
+                            hideAllScreens();
                             verifyScreen.classList.add('active');
-                            
-                            const emailTargetText = document.getElementById('verifyEmailTarget');
-                            if (emailTargetText) emailTargetText.innerText = user.email;
-                            
+                            const verifyTitle = document.getElementById('verifyTitle');
+                            const verifyDesc = document.getElementById('verifyEmailTarget');
+                            if (verifyTitle) verifyTitle.innerText = "Menunggu Persetujuan Master Admin";
+                            if (verifyDesc) verifyDesc.innerText = `Akun ${user.email} sedang menunggu verifikasi awal dari Master Admin.`;
+                            window.appState = 'verify';
+                            return;
+                        }
+
+                        // Level 2 Check: If user is a Student, they need Teacher Approval based on classCode
+                        if (profile.role === 'Siswa' && !profile.isTeacherApproved) {
+                            hideAllScreens();
+                            verifyScreen.classList.add('active');
+                            const verifyTitle = document.getElementById('verifyTitle');
+                            const verifyDesc = document.getElementById('verifyEmailTarget');
+                            if (verifyTitle) verifyTitle.innerText = "Menunggu Persetujuan Guru";
+                            if (verifyDesc) verifyDesc.innerText = `Akun Anda telah disetujui Admin Utama, namun sedang menunggu konfirmasi dari Guru (Kode Kelas: ${profile.classCode || '-'}).`;
                             window.appState = 'verify';
                             return;
                         }
 
                         updateUserGreeting();
-                        setupAdminDashboardAccess();
+                        setupDashboardAccess();
 
-                        loginScreen.classList.remove('active');
-                        verifyScreen.classList.remove('active');
-                        if (adminScreen) adminScreen.classList.remove('active');
-
+                        hideAllScreens();
                         if (readScreen.classList.contains('active')) {
                             window.appState = 'read';
                         } else if (bookmarksScreen.classList.contains('active')) {
@@ -109,17 +118,20 @@
                     }
                 } else {
                     window.currentUserProfile = null;
+                    hideAllScreens();
                     loginScreen.classList.add('active');
-                    verifyScreen.classList.remove('active');
-                    menuScreen.classList.remove('active');
-                    readScreen.classList.remove('active');
-                    bookmarksScreen.classList.remove('active');
-                    if (adminScreen) adminScreen.classList.remove('active');
                     window.appState = 'login';
                 }
             });
         } catch (e) {
             console.error("Gagal memuat Firebase:", e);
+        }
+
+        function hideAllScreens() {
+            ['login-screen', 'verify-screen', 'menu-screen', 'read-screen', 'bookmarks-screen', 'admin-screen', 'teacher-admin-screen'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('active');
+            });
         }
     </script>
 
@@ -192,7 +204,7 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        #login-screen, #verify-screen, #admin-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
+        #login-screen, #verify-screen, #admin-screen, #teacher-admin-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
         .login-card {
             background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding: 30px 24px; border-radius: 28px; border: 1px solid var(--border-color);
@@ -448,12 +460,12 @@
         .btn-cover:hover img { transform: scale(1.03); }
         .btn-cover:active { transform: scale(1.0); }
 
-        .btn-theme-toggle, .btn-bookmark, .btn-logout, .btn-admin {
+        .btn-theme-toggle, .btn-bookmark, .btn-logout, .btn-admin, .btn-teacher-panel {
             background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
             width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: var(--transition); flex-shrink: 0;
         }
-        .btn-theme-toggle:hover, .btn-bookmark:hover, .btn-admin:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; }
+        .btn-theme-toggle:hover, .btn-bookmark:hover, .btn-admin:hover, .btn-teacher-panel:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; }
         
         .btn-logout {
             background: rgba(239, 68, 68, 0.12);
@@ -462,13 +474,13 @@
         .btn-logout:hover { transform: scale(1.08); background: #ef4444; border-color: #ef4444; }
         .btn-logout:hover svg { stroke: white; }
 
-        .btn-theme-toggle svg, .btn-bookmark svg, .btn-logout svg, .btn-admin svg {
+        .btn-theme-toggle svg, .btn-bookmark svg, .btn-logout svg, .btn-admin svg, .btn-teacher-panel svg {
             width: 18px; height: 18px; fill: none; stroke: var(--text-muted);
             stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: var(--transition);
         }
         body.dark-theme .btn-theme-toggle svg { stroke: #38bdf8; }
         .btn-logout svg { stroke: #ef4444; }
-        .btn-admin { display: none; } /* Hanya tampil jika user adalah Guru/Admin */
+        .btn-admin, .btn-teacher-panel { display: none; }
 
         .btn-bookmark.saved { background: var(--bg-card); border-color: var(--border-color); }
         .btn-bookmark.saved svg { fill: #0ea5e9; stroke: #0ea5e9; }
@@ -603,11 +615,14 @@
             
             <div id="registerFields" class="register-only-field">
                 <input type="text" id="authName" placeholder="Nama Lengkap" />
-                <input type="text" id="authClass" placeholder="Kelas/Grup (Contoh: 5A/Cinta Al Qur'an)" />
-                <select id="authRole">
+                <select id="authRole" onchange="toggleRoleFields()">
                     <option value="Siswa">Daftar sebagai Siswa</option>
                     <option value="Guru">Daftar sebagai Guru / Pengajar</option>
                 </select>
+                <!-- Input khusus Siswa untuk memasukkan Kode Kelas dari Guru -->
+                <input type="text" id="authClassCode" placeholder="Kode Kelas dari Guru (Contoh: KLS-A1)" />
+                <!-- Input khusus Guru untuk menentukan Nama/Kode Kelas yang ingin dibuat -->
+                <input type="text" id="authTeacherClassName" placeholder="Nama/Kode Kelas Anda (Contoh: 5A - Al-Qur'an)" style="display:none;" />
             </div>
 
             <button class="btn-login" id="authSubmitBtn" onclick="handleAuthSubmit()">Masuk Sekarang</button>
@@ -615,16 +630,16 @@
         </div>
     </div>
 
-    <!-- Halaman Menunggu Persetujuan Admin -->
+    <!-- Halaman Menunggu Persetujuan (Level 1 atau Level 2) -->
     <div id="verify-screen" class="screen">
         <div class="login-card">
             <div style="font-size: 42px; margin-bottom: 2px;">⏳</div>
-            <h2>Menunggu Persetujuan</h2>
-            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">
-                Akun dengan email <strong id="verifyEmailTarget" style="color: var(--text-main);">-</strong> sedang menunggu verifikasi/persetujuan manual dari Admin aplikasi.
+            <h2 id="verifyTitle">Menunggu Persetujuan</h2>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;" id="verifyEmailTarget">
+                Akun Anda sedang menunggu verifikasi.
             </p>
             <p style="font-size: 12px; color: var(--text-muted);">
-                Silakan hubungi pengelola atau admin agar akun Anda segera disetujui, atau cek kembali beberapa saat lagi.
+                Silakan hubungi Master Admin atau Guru pengampu kelas Anda agar akun segera disetujui.
             </p>
 
             <button class="btn-login" onclick="window.location.reload()" style="margin-top: 10px;">Cek Status Akun</button>
@@ -632,14 +647,32 @@
         </div>
     </div>
 
-    <!-- Halaman Dashboard Admin/Guru (Persetujuan Akun) -->
+    <!-- Halaman Panel Master Admin (Menyetujui Pendaftaran Akun Baru Global) -->
     <div id="admin-screen" class="screen">
         <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
-            <h2>Panel Persetujuan Akun</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Daftar akun (Siswa & Guru) yang menunggu konfirmasi akses:</p>
+            <h2>Panel Master Admin</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Daftar akun baru (Siswa & Guru) yang menunggu verifikasi awal:</p>
             
-            <div id="pendingUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
-                <!-- List diisi dinamis via JS -->
+            <div id="pendingMasterUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
+                <!-- Diisi dinamis via JS -->
+            </div>
+
+            <button class="auth-mode-btn" onclick="goToMenu()" style="width: 100%; padding: 10px; background: var(--input-bg); border-radius: 12px; color: var(--text-main); font-weight: 700; margin-top: 8px;">Kembali ke Menu Utama</button>
+        </div>
+    </div>
+
+    <!-- Halaman Panel Guru (Manajemen Kelas & Menyetujui Siswa di Kelasnya) -->
+    <div id="teacher-admin-screen" class="screen">
+        <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
+            <h2>Panel Kelas Guru</h2>
+            <div style="background: var(--input-bg); padding: 10px; border-radius: 12px; text-align: left; margin-bottom: 8px;">
+                <div style="font-size: 11px; color: var(--text-muted);">Kode Kelas Anda untuk dibagikan ke Siswa:</div>
+                <div id="teacherClassCodeDisplay" style="font-size: 16px; font-weight: 800; color: #0ea5e9; margin-top: 2px;">-</div>
+            </div>
+            
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-align: left;">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
+            <div id="pendingStudentContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
+                <!-- Diisi dinamis via JS -->
             </div>
 
             <button class="auth-mode-btn" onclick="goToMenu()" style="width: 100%; padding: 10px; background: var(--input-bg); border-radius: 12px; color: var(--text-main); font-weight: 700; margin-top: 8px;">Kembali ke Menu Utama</button>
@@ -660,16 +693,17 @@
                     </div>
                 </div>
                 <div class="landing-hero-actions">
-                    <button class="btn-admin" id="btnAdminPanel" onclick="openAdminScreen()" title="Panel Guru / Admin">
+                    <button class="btn-admin" id="btnMasterAdminPanel" onclick="openMasterAdminScreen()" title="Panel Master Admin">
+                        <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    </button>
+                    <button class="btn-teacher-panel" id="btnTeacherPanel" onclick="openTeacherAdminScreen()" title="Panel Guru / Kelas">
                         <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
                     </button>
                     <button class="btn-bookmark" onclick="openBookmarksScreen()" title="Halaman Tersimpan">
                         <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
                     </button>
                     <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                        </svg>
+                        <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                     </button>
                     <button class="btn-logout" onclick="handleLogout()" title="Keluar Akun">
                         <svg viewBox="0 0 24 24"><path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -811,7 +845,7 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const swCode = `
-                    const CACHE_NAME = 'tartili-cache-v5';
+                    const CACHE_NAME = 'tartili-cache-v6';
                     self.addEventListener('install', (e) => { self.skipWaiting(); });
                     self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
                     self.addEventListener('fetch', (e) => {
@@ -855,23 +889,9 @@
             if (btn) {
                 const isDark = document.body.classList.contains('dark-theme');
                 if (isDark) {
-                    btn.innerHTML = `
-                        <svg viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="5"></circle>
-                            <line x1="12" y1="1" x2="12" y2="3"></line>
-                            <line x1="12" y1="21" x2="12" y2="23"></line>
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                            <line x1="1" y1="12" x2="3" y2="12"></line>
-                            <line x1="21" y1="12" x2="23" y2="12"></line>
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                        </svg>`;
+                    btn.innerHTML = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
                 } else {
-                    btn.innerHTML = `
-                        <svg viewBox="0 0 24 24">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                        </svg>`;
+                    btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
                 }
             }
         }
@@ -904,6 +924,21 @@
                 regFields.classList.remove('show');
                 submitBtn.innerText = "Masuk Sekarang";
             }
+            toggleRoleFields();
+        }
+
+        function toggleRoleFields() {
+            const role = document.getElementById('authRole').value;
+            const classCodeInput = document.getElementById('authClassCode');
+            const teacherClassNameInput = document.getElementById('authTeacherClassName');
+
+            if (role === 'Guru') {
+                classCodeInput.style.display = 'none';
+                teacherClassNameInput.style.display = 'block';
+            } else {
+                classCodeInput.style.display = 'block';
+                teacherClassNameInput.style.display = 'none';
+            }
         }
 
         async function handleAuthSubmit() {
@@ -920,26 +955,40 @@
             try {
                 if (isRegisterMode) {
                     const name = document.getElementById('authName').value || email.split('@')[0];
-                    const className = document.getElementById('authClass').value || '-';
                     const role = document.getElementById('authRole').value;
                     
-                    // SEMUA ROLE (baik Siswa maupun Guru) HARUS MENUNGGU PERSETUJUAN ADMIN (isApproved: false)
-                    const isApproved = false;
+                    let classCode = "";
+                    let teacherClassName = "";
+
+                    if (role === 'Guru') {
+                        teacherClassName = document.getElementById('authTeacherClassName').value || 'Kelas Guru';
+                        // Buat kode unik untuk kelas guru (misal: GURU + 4 digit acak)
+                        classCode = 'KLS-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+                    } else {
+                        classCode = document.getElementById('authClassCode').value.trim();
+                        if (!classCode) {
+                            errorDiv.innerText = "Kode kelas dari guru wajib diisi bagi siswa.";
+                            errorDiv.style.display = 'block';
+                            return;
+                        }
+                    }
 
                     const userCredential = await window.createUserWithEmailAndPassword(window.firebaseAuth, email, password);
                     const user = userCredential.user;
 
                     await window.setDoc(window.doc(window.firebaseDb, "users", user.uid), {
                         name: name,
-                        className: className,
-                        role: role,
                         email: email,
-                        isApproved: isApproved,
+                        role: role,
+                        classCode: classCode,
+                        teacherClassName: teacherClassName,
+                        isMasterApproved: false, // Menunggu persetujuan Master Admin
+                        isTeacherApproved: (role === 'Guru'), // Guru otomatis true untuk level guru, tapi menunggu Master Admin
                         createdAt: new Date().toISOString()
                     });
 
                     errorDiv.style.display = 'none';
-                    showToast('Pendaftaran berhasil! Akun Anda sedang menunggu persetujuan Admin.');
+                    showToast('Pendaftaran berhasil! Akun menunggu persetujuan Master Admin.');
                 } else {
                     await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
                     errorDiv.style.display = 'none';
@@ -961,71 +1010,150 @@
             const roleEl = document.getElementById('userRoleBadge');
 
             if (usernameEl) usernameEl.innerText = profile.name || 'Pengguna';
-            if (classEl) classEl.innerText = `Kelas: ${profile.className || '-'}`;
+            if (classEl) classEl.innerText = profile.role === 'Guru' ? `Kelas: ${profile.teacherClassName}` : `Kode Kelas: ${profile.classCode || '-'}`;
             if (roleEl) roleEl.innerText = profile.role || 'Siswa';
         }
 
-        function setupAdminDashboardAccess() {
-            const btnAdmin = document.getElementById('btnAdminPanel');
-            if (!btnAdmin) return;
-            if (window.currentUserProfile && window.currentUserProfile.role === 'Guru') {
-                btnAdmin.style.display = 'flex';
+        function setupDashboardAccess() {
+            const btnMaster = document.getElementById('btnMasterAdminPanel');
+            const btnTeacher = document.getElementById('btnTeacherPanel');
+            if (!btnMaster || !btnTeacher) return;
+
+            const profile = window.currentUserProfile;
+            // Anggap email master admin tertentu atau role khusus, atau jika email mengandung 'admin'
+            const isMaster = profile.email === 'admin@tartili.com' || profile.isMasterAdmin === true;
+
+            if (isMaster) {
+                btnMaster.style.display = 'flex';
             } else {
-                btnAdmin.style.display = 'none';
+                btnMaster.style.display = 'none';
+            }
+
+            if (profile.role === 'Guru') {
+                btnTeacher.style.display = 'flex';
+            } else {
+                btnTeacher.style.display = 'none';
             }
         }
 
-        async function openAdminScreen() {
+        // --- MASTER ADMIN PANEL ---
+        async function openMasterAdminScreen() {
             appState = 'admin';
             document.getElementById('menu-screen').classList.remove('active');
             document.getElementById('admin-screen').classList.add('active');
-            await loadPendingUsers();
+            await loadMasterPendingUsers();
         }
 
-        async function loadPendingUsers() {
-            const container = document.getElementById('pendingUsersContainer');
+        async function loadMasterPendingUsers() {
+            const container = document.getElementById('pendingMasterUsersContainer');
             if (!container) return;
             container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat data...</div>`;
 
             try {
-                const q = window.query(window.collection(window.firebaseDb, "users"), window.where("isApproved", "==", false));
+                const q = window.query(window.collection(window.firebaseDb, "users"), window.where("isMasterApproved", "==", false));
                 const querySnapshot = await window.getDocs(q);
                 
                 container.innerHTML = "";
                 if (querySnapshot.empty) {
-                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada akun yang menunggu persetujuan.</div>`;
+                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada akun yang menunggu persetujuan Master.</div>`;
                     return;
                 }
 
-                querySnapshot.forEach((documentSnapshot) => {
-                    const userData = documentSnapshot.data();
-                    const userId = documentSnapshot.id;
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const userId = docSnap.id;
 
                     let item = document.createElement('div');
                     item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
                     item.innerHTML = `
                         <div>
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${userData.name} <span class="badge-role" style="margin-left: 6px;">${userData.role || 'Siswa'}</span></div>
-                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${userData.email} | Kelas: ${userData.className}</div>
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${data.name} <span class="badge-role" style="margin-left: 6px;">${data.role}</span></div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${data.email} ${data.role === 'Guru' ? '| Kelas: ' + data.teacherClassName : '| Kode Kelas: ' + data.classCode}</div>
                         </div>
-                        <button onclick="approveUser('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Setujui</button>
+                        <button onclick="approveMasterUser('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Setujui</button>
                     `;
                     container.appendChild(item);
                 });
             } catch (e) {
                 console.error(e);
-                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat data persetujuan.</div>`;
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat data.</div>`;
             }
         }
 
-        async function approveUser(userId) {
+        async function approveMasterUser(userId) {
             try {
-                await window.updateDoc(window.doc(window.firebaseDb, "users", userId), { isApproved: true });
-                showToast('Akun berhasil disetujui!');
-                loadPendingUsers();
+                await window.updateDoc(window.doc(window.firebaseDb, "users", userId), { isMasterApproved: true });
+                showToast('Akun berhasil disetujui Master Admin!');
+                loadMasterPendingUsers();
             } catch (e) {
                 console.error(e);
                 showToast('Gagal menyetujui akun.');
+            }
+        }
+
+        // --- TEACHER PANEL ---
+        async function openTeacherAdminScreen() {
+            appState = 'teacher-admin';
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('teacher-admin-screen').classList.add('active');
+            
+            const profile = window.currentUserProfile;
+            const codeDisplay = document.getElementById('teacherClassCodeDisplay');
+            if (codeDisplay) codeDisplay.innerText = profile.classCode || '-';
+
+            await loadTeacherPendingStudents();
+        }
+
+        async function loadTeacherPendingStudents() {
+            const container = document.getElementById('pendingStudentContainer');
+            if (!container) return;
+            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat data siswa...</div>`;
+
+            try {
+                const teacherClassCode = window.currentUserProfile.classCode;
+                const q = window.query(
+                    window.collection(window.firebaseDb, "users"), 
+                    window.where("role", "==", "Siswa"),
+                    window.where("classCode", "==", teacherClassCode),
+                    window.where("isTeacherApproved", "==", false)
+                );
+                const querySnapshot = await window.getDocs(q);
+                
+                container.innerHTML = "";
+                if (querySnapshot.empty) {
+                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada siswa baru yang mendaftar ke kelas Anda.</div>`;
+                    return;
+                }
+
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const userId = docSnap.id;
+
+                    let item = document.createElement('div');
+                    item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
+                    item.innerHTML = `
+                        <div>
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${data.name}</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${data.email}</div>
+                        </div>
+                        <button onclick="approveStudent('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Terima</button>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat siswa kelas.</div>`;
+            }
+        }
+
+        async function approveStudent(userId) {
+            try {
+                await window.updateDoc(window.doc(window.firebaseDb, "users", userId), { isTeacherApproved: true });
+                showToast('Siswa berhasil diterima di kelas!');
+                loadTeacherPendingStudents();
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal menerima siswa.');
             }
         }
 
@@ -1059,20 +1187,9 @@
             if (appState === 'read') {
                 if (currentAudio) { currentAudio.pause(); currentAudio = null; }
                 resetRecording();
-                appState = 'menu';
-                document.getElementById('read-screen').classList.remove('active');
-                document.getElementById('bookmarks-screen').classList.remove('active');
-                document.getElementById('admin-screen').classList.remove('active');
-                document.getElementById('menu-screen').classList.add('active');
-                updateMenuCoverFocus();
-                history.replaceState({ screen: 'menu' }, '', '');
-            } else if (appState === 'bookmarks' || appState === 'admin') {
-                appState = 'menu';
-                document.getElementById('bookmarks-screen').classList.remove('active');
-                document.getElementById('admin-screen').classList.remove('active');
-                document.getElementById('menu-screen').classList.add('active');
-                updateMenuCoverFocus();
-                history.replaceState({ screen: 'menu' }, '', '');
+                goToMenu();
+            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin') {
+                goToMenu();
             } else {
                 history.back();
             }
@@ -1109,11 +1226,7 @@
             container.innerHTML = "";
 
             if (savedBookmarks.length === 0) {
-                container.innerHTML = `
-                    <div style="display:flex; flex-direction: column; align-items:center; justify-content:center; height: 180px; color:var(--text-muted); font-size:13px; padding:20px; text-align:center; gap: 8px;">
-                        <span style="font-size: 36px;">📖</span>
-                        <span>Belum ada halaman tersimpan.</span>
-                    </div>`;
+                container.innerHTML = `<div style="display:flex; flex-direction: column; align-items:center; justify-content:center; height: 180px; color:var(--text-muted); font-size:13px; padding:20px; text-align:center; gap: 8px;"><span style="font-size: 36px;">📖</span><span>Belum ada halaman tersimpan.</span></div>`;
                 return;
             }
 
@@ -1157,6 +1270,7 @@
             document.getElementById('read-screen').classList.remove('active');
             document.getElementById('bookmarks-screen').classList.remove('active');
             document.getElementById('admin-screen').classList.remove('active');
+            document.getElementById('teacher-admin-screen').classList.remove('active');
             document.getElementById('menu-screen').classList.add('active');
             updateMenuCoverFocus();
             history.replaceState({ screen: 'menu' }, '', '');
@@ -1213,6 +1327,7 @@
             document.getElementById('menu-screen').classList.remove('active');
             document.getElementById('bookmarks-screen').classList.remove('active');
             document.getElementById('admin-screen').classList.remove('active');
+            document.getElementById('teacher-admin-screen').classList.remove('active');
             updatePageOptions('Read');
             
             let numList = getNumericPageList(currentJilid);
