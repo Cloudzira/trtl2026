@@ -50,11 +50,11 @@
                 const bookmarksScreen = document.getElementById('bookmarks-screen');
 
                 if (user) {
-                    // Paksa muat ulang data user untuk memastikan status emailVerified terbaru dari server
-                    await user.reload();
+                    // Cek apakah email sudah diverifikasi
+                    await user.reload(); // Refresh token/status user
                     
                     if (!user.emailVerified) {
-                        // Jika belum verifikasi, pastikan sesi tidak masuk ke menu utama
+                        // Belum verifikasi -> Tampilkan layar verifikasi
                         window.currentUserProfile = null;
                         loginScreen.classList.remove('active');
                         menuScreen.classList.remove('active');
