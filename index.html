@@ -109,7 +109,7 @@
         }
     </script>
 
-    <!-- Memuat Berkas Konfigurasi Data Buku Tartili (Jilid 1-6) -->
+    <!-- Berkas Konfigurasi Data Buku Tartili (Jilid 1-6) -->
     <script src="tartili1.js"></script>
     <script src="tartili2.js"></script>
     <script src="tartili3.js"></script>
@@ -178,7 +178,6 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        /* --- LOGIN & VERIFY SCREEN --- */
         #login-screen, #verify-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
         .login-card {
             background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -222,7 +221,6 @@
         .btn-login:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 12px 25px rgba(14, 165, 233, 0.4); }
         .login-error { color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 2px; display: none; }
 
-        /* --- MENU SCREEN (LANDING PAGE STYLE) --- */
         #menu-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; justify-content: flex-start; align-items: center; }
         .menu-content-wrapper {
             display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 880px; position: relative; margin: auto;
@@ -245,7 +243,6 @@
         .menu-section-title { width: 100%; text-align: left; font-size: 14px; font-weight: 800; color: var(--text-main); letter-spacing: 0.5px; margin-top: 4px; }
         .grid-jilid { display: grid; gap: 16px; width: 100%; margin: 0; grid-template-columns: repeat(6, 1fr); }
         
-        /* --- BOOKMARKS SCREEN --- */
         #bookmarks-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; justify-content: space-between; align-items: center; height: 100vh; height: 100dvh; }
         .bookmarks-content-wrapper {
             display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 480px; height: 100%; justify-content: space-between; padding: 10px 0;
@@ -282,7 +279,6 @@
         }
         .bookmark-item-delete:hover { background: #ef4444; color: white; transform: scale(1.08); }
 
-        /* --- TOAST --- */
         #toastNotification {
             position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%) translateY(100px);
             background: var(--bg-panel); backdrop-filter: blur(16px); color: var(--text-main); padding: 12px 24px; border-radius: 40px;
@@ -291,7 +287,6 @@
             border: 1px solid var(--border-color);
         }
 
-        /* --- MEDIA QUERIES & RESPONSIVE LAYOUT --- */
         @media (orientation: portrait) {
             .menu-content-wrapper { max-width: 420px; }
             .grid-jilid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, auto); }
@@ -425,7 +420,6 @@
             #read-screen .btn-menu-back, #bookmarks-screen .btn-menu-back { width: 55px !important; flex: 0 0 55px !important; height: 28px !important; font-size: 11px !important; align-self: center !important; margin-top: 0 !important; border-radius: 8px !important; }
         }
 
-        /* --- COVER BUTTONS --- */
         .btn-cover { 
             width: 100%; border: none; padding: 0; cursor: pointer; border-radius: 20px; 
             transition: var(--transition); transform: scale(0.96); background: transparent; 
@@ -440,7 +434,6 @@
         .btn-cover:hover img { transform: scale(1.03); }
         .btn-cover:active { transform: scale(1.0); }
 
-        /* --- UTILITY BUTTONS (Theme, Bookmark, Logout) --- */
         .btn-theme-toggle, .btn-bookmark, .btn-logout {
             background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
             width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
@@ -467,7 +460,6 @@
         .btn-bookmark.saved svg { fill: #0ea5e9; stroke: #0ea5e9; }
         body.dark-theme .btn-bookmark.saved svg { fill: #38bdf8; stroke: #38bdf8; }
 
-        /* --- NAV BUTTONS --- */
         .btn-page-nav-custom {
             flex: 1; height: 34px; border: none; border-radius: 17px; cursor: pointer;
             display: flex; align-items: center; position: relative; font-weight: 700; font-size: 12px;
@@ -489,7 +481,6 @@
         .btn-page-nav-custom:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(14, 165, 233, 0.35); }
         .btn-page-nav-custom:active { transform: scale(0.97); }
 
-        /* --- READ SCREEN --- */
         #read-screen { position: relative; background: var(--bg-gradient); display: none; width: 100%; height: 100%; overflow: hidden; }
         #read-screen.active { display: flex; flex-direction: column; }
 
@@ -576,7 +567,6 @@
 </head>
 <body class="light-theme">
 
-    <!-- Toast Notifikasi Elemen -->
     <div id="toastNotification">Pemberitahuan</div>
 
     <!-- ==========================================
@@ -599,7 +589,7 @@
             
             <div id="registerFields" class="register-only-field">
                 <input type="text" id="authName" placeholder="Nama Lengkap" />
-                <input type="text" id="authClass" placeholder="Kelas/Grup (Contoh: 5A/Cinta Al Qur'an)" />
+                <input type="text" id="authClass" placeholder="Kelas/Grup (Contoh: 5A/Cinta Al Qur'an )" />
                 <select id="authRole">
                     <option value="Siswa">Masuk sebagai Siswa</option>
                     <option value="Guru">Masuk sebagai Guru / Pengajar</option>
@@ -648,7 +638,9 @@
                         <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
                     </button>
                     <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna">
-                        <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                        <svg viewBox="0 0 24 24">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
                     </button>
                     <button class="btn-logout" onclick="handleLogout()" title="Keluar Akun">
                         <svg viewBox="0 0 24 24"><path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -689,7 +681,7 @@
         </div>
     </div>
 
-    <!-- Halaman Daftar Bookmark (Tersimpan) -->
+    <!-- Halaman Daftar Bookmark -->
     <div id="bookmarks-screen" class="screen">
         <div class="bookmarks-content-wrapper">
             <div class="bookmarks-header">
