@@ -15,8 +15,8 @@
          ========================================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyDCkiYKe-lKkbb0czz9y9ZBGN9SgOhbjmw",
@@ -37,55 +37,76 @@
             window.signInWithEmailAndPassword = signInWithEmailAndPassword;
             window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
             window.signOut = signOut;
-            window.sendEmailVerification = sendEmailVerification;
             window.doc = doc;
             window.setDoc = setDoc;
             window.getDoc = getDoc;
+            window.updateDoc = updateDoc;
+            window.collection = collection;
+            window.query = query;
+            window.where = where;
+            window.getDocs = getDocs;
 
             onAuthStateChanged(auth, async (user) => {
                 const loginScreen = document.getElementById('login-screen');
                 const verifyScreen = document.getElementById('verify-screen');
                 const menuScreen = document.getElementById('menu-screen');
+                const adminScreen = document.getElementById('admin-screen');
                 const readScreen = document.getElementById('read-screen');
                 const bookmarksScreen = document.getElementById('bookmarks-screen');
 
                 if (user) {
-                    // Cek apakah email sudah diverifikasi
-                    await user.reload(); // Refresh token/status user
-                    
-                    if (!user.emailVerified) {
-                        // Belum verifikasi -> Tampilkan layar verifikasi
-                        window.currentUserProfile = null;
-                        loginScreen.classList.remove('active');
-                        menuScreen.classList.remove('active');
-                        readScreen.classList.remove('active');
-                        bookmarksScreen.classList.remove('active');
-                        verifyScreen.classList.add('active');
-                        
-                        const emailTargetText = document.getElementById('verifyEmailTarget');
-                        if (emailTargetText) emailTargetText.innerText = user.email;
-                        
-                        window.appState = 'verify';
-                        return;
-                    }
-
-                    // Jika sudah terverifikasi, lanjutkan masuk aplikasi
                     try {
                         const userDocRef = doc(db, "users", user.uid);
                         const userSnap = await getDoc(userDocRef);
+                        
                         if (userSnap.exists()) {
                             window.currentUserProfile = userSnap.data();
                         } else {
-                            window.currentUserProfile = { name: user.email.split('@')[0], role: 'Siswa', className: '-' };
+                            // Default profil jika belum ada dokumen
+                            window.currentUserProfile = { name: user.email.split('@')[0], role: 'Siswa', className: '-', isApproved: false };
                         }
+
+                        // Cek apakah akun sudah disetujui oleh admin (Kecuali jika akun tersebut adalah admin utama)
+                        const isAdminEmail = user.email === "admin@tartili.com"; // Ganti email admin sesuai kebutuhan
+                        if (!window.currentUserProfile.isApproved && !isAdminEmail) {
+                            // Belum disetujui -> Tampilkan layar tunggu verifikasi admin
+                            loginScreen.classList.remove('active');
+                            menuScreen.classList.remove('active');
+                            adminScreen.classList.remove('active');
+                            readScreen.classList.remove('active');
+                            bookmarksScreen.classList.remove('active');
+                            verifyScreen.classList.add('active');
+                            
+                            const emailTargetText = document.getElementById('verifyEmailTarget');
+                            if (emailTargetText) emailTargetText.innerText = user.email;
+                            
+                            window.appState = 'verify';
+                            return;
+                        }
+
+                        // Jika login sebagai admin (bisa via role Guru dengan email khusus atau flag admin)
+                        if (window.currentUserProfile.role === 'Guru' && (isAdminEmail || window.currentUserProfile.isAdmin)) {
+                            window.appState = 'admin';
+                            loginScreen.classList.remove('active');
+                            verifyScreen.classList.remove('active');
+                            menuScreen.classList.remove('active');
+                            readScreen.classList.remove('active');
+                            bookmarksScreen.classList.remove('active');
+                            adminScreen.classList.add('active');
+                            loadAdminPendingUsers();
+                            return;
+                        }
+
                     } catch (err) {
-                        window.currentUserProfile = { name: user.email.split('@')[0], role: 'Siswa', className: '-' };
+                        console.error("Gagal memuat profil pengguna:", err);
+                        window.currentUserProfile = { name: user.email.split('@')[0], role: 'Siswa', className: '-', isApproved: false };
                     }
 
                     updateUserGreeting();
 
                     loginScreen.classList.remove('active');
                     verifyScreen.classList.remove('active');
+                    adminScreen.classList.remove('active');
                     if (!readScreen.classList.contains('active') && !bookmarksScreen.classList.contains('active')) {
                         menuScreen.classList.add('active');
                     }
@@ -102,6 +123,7 @@
                     loginScreen.classList.add('active');
                     verifyScreen.classList.remove('active');
                     menuScreen.classList.remove('active');
+                    adminScreen.classList.remove('active');
                     readScreen.classList.remove('active');
                     bookmarksScreen.classList.remove('active');
                     window.appState = 'login';
@@ -224,6 +246,17 @@
         }
         .btn-login:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 12px 25px rgba(14, 165, 233, 0.4); }
         .login-error { color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 2px; display: none; }
+
+        /* --- ADMIN DASHBOARD SCREEN --- */
+        #admin-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; justify-content: flex-start; align-items: center; }
+        .admin-container { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 16px; margin: auto; }
+        .admin-header { background: var(--bg-panel); padding: 20px; border-radius: 20px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); }
+        .admin-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        .admin-user-item { background: var(--bg-panel); border: 1px solid var(--border-color); padding: 14px 18px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); }
+        .admin-user-info { display: flex; flex-direction: column; gap: 2px; }
+        .admin-actions { display: flex; gap: 8px; }
+        .btn-approve { background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px; }
+        .btn-reject { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px; }
 
         /* --- MENU SCREEN (LANDING PAGE STYLE) --- */
         #menu-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; justify-content: flex-start; align-items: center; }
@@ -603,7 +636,7 @@
             
             <div id="registerFields" class="register-only-field">
                 <input type="text" id="authName" placeholder="Nama Lengkap" />
-                <input type="text" id="authClass" placeholder="Kelas/Grup (Contoh: 5A/Cinta Al Qur'an )" />
+                <input type="text" id="authClass" placeholder="Kelas/Grup (Contoh: 5A/Cinta Al Qur'an)" />
                 <select id="authRole">
                     <option value="Siswa">Masuk sebagai Siswa</option>
                     <option value="Guru">Masuk sebagai Guru / Pengajar</option>
@@ -615,22 +648,39 @@
         </div>
     </div>
 
-    <!-- Halaman Instruksi Verifikasi Email -->
+    <!-- Halaman Menunggu Konfirmasi Admin -->
     <div id="verify-screen" class="screen">
         <div class="login-card">
-            <div style="font-size: 42px; margin-bottom: 2px;">📩</div>
-            <h2>Verifikasi Email</h2>
+            <div style="font-size: 42px; margin-bottom: 2px;">⏳</div>
+            <h2>Menunggu Konfirmasi Admin</h2>
             <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">
-                Kami telah mengirimkan tautan konfirmasi ke email:<br>
-                <strong id="verifyEmailTarget" style="color: var(--text-main);">-</strong>
+                Akun dengan email <strong id="verifyEmailTarget" style="color: var(--text-main);">-</strong> telah berhasil didaftarkan.
             </p>
             <p style="font-size: 12px; color: var(--text-muted);">
-                Silakan buka kotak masuk (inbox) atau folder Spam email Anda, lalu klik tautan verifikasi tersebut sebelum mengakses aplikasi.
+                Akun Anda saat ini sedang menunggu persetujuan (konfirmasi) dari admin/pengajar sebelum dapat digunakan untuk masuk ke aplikasi.
             </p>
 
-            <button class="btn-login" onclick="checkEmailVerificationStatus()" style="margin-top: 10px;">Cek Status Verifikasi</button>
-            <button class="auth-mode-btn" onclick="resendVerificationEmail()" style="width: 100%; padding: 10px; margin-top: 4px; background: var(--input-bg); border-radius: 12px; color: var(--text-main); font-weight: 700;">Kirim Ulang Email</button>
-            <button class="auth-mode-btn" onclick="handleLogout()" style="width: 100%; padding: 8px; margin-top: 2px; color: #ef4444; font-weight: 600;">Keluar / Ganti Akun</button>
+            <button class="btn-login" onclick="window.location.reload()" style="margin-top: 10px;">Cek Status Akun</button>
+            <button class="auth-mode-btn" onclick="handleLogout()" style="width: 100%; padding: 8px; margin-top: 6px; color: #ef4444; font-weight: 600; background: var(--input-bg); border-radius: 12px;">Keluar / Ganti Akun</button>
+        </div>
+    </div>
+
+    <!-- Halaman Dashboard Admin (Konfirmasi Pengguna) -->
+    <div id="admin-screen" class="screen">
+        <div class="admin-container">
+            <div class="admin-header">
+                <div>
+                    <h2 style="font-size: 20px; font-weight: 800; color: var(--text-main);">Dashboard Admin</h2>
+                    <p style="font-size: 12px; color: var(--text-muted);">Persetujuan Akun Pengguna Baru</p>
+                </div>
+                <button class="btn-logout" onclick="handleLogout()" title="Keluar Akun">
+                    <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:#ef4444;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </button>
+            </div>
+            
+            <div class="admin-list" id="adminPendingListContainer">
+                <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px;">Memuat daftar akun...</div>
+            </div>
         </div>
     </div>
 
@@ -885,7 +935,7 @@
                 loginBtn.classList.remove('active');
                 regBtn.classList.add('active');
                 regFields.classList.add('show');
-                submitBtn.innerText = "Daftar & Kirim Verifikasi";
+                submitBtn.innerText = "Daftar Akun Baru";
             } else {
                 regBtn.classList.remove('active');
                 loginBtn.classList.add('active');
@@ -914,29 +964,25 @@
                     const userCredential = await window.createUserWithEmailAndPassword(window.firebaseAuth, email, password);
                     const user = userCredential.user;
 
-                    // Kirim Email Verifikasi Firebase
-                    await window.sendEmailVerification(user);
-
+                    // Simpan data user dengan status isApproved: false (perlu konfirmasi admin)
+                    // Jika email adalah admin utama, langsung disetujui
+                    const isAdminEmail = (email === "admin@tartili.com");
+                    
                     await window.setDoc(window.doc(window.firebaseDb, "users", user.uid), {
                         name: name,
                         className: className,
                         role: role,
-                        email: email
+                        email: email,
+                        isApproved: isAdminEmail,
+                        isAdmin: isAdminEmail
                     });
 
                     errorDiv.style.display = 'none';
-                    showToast('Akun dibuat! Silakan cek email Anda untuk verifikasi.');
+                    showToast('Pendaftaran berhasil! Menunggu persetujuan admin.');
                 } else {
                     const userCredential = await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
-                    const user = userCredential.user;
-                    
-                    await user.reload();
-                    if (!user.emailVerified) {
-                        showToast('Email belum diverifikasi. Silakan periksa kotak masuk.');
-                    } else {
-                        errorDiv.style.display = 'none';
-                        showToast('Berhasil masuk!');
-                    }
+                    errorDiv.style.display = 'none';
+                    showToast('Berhasil masuk!');
                 }
             } catch (err) {
                 console.error(err);
@@ -945,31 +991,64 @@
             }
         }
 
-        async function checkEmailVerificationStatus() {
-            const user = window.firebaseAuth.currentUser;
-            if (!user) return;
-            
-            showToast('Memeriksa status verifikasi...');
-            await user.reload();
-            
-            if (user.emailVerified) {
-                showToast('Email berhasil diverifikasi! Memuat aplikasi...');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            } else {
-                showToast('Email belum diverifikasi. Cek kembali link di email Anda.');
+        async function loadAdminPendingUsers() {
+            const container = document.getElementById('adminPendingListContainer');
+            if (!container) return;
+            container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px;">Memuat daftar akun...</div>`;
+
+            try {
+                const q = window.query(window.collection(window.firebaseDb, "users"), window.where("isApproved", "==", false));
+                const querySnapshot = await window.getDocs(q);
+                
+                container.innerHTML = "";
+                if (querySnapshot.empty) {
+                    container.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted); font-size: 13px; background: var(--bg-panel); border-radius: 16px; border: 1px solid var(--border-color);">Tidak ada akun yang menunggu konfirmasi.</div>`;
+                    return;
+                }
+
+                querySnapshot.forEach((docSnap) => {
+                    const userData = docSnap.data();
+                    const userId = docSnap.id;
+
+                    let item = document.createElement('div');
+                    item.className = 'admin-user-item';
+                    item.innerHTML = `
+                        <div class="admin-user-info">
+                            <span style="font-size: 14px; font-weight: 700; color: var(--text-main);">${userData.name}</span>
+                            <span style="font-size: 12px; color: var(--text-muted);">${userData.email} | Kelas: ${userData.className} (${userData.role})</span>
+                        </div>
+                        <div class="admin-actions">
+                            <button class="btn-approve" onclick="approveUser('${userId}')">Setujui</button>
+                            <button class="btn-reject" onclick="rejectUser('${userId}')">Tolak</button>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444; font-size: 13px;">Gagal memuat daftar persetujuan.</div>`;
             }
         }
 
-        async function resendVerificationEmail() {
-            const user = window.firebaseAuth.currentUser;
-            if (!user) return;
+        async function approveUser(userId) {
             try {
-                await window.sendEmailVerification(user);
-                showToast('Email verifikasi ulang telah dikirim!');
-            } catch (err) {
-                showToast('Terlalu cepat meminta kirim ulang. Coba beberapa saat lagi.');
+                await window.updateDoc(window.doc(window.firebaseDb, "users", userId), { isApproved: true });
+                showToast("Akun berhasil disetujui!");
+                loadAdminPendingUsers();
+            } catch (e) {
+                showToast("Gagal menyetujui akun.");
+            }
+        }
+
+        async function rejectUser(userId) {
+            try {
+                // Bisa dihapus atau diubah statusnya, di sini kita hapus dokumen user dari Firestore
+                // Catatan: Akun Auth Firebase tetap ada, atau bisa dibiarkan tidak aktif
+                await window.setDoc(window.doc(window.firebaseDb, "users", userId), { isApproved: false, rejected: true }, { merge: true });
+                showToast("Akun ditolak.");
+                loadAdminPendingUsers();
+            } catch (e) {
+                showToast("Gagal menolak akun.");
             }
         }
 
