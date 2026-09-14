@@ -71,7 +71,7 @@
                             };
                         }
 
-                        // Cek Persetujuan Admin
+                        // Cek Persetujuan Admin (BERLAKU UNTUK SEMUA ROLE: Siswa & Guru)
                         if (!window.currentUserProfile.isApproved) {
                             loginScreen.classList.remove('active');
                             menuScreen.classList.remove('active');
@@ -621,10 +621,10 @@
             <div style="font-size: 42px; margin-bottom: 2px;">⏳</div>
             <h2>Menunggu Persetujuan</h2>
             <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">
-                Akun dengan email <strong id="verifyEmailTarget" style="color: var(--text-main);">-</strong> sedang menunggu verifikasi/persetujuan manual dari Guru atau Admin aplikasi.
+                Akun dengan email <strong id="verifyEmailTarget" style="color: var(--text-main);">-</strong> sedang menunggu verifikasi/persetujuan manual dari Admin aplikasi.
             </p>
             <p style="font-size: 12px; color: var(--text-muted);">
-                Silakan hubungi pengajar Anda agar akun segera disetujui, atau cek kembali beberapa saat lagi.
+                Silakan hubungi pengelola atau admin agar akun Anda segera disetujui, atau cek kembali beberapa saat lagi.
             </p>
 
             <button class="btn-login" onclick="window.location.reload()" style="margin-top: 10px;">Cek Status Akun</button>
@@ -632,11 +632,11 @@
         </div>
     </div>
 
-    <!-- Halaman Dashboard Admin/Guru (Persetujuan Siswa) -->
+    <!-- Halaman Dashboard Admin/Guru (Persetujuan Akun) -->
     <div id="admin-screen" class="screen">
         <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
             <h2>Panel Persetujuan Akun</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Daftar akun siswa yang menunggu konfirmasi akses:</p>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Daftar akun (Siswa & Guru) yang menunggu konfirmasi akses:</p>
             
             <div id="pendingUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
                 <!-- List diisi dinamis via JS -->
@@ -923,8 +923,8 @@
                     const className = document.getElementById('authClass').value || '-';
                     const role = document.getElementById('authRole').value;
                     
-                    // Guru langsung disetujui, Siswa perlu approval admin/guru
-                    const isApproved = (role === 'Guru');
+                    // SEMUA ROLE (baik Siswa maupun Guru) HARUS MENUNGGU PERSETUJUAN ADMIN (isApproved: false)
+                    const isApproved = false;
 
                     const userCredential = await window.createUserWithEmailAndPassword(window.firebaseAuth, email, password);
                     const user = userCredential.user;
@@ -939,7 +939,7 @@
                     });
 
                     errorDiv.style.display = 'none';
-                    showToast(isApproved ? 'Akun Guru berhasil dibuat!' : 'Pendaftaran berhasil! Menunggu persetujuan Admin.');
+                    showToast('Pendaftaran berhasil! Akun Anda sedang menunggu persetujuan Admin.');
                 } else {
                     await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
                     errorDiv.style.display = 'none';
@@ -993,7 +993,7 @@
                 
                 container.innerHTML = "";
                 if (querySnapshot.empty) {
-                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada akun siswa yang menunggu persetujuan.</div>`;
+                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada akun yang menunggu persetujuan.</div>`;
                     return;
                 }
 
@@ -1005,7 +1005,7 @@
                     item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
                     item.innerHTML = `
                         <div>
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${userData.name}</div>
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${userData.name} <span class="badge-role" style="margin-left: 6px;">${userData.role || 'Siswa'}</span></div>
                             <div style="font-size: 11px; color: var(--text-muted);">Email: ${userData.email} | Kelas: ${userData.className}</div>
                         </div>
                         <button onclick="approveUser('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Setujui</button>
