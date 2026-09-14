@@ -55,6 +55,7 @@
                 const bookmarksScreen = document.getElementById('bookmarks-screen');
                 const adminScreen = document.getElementById('admin-screen');
                 const teacherAdminScreen = document.getElementById('teacher-admin-screen');
+                const classMembersScreen = document.getElementById('class-members-screen');
 
                 if (user) {
                     try {
@@ -99,7 +100,7 @@
                             return;
                         }
 
-                        updateUserGreeting();
+                        await updateUserGreeting();
                         setupDashboardAccess();
 
                         hideAllScreens();
@@ -107,6 +108,8 @@
                             window.appState = 'read';
                         } else if (bookmarksScreen.classList.contains('active')) {
                             window.appState = 'bookmarks';
+                        } else if (classMembersScreen.classList.contains('active')) {
+                            window.appState = 'class-members';
                         } else {
                             menuScreen.classList.add('active');
                             window.appState = 'menu';
@@ -128,7 +131,7 @@
         }
 
         function hideAllScreens() {
-            ['login-screen', 'verify-screen', 'menu-screen', 'read-screen', 'bookmarks-screen', 'admin-screen', 'teacher-admin-screen'].forEach(id => {
+            ['login-screen', 'verify-screen', 'menu-screen', 'read-screen', 'bookmarks-screen', 'admin-screen', 'teacher-admin-screen', 'class-members-screen'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('active');
             });
@@ -204,7 +207,7 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        #login-screen, #verify-screen, #admin-screen, #teacher-admin-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
+        #login-screen, #verify-screen, #admin-screen, #teacher-admin-screen, #class-members-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
         .login-card {
             background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding: 30px 24px; border-radius: 28px; border: 1px solid var(--border-color);
@@ -261,8 +264,9 @@
         .landing-hero-greeting { font-size: 16px; font-weight: 700; color: var(--text-muted); }
         .landing-hero-username { font-size: 20px; font-weight: 800; color: var(--text-main); }
         .landing-hero-motivation { font-size: 12px; font-weight: 600; color: var(--text-muted); font-style: italic; margin-top: 2px; }
-        .landing-hero-subtitle { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; gap: 8px; align-items: center; margin-top: 2px; }
-        .badge-role { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+        .landing-hero-subtitle { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; gap: 8px; align-items: center; margin-top: 2px; flex-wrap: wrap; }
+        .badge-role { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 3px; }
+        .badge-role:hover { background: rgba(14, 165, 233, 0.25); }
         
         .landing-hero-actions { display: flex; gap: 10px; align-items: center; }
 
@@ -670,12 +674,29 @@
                 <div id="teacherClassCodeDisplay" style="font-size: 16px; font-weight: 800; color: #0ea5e9; margin-top: 2px;">-</div>
             </div>
             
+            <!-- Tombol Anggota Kelas untuk Guru -->
+            <button onclick="openClassMembersScreen()" style="width: 100%; padding: 10px; background: var(--accent-gradient); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-bottom: 8px;">👥 Lihat Daftar Siswa di Kelas</button>
+
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-align: left;">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
             <div id="pendingStudentContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
                 <!-- Diisi dinamis via JS -->
             </div>
 
             <button class="auth-mode-btn" onclick="goToMenu()" style="width: 100%; padding: 10px; background: var(--input-bg); border-radius: 12px; color: var(--text-main); font-weight: 700; margin-top: 8px;">Kembali ke Menu Utama</button>
+        </div>
+    </div>
+
+    <!-- Halaman Daftar Anggota Kelas (Siswa & Guru) -->
+    <div id="class-members-screen" class="screen">
+        <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
+            <h2 id="classMembersTitle">Daftar Anggota Kelas</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;" id="classMembersSubtitle">Daftar siswa yang tergabung dalam kelas ini:</p>
+            
+            <div id="classMembersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
+                <!-- Diisi dinamis via JS -->
+            </div>
+
+            <button class="auth-mode-btn" onclick="goBackFromClassMembers()" style="width: 100%; padding: 10px; background: var(--input-bg); border-radius: 12px; color: var(--text-main); font-weight: 700; margin-top: 8px;">Kembali</button>
         </div>
     </div>
 
@@ -689,7 +710,8 @@
                     <div class="landing-hero-motivation">Semangat belajar membaca tartili ya..</div>
                     <div class="landing-hero-subtitle">
                         <span id="userClassText">Kelas: -</span>
-                        <span class="badge-role" id="userRoleBadge">Siswa</span>
+                        <span id="userTeacherNameText">Guru: -</span>
+                        <span class="badge-role" id="userRoleBadge" onclick="openClassMembersScreen()" title="Lihat Daftar Anggota Kelas">Siswa 👥</span>
                     </div>
                 </div>
                 <div class="landing-hero-actions">
@@ -845,7 +867,7 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const swCode = `
-                    const CACHE_NAME = 'tartili-cache-v6';
+                    const CACHE_NAME = 'tartili-cache-v7';
                     self.addEventListener('install', (e) => { self.skipWaiting(); });
                     self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
                     self.addEventListener('fetch', (e) => {
@@ -962,7 +984,6 @@
 
                     if (role === 'Guru') {
                         teacherClassName = document.getElementById('authTeacherClassName').value || 'Kelas Guru';
-                        // Buat kode unik untuk kelas guru (misal: GURU + 4 digit acak)
                         classCode = 'KLS-' + Math.random().toString(36).substring(2, 7).toUpperCase();
                     } else {
                         classCode = document.getElementById('authClassCode').value.trim();
@@ -982,8 +1003,8 @@
                         role: role,
                         classCode: classCode,
                         teacherClassName: teacherClassName,
-                        isMasterApproved: false, // Menunggu persetujuan Master Admin
-                        isTeacherApproved: (role === 'Guru'), // Guru otomatis true untuk level guru, tapi menunggu Master Admin
+                        isMasterApproved: false,
+                        isTeacherApproved: (role === 'Guru'),
                         createdAt: new Date().toISOString()
                     });
 
@@ -1001,17 +1022,41 @@
             }
         }
 
-        function updateUserGreeting() {
+        async function updateUserGreeting() {
             if (!window.currentUserProfile) return;
             const profile = window.currentUserProfile;
             
             const usernameEl = document.getElementById('userUsernameText');
             const classEl = document.getElementById('userClassText');
+            const teacherNameEl = document.getElementById('userTeacherNameText');
             const roleEl = document.getElementById('userRoleBadge');
 
             if (usernameEl) usernameEl.innerText = profile.name || 'Pengguna';
-            if (classEl) classEl.innerText = profile.role === 'Guru' ? `Kelas: ${profile.teacherClassName}` : `Kode Kelas: ${profile.classCode || '-'}`;
-            if (roleEl) roleEl.innerText = profile.role || 'Siswa';
+            if (roleEl) roleEl.innerHTML = `${profile.role || 'Siswa'} 👥`;
+
+            if (profile.role === 'Guru') {
+                if (classEl) classEl.innerText = `Kelas: ${profile.teacherClassName}`;
+                if (teacherNameEl) teacherNameEl.style.display = 'none';
+            } else {
+                if (classEl) classEl.innerText = `Kode Kelas: ${profile.classCode || '-'}`;
+                if (teacherNameEl) {
+                    teacherNameEl.style.display = 'inline';
+                    teacherNameEl.innerText = "Guru: Memuat...";
+                    // Cari nama guru berdasarkan classCode
+                    try {
+                        const q = window.query(window.collection(window.firebaseDb, "users"), window.where("role", "==", "Guru"), window.where("classCode", "==", profile.classCode));
+                        const snap = await window.getDocs(q);
+                        if (!snap.empty) {
+                            const teacherData = snap.docs[0].data();
+                            teacherNameEl.innerText = `Guru: ${teacherData.name}`;
+                        } else {
+                            teacherNameEl.innerText = `Guru: -`;
+                        }
+                    } catch (e) {
+                        teacherNameEl.innerText = `Guru: -`;
+                    }
+                }
+            }
         }
 
         function setupDashboardAccess() {
@@ -1020,7 +1065,6 @@
             if (!btnMaster || !btnTeacher) return;
 
             const profile = window.currentUserProfile;
-            // Anggap email master admin tertentu atau role khusus, atau jika email mengandung 'admin'
             const isMaster = profile.email === 'admin@tartili.com' || profile.isMasterAdmin === true;
 
             if (isMaster) {
@@ -1157,6 +1201,105 @@
             }
         }
 
+        // --- CLASS MEMBERS SCREEN (Siswa & Guru) ---
+        let previousScreenBeforeMembers = 'menu';
+
+        async function openClassMembersScreen() {
+            if (appState === 'teacher-admin') {
+                previousScreenBeforeMembers = 'teacher-admin';
+                document.getElementById('teacher-admin-screen').classList.remove('active');
+            } else {
+                previousScreenBeforeMembers = 'menu';
+                document.getElementById('menu-screen').classList.remove('active');
+            }
+
+            appState = 'class-members';
+            document.getElementById('class-members-screen').classList.add('active');
+
+            const container = document.getElementById('classMembersContainer');
+            const titleEl = document.getElementById('classMembersTitle');
+            const subtitleEl = document.getElementById('classMembersSubtitle');
+            if (!container) return;
+
+            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat anggota kelas...</div>`;
+
+            try {
+                const profile = window.currentUserProfile;
+                const classCode = profile.classCode;
+
+                if (titleEl) titleEl.innerText = profile.role === 'Guru' ? `Anggota Kelas (${profile.teacherClassName})` : `Anggota Kelas`;
+                if (subtitleEl) subtitleEl.innerText = profile.role === 'Guru' ? `Daftar siswa yang aktif di kelas Anda:` : `Daftar siswa dan guru dalam kelas Anda:`;
+
+                // Ambil guru kelas
+                const qTeacher = window.query(window.collection(window.firebaseDb, "users"), window.where("role", "==", "Guru"), window.where("classCode", "==", classCode));
+                const snapTeacher = await window.getDocs(qTeacher);
+
+                // Ambil semua siswa yang sudah disetujui di kelas ini
+                const qStudents = window.query(
+                    window.collection(window.firebaseDb, "users"), 
+                    window.where("role", "==", "Siswa"),
+                    window.where("classCode", "==", classCode),
+                    window.where("isTeacherApproved", "==", true)
+                );
+                const snapStudents = await window.getDocs(qStudents);
+
+                container.innerHTML = "";
+
+                // Tampilkan info Guru
+                if (!snapTeacher.empty) {
+                    snapTeacher.forEach(docSnap => {
+                        const tData = docSnap.data();
+                        let item = document.createElement('div');
+                        item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(14, 165, 233, 0.1); border: 1px solid #0ea5e9; border-radius: 12px;";
+                        item.innerHTML = `
+                            <div>
+                                <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👨‍🏫 ${tData.name} <span class="badge-role" style="margin-left: 6px;">Guru Pengampu</span></div>
+                                <div style="font-size: 11px; color: var(--text-muted);">Email: ${tData.email}</div>
+                            </div>
+                        `;
+                        container.appendChild(item);
+                    });
+                }
+
+                if (snapStudents.empty) {
+                    let emptyItem = document.createElement('div');
+                    emptyItem.style.cssText = "text-align:center; color:var(--text-muted); padding:15px; font-size:12px;";
+                    emptyItem.innerText = "Belum ada siswa lain yang aktif di kelas ini.";
+                    container.appendChild(emptyItem);
+                    return;
+                }
+
+                snapStudents.forEach((docSnap) => {
+                    const sData = docSnap.data();
+                    let item = document.createElement('div');
+                    item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
+                    item.innerHTML = `
+                        <div>
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👤 ${sData.name}</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${sData.email}</div>
+                        </div>
+                        <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 6px;">Aktif</span>
+                    `;
+                    container.appendChild(item);
+                });
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat daftar anggota kelas.</div>`;
+            }
+        }
+
+        function goBackFromClassMembers() {
+            document.getElementById('class-members-screen').classList.remove('active');
+            if (previousScreenBeforeMembers === 'teacher-admin') {
+                document.getElementById('teacher-admin-screen').classList.add('active');
+                appState = 'teacher-admin';
+            } else {
+                document.getElementById('menu-screen').classList.add('active');
+                appState = 'menu';
+            }
+        }
+
         function handleLogout() {
             window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
         }
@@ -1188,7 +1331,7 @@
                 if (currentAudio) { currentAudio.pause(); currentAudio = null; }
                 resetRecording();
                 goToMenu();
-            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin') {
+            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin' || appState === 'class-members') {
                 goToMenu();
             } else {
                 history.back();
@@ -1271,6 +1414,7 @@
             document.getElementById('bookmarks-screen').classList.remove('active');
             document.getElementById('admin-screen').classList.remove('active');
             document.getElementById('teacher-admin-screen').classList.remove('active');
+            document.getElementById('class-members-screen').classList.remove('active');
             document.getElementById('menu-screen').classList.add('active');
             updateMenuCoverFocus();
             history.replaceState({ screen: 'menu' }, '', '');
@@ -1328,6 +1472,7 @@
             document.getElementById('bookmarks-screen').classList.remove('active');
             document.getElementById('admin-screen').classList.remove('active');
             document.getElementById('teacher-admin-screen').classList.remove('active');
+            document.getElementById('class-members-screen').classList.remove('active');
             updatePageOptions('Read');
             
             let numList = getNumericPageList(currentJilid);
