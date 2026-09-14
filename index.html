@@ -15,7 +15,8 @@
          ========================================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyDCkiYKe-lKkbb0czz9y9ZBGN9SgOhbjmw",
@@ -29,18 +30,38 @@
         try {
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
+            const db = getFirestore(app);
 
             window.firebaseAuth = auth;
+            window.firebaseDb = db;
             window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+            window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
             window.signOut = signOut;
+            window.doc = doc;
+            window.setDoc = setDoc;
+            window.getDoc = getDoc;
 
-            onAuthStateChanged(auth, (user) => {
+            onAuthStateChanged(auth, async (user) => {
                 const loginScreen = document.getElementById('login-screen');
                 const menuScreen = document.getElementById('menu-screen');
                 const readScreen = document.getElementById('read-screen');
                 const bookmarksScreen = document.getElementById('bookmarks-screen');
 
                 if (user) {
+                    try {
+                        const userDocRef = doc(db, "users", user.uid);
+                        const userSnap = await getDoc(userDocRef);
+                        if (userSnap.exists()) {
+                            window.currentUserProfile = userSnap.data();
+                        } else {
+                            window.currentUserProfile = { name: user.email.split('@')[0], role: 'Siswa', className: '-' };
+                        }
+                    } catch (err) {
+                        window.currentUserProfile = { name: user.email.split('@')[0], role: 'Siswa', className: '-' };
+                    }
+
+                    updateUserGreeting();
+
                     loginScreen.classList.remove('active');
                     if (!readScreen.classList.contains('active') && !bookmarksScreen.classList.contains('active')) {
                         menuScreen.classList.add('active');
@@ -54,6 +75,7 @@
                         updateMenuCoverFocus();
                     }
                 } else {
+                    window.currentUserProfile = null;
                     loginScreen.classList.add('active');
                     menuScreen.classList.remove('active');
                     readScreen.classList.remove('active');
@@ -136,46 +158,77 @@
         }
 
         /* --- LOGIN SCREEN --- */
-        #login-screen { background: var(--bg-gradient); padding: 20px; z-index: 999; }
+        #login-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
         .login-card {
             background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            padding: 40px 30px; border-radius: 28px; border: 1px solid var(--border-color);
-            box-shadow: var(--shadow); width: 100%; max-width: 400px;
-            display: flex; flex-direction: column; gap: 16px; text-align: center;
-            position: relative; overflow: hidden;
+            padding: 30px 24px; border-radius: 28px; border: 1px solid var(--border-color);
+            box-shadow: var(--shadow); width: 100%; max-width: 420px;
+            display: flex; flex-direction: column; gap: 12px; text-align: center;
+            position: relative; overflow: hidden; margin: auto;
         }
         .login-card::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
             background: var(--accent-gradient);
         }
-        .login-card h2 { color: var(--text-main); font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
-        .login-card input {
-            width: 100%; padding: 14px 18px; border: 1px solid var(--border-color);
-            border-radius: 14px; font-size: 14px; outline: none; background: var(--input-bg); color: var(--text-main);
-            transition: var(--transition); font-weight: 500;
+        .login-card h2 { color: var(--text-main); font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+        
+        .auth-mode-toggle {
+            display: flex; background: var(--input-bg); border-radius: 12px; padding: 4px; margin-bottom: 4px;
         }
-        .login-card input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15); }
+        .auth-mode-btn {
+            flex: 1; padding: 8px; border: none; background: transparent; font-size: 12px; font-weight: 700;
+            color: var(--text-muted); cursor: pointer; border-radius: 10px; transition: var(--transition);
+        }
+        .auth-mode-btn.active { background: var(--bg-card); color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+        .login-card input, .login-card select {
+            width: 100%; padding: 12px 16px; border: 1px solid var(--border-color);
+            border-radius: 14px; font-size: 14px; outline: none; background: var(--input-bg); color: var(--text-main);
+            transition: var(--transition); font-weight: 500; font-family: inherit;
+        }
+        .login-card input:focus, .login-card select:focus { border-color: #0ea5e9; box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15); }
+        .login-card select option { background: var(--bg-panel); color: var(--text-main); }
+        
+        .register-only-field { display: none; flex-direction: column; gap: 12px; }
+        .register-only-field.show { display: flex; }
+
         .btn-login {
-            width: 100%; padding: 14px; border: none; border-radius: 14px;
+            width: 100%; padding: 13px; border: none; border-radius: 14px;
             background: var(--accent-gradient); color: white;
             font-weight: 700; cursor: pointer; font-size: 15px;
-            box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3); transition: var(--transition);
+            box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3); transition: var(--transition); margin-top: 4px;
         }
         .btn-login:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 12px 25px rgba(14, 165, 233, 0.4); }
-        .login-error { color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 4px; display: none; }
+        .login-error { color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 2px; display: none; }
 
-        /* --- MENU SCREEN --- */
-        #menu-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; gap: 16px; }
+        /* --- MENU SCREEN (LANDING PAGE STYLE) --- */
+        #menu-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; justify-content: flex-start; align-items: center; }
         .menu-content-wrapper {
-            display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 420px; position: relative;
+            display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 880px; position: relative; margin: auto;
         }
-        #menu-screen h2 { margin: 0; color: var(--text-main); font-size: 24px; font-weight: 800; letter-spacing: 2px; text-align: center; width: 100%; text-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .grid-jilid { display: grid; gap: 14px; width: 100%; margin: 0; }
+        
+        /* Landing Header Bar */
+        .landing-hero-card {
+            width: 100%; background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color); border-radius: 24px; padding: 20px 24px;
+            display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow);
+        }
+        .landing-hero-info { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+        .landing-hero-greeting { font-size: 16px; font-weight: 700; color: var(--text-muted); }
+        .landing-hero-username { font-size: 20px; font-weight: 800; color: var(--text-main); }
+        .landing-hero-motivation { font-size: 12px; font-weight: 600; color: #0ea5e9; font-style: italic; margin-top: 2px; }
+        .landing-hero-subtitle { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; gap: 8px; align-items: center; margin-top: 2px; }
+        .badge-role { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+        
+        .landing-hero-actions { display: flex; gap: 10px; align-items: center; }
+
+        .menu-section-title { width: 100%; text-align: left; font-size: 14px; font-weight: 800; color: var(--text-main); letter-spacing: 0.5px; margin-top: 4px; }
+        .grid-jilid { display: grid; gap: 16px; width: 100%; margin: 0; grid-template-columns: repeat(6, 1fr); }
         
         /* --- BOOKMARKS SCREEN --- */
         #bookmarks-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; justify-content: space-between; align-items: center; height: 100vh; height: 100dvh; }
         .bookmarks-content-wrapper {
-            display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 420px; height: 100%; justify-content: space-between; padding: 10px 0;
+            display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 480px; height: 100%; justify-content: space-between; padding: 10px 0;
         }
         .bookmarks-header { width: 100%; display: flex; justify-content: center; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
         .bookmarks-header h2 { color: var(--text-main); font-size: 20px; font-weight: 700; text-align: center; width: 100%; }
@@ -220,14 +273,12 @@
 
         /* --- MEDIA QUERIES & RESPONSIVE LAYOUT --- */
         @media (orientation: portrait) {
-            .menu-content-wrapper { max-width: 340px; }
+            .menu-content-wrapper { max-width: 420px; }
             .grid-jilid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, auto); }
             .btn-cover { aspect-ratio: 3/4; }
             
-            #menu-screen h2 { order: 1 !important; }
-            .grid-jilid { order: 2 !important; }
-            .shortcut-panel { order: 3 !important; width: 100% !important; }
-            .logout-wrapper { order: 4 !important; width: 100% !important; display: flex !important; justify-content: center !important; align-items: center !important; gap: 10px !important; margin-top: 4px !important; }
+            .landing-hero-card { flex-direction: row; align-items: center; gap: 12px; padding: 16px; }
+            .landing-hero-actions { width: auto; justify-content: flex-end; }
 
             .image-scroll-area { flex: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 4px !important; overflow: hidden !important; }
             .image-container { height: 100% !important; width: auto !important; aspect-ratio: 1 / 1.414 !important; max-width: 100% !important; max-height: 100% !important; margin-bottom: 0 !important; }
@@ -267,14 +318,14 @@
             }
             .menu-content-wrapper { max-width: 880px !important; gap: 12px !important; }
 
-            #menu-screen h2 { font-size: 19px; text-align: center; width: 100%; order: 1 !important; }
-            .grid-jilid { grid-template-columns: repeat(6, 1fr); grid-template-rows: 1fr; gap: 12px; order: 2 !important; }
-            .btn-cover { aspect-ratio: 3/4; max-height: 160px !important; }
+            .landing-hero-card { padding: 14px 20px; }
+            .grid-jilid { grid-template-columns: repeat(6, 1fr); grid-template-rows: 1fr; gap: 12px; }
+            .btn-cover { aspect-ratio: 3/4; max-height: 150px !important; }
             
             #menu-screen .shortcut-panel { 
                 width: 100% !important; max-width: 480px !important; height: auto !important; 
                 min-height: unset !important; max-height: none !important; flex-grow: 0 !important;
-                flex-shrink: 0 !important; padding: 8px 12px !important; order: 3 !important;
+                flex-shrink: 0 !important; padding: 8px 12px !important;
             }
             #menu-screen .shortcut-container { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 10px !important; width: 100% !important; height: auto !important; }
             #menu-screen .shortcut-left { display: flex !important; flex-direction: row !important; gap: 10px !important; flex: 1 !important; align-items: center !important; }
@@ -283,8 +334,6 @@
             #menu-screen .shortcut-panel select { padding: 2px 8px !important; font-size: 12px !important; height: 30px !important; width: 100% !important; flex: 1 !important; background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); border-radius: 8px; }
             
             #menu-screen .shortcut-panel .btn-open-menu { width: 85px !important; flex: 0 0 85px !important; height: 30px !important; font-size: 11px !important; align-self: center !important; margin-top: 0 !important; border-radius: 8px !important; }
-
-            .logout-wrapper { order: 4 !important; width: 100% !important; display: flex !important; justify-content: center !important; align-items: center !important; gap: 8px !important; }
 
             .image-scroll-area {
                 display: flex !important; flex-direction: column !important; align-items: center !important;
@@ -371,22 +420,32 @@
         .btn-cover:hover img { transform: scale(1.03); }
         .btn-cover:active { transform: scale(1.0); }
 
-        /* --- UTILITY BUTTONS (Theme, Bookmark) --- */
-        .btn-theme-toggle, .btn-bookmark {
+        /* --- UTILITY BUTTONS (Theme, Bookmark, Logout) --- */
+        .btn-theme-toggle, .btn-bookmark, .btn-logout {
             background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
             width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: var(--transition); flex-shrink: 0;
         }
         .btn-theme-toggle:hover, .btn-bookmark:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; }
         
-        .btn-theme-toggle svg, .btn-bookmark svg {
+        .btn-logout {
+            background: rgba(239, 68, 68, 0.12);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+        .btn-logout:hover { transform: scale(1.08); background: #ef4444; border-color: #ef4444; }
+        .btn-logout:hover svg { stroke: white; }
+
+        .btn-theme-toggle svg, .btn-bookmark svg, .btn-logout svg {
             width: 18px; height: 18px; fill: none; stroke: var(--text-muted);
             stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: var(--transition);
         }
         body.dark-theme .btn-theme-toggle svg { stroke: #38bdf8; }
 
-        .btn-bookmark.saved { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); }
-        .btn-bookmark.saved svg { fill: #ef4444; stroke: #ef4444; }
+        .btn-logout svg { stroke: #ef4444; }
+
+        .btn-bookmark.saved { background: var(--bg-card); border-color: var(--border-color); }
+        .btn-bookmark.saved svg { fill: #0ea5e9; stroke: #0ea5e9; }
+        body.dark-theme .btn-bookmark.saved svg { fill: #38bdf8; stroke: #38bdf8; }
 
         /* --- NAV BUTTONS --- */
         .btn-page-nav-custom {
@@ -504,22 +563,65 @@
          3. STRUKTUR HTML (ANTARMUKA / TAMPILAN)
          ========================================== -->
 
-    <!-- Halaman Login -->
+    <!-- Halaman Login / Pendaftaran Profesional -->
     <div id="login-screen" class="screen">
         <div class="login-card">
             <h2>Tartili Digital</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 6px;">Silakan masuk dengan akun terdaftar Anda.</p>
-            <input type="email" id="loginEmail" placeholder="Email Anda" />
-            <input type="password" id="loginPassword" placeholder="Kata Sandi" />
-            <button class="btn-login" onclick="handleLogin()">Masuk Sekarang</button>
-            <div id="loginError" class="login-error">Email atau kata sandi salah.</div>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 2px;">Metode Praktis Belajar Membaca Al-Qur'an</p>
+            
+            <div class="auth-mode-toggle">
+                <button class="auth-mode-btn active" id="modeLoginBtn" onclick="switchAuthMode('login')">Masuk</button>
+                <button class="auth-mode-btn" id="modeRegisterBtn" onclick="switchAuthMode('register')">Buat Akun</button>
+            </div>
+
+            <input type="email" id="authEmail" placeholder="Email Anda" />
+            <input type="password" id="authPassword" placeholder="Kata Sandi (Min. 6 Karakter)" />
+            
+            <div id="registerFields" class="register-only-field">
+                <input type="text" id="authName" placeholder="Nama Lengkap" />
+                <input type="text" id="authClass" placeholder="Kelas (Contoh: 5A / Tahfidz)" />
+                <select id="authRole">
+                    <option value="Siswa">Masuk sebagai Siswa</option>
+                    <option value="Guru">Masuk sebagai Guru / Pengajar</option>
+                </select>
+            </div>
+
+            <button class="btn-login" id="authSubmitBtn" onclick="handleAuthSubmit()">Masuk Sekarang</button>
+            <div id="loginError" class="login-error">Terjadi kesalahan pada data yang dimasukkan.</div>
         </div>
     </div>
 
-    <!-- Halaman Menu Utama -->
+    <!-- Halaman Menu Utama (Landing Page Style) -->
     <div id="menu-screen" class="screen">
         <div class="menu-content-wrapper">
-            <h2>TARTILI DIGITAL</h2>
+            <!-- Landing Hero Greeting Bar -->
+            <div class="landing-hero-card">
+                <div class="landing-hero-info">
+                    <div class="landing-hero-greeting" id="userGreetingText"Assalamu'alaikum.. 👋</div>
+                    <div class="landing-hero-username" id="userUsernameText">Pengguna</div>
+                    <div class="landing-hero-motivation">Semangat belajar membaca tartili ya..</div>
+                    <div class="landing-hero-subtitle">
+                        <span id="userClassText">Kelas: -</span>
+                        <span class="badge-role" id="userRoleBadge">Siswa</span>
+                    </div>
+                </div>
+                <div class="landing-hero-actions">
+                    <button class="btn-bookmark" onclick="openBookmarksScreen()" title="Halaman Tersimpan">
+                        <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
+                    </button>
+                    <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                    <button class="btn-logout" onclick="handleLogout()" title="Keluar Akun">
+                        <svg viewBox="0 0 24 24"><path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="menu-section-title">Pilih Jilid Tartili (1 - 6)</div>
+            
             <div class="grid-jilid">
                 <button class="btn-cover" id="cover-btn-0" onclick="openJilid(1, 'a')" onmouseenter="selectedMenuCoverIndex=0; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover1.jpg"></button>
                 <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover2.jpg"></button>
@@ -529,7 +631,8 @@
                 <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover6.jpg"></button>
             </div>
             
-            <div class="shortcut-panel">
+            <div class="shortcut-panel" style="width: 100%; max-width: 100%;">
+                <div class="section-title">Pintasan Cepat Halaman</div>
                 <div class="shortcut-container">
                     <div class="shortcut-left">
                         <div class="shortcut-row">
@@ -544,21 +647,8 @@
                             <select id="jumpPageSelectMenu"></select>
                         </div>
                     </div>
-                    <button class="btn-open-menu" onclick="directOpen('Menu')" style="background: var(--accent-gradient); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: var(--transition);">Buka</button>
+                    <button class="btn-open-menu" onclick="directOpen('Menu')" style="background: var(--accent-gradient); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: var(--transition); height: 32px; width: 80px;">Buka</button>
                 </div>
-            </div>
-
-            <div class="logout-wrapper">
-                <button class="btn-bookmark saved" onclick="openBookmarksScreen()" title="Halaman Tersimpan">
-                    <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
-                </button>
-                <button onclick="handleLogout()" style="background: #ef4444; color: white; border: none; padding: 0 16px; height: 38px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25); display: flex; align-items: center; justify-content: center; gap: 6px; transition: var(--transition);" title="Keluar">Logout</button>
-                
-                <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                </button>
             </div>
         </div>
     </div>
@@ -666,7 +756,7 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const swCode = `
-                    const CACHE_NAME = 'tartili-cache-v3';
+                    const CACHE_NAME = 'tartili-cache-v4';
                     self.addEventListener('install', (e) => { self.skipWaiting(); });
                     self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
                     self.addEventListener('fetch', (e) => {
@@ -740,6 +830,87 @@
             }, 3000);
         }
 
+        let isRegisterMode = false;
+        function switchAuthMode(mode) {
+            isRegisterMode = (mode === 'register');
+            const loginBtn = document.getElementById('modeLoginBtn');
+            const regBtn = document.getElementById('modeRegisterBtn');
+            const regFields = document.getElementById('registerFields');
+            const submitBtn = document.getElementById('authSubmitBtn');
+
+            if (isRegisterMode) {
+                loginBtn.classList.remove('active');
+                regBtn.classList.add('active');
+                regFields.classList.add('show');
+                submitBtn.innerText = "Daftar & Masuk";
+            } else {
+                regBtn.classList.remove('active');
+                loginBtn.classList.add('active');
+                regFields.classList.remove('show');
+                submitBtn.innerText = "Masuk Sekarang";
+            }
+        }
+
+        async function handleAuthSubmit() {
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            const errorDiv = document.getElementById('loginError');
+
+            if (!email || !password) {
+                errorDiv.innerText = "Email dan kata sandi wajib diisi.";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                if (isRegisterMode) {
+                    const name = document.getElementById('authName').value || email.split('@')[0];
+                    const className = document.getElementById('authClass').value || '-';
+                    const role = document.getElementById('authRole').value;
+
+                    const userCredential = await window.createUserWithEmailAndPassword(window.firebaseAuth, email, password);
+                    const user = userCredential.user;
+
+                    await window.setDoc(window.doc(window.firebaseDb, "users", user.uid), {
+                        name: name,
+                        className: className,
+                        role: role,
+                        email: email
+                    });
+
+                    errorDiv.style.display = 'none';
+                    showToast('Akun berhasil dibuat & masuk!');
+                } else {
+                    await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
+                    errorDiv.style.display = 'none';
+                    showToast('Berhasil masuk!');
+                }
+            } catch (err) {
+                console.error(err);
+                errorDiv.innerText = isRegisterMode ? "Gagal mendaftar (Email sudah terpakai / sandi terlalu pendek)." : "Email atau kata sandi salah.";
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        function updateUserGreeting() {
+            if (!window.currentUserProfile) return;
+            const profile = window.currentUserProfile;
+            
+            const usernameEl = document.getElementById('userUsernameText');
+            const classEl = document.getElementById('userClassText');
+            const roleEl = document.getElementById('userRoleBadge');
+
+            if (usernameEl) usernameEl.innerText = profile.name || 'Pengguna';
+            if (classEl) classEl.innerText = `Kelas: ${profile.className || '-'}`;
+            if (roleEl) roleEl.innerText = profile.role || 'Siswa';
+        }
+
+        function handleLogout() {
+            if (confirm("Apakah Anda yakin ingin keluar dari akun?")) {
+                window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
+            }
+        }
+
         let savedLastRead = JSON.parse(localStorage.getItem('tartili_last_read')) || { jilid: 1, page: 'a' };
         let savedBookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks')) || [];
         
@@ -759,31 +930,6 @@
             "5": typeof tartili5Config !== 'undefined' ? tartili5Config : {},
             "6": typeof tartili6Config !== 'undefined' ? tartili6Config : {}
         };
-
-        function handleLogin() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            const errorDiv = document.getElementById('loginError');
-
-            if (!email || !password) {
-                errorDiv.innerText = "Isi email dan kata sandi.";
-                errorDiv.style.display = 'block';
-                return;
-            }
-
-            window.signInWithEmailAndPassword(window.firebaseAuth, email, password)
-                .then(() => { errorDiv.style.display = 'none'; showToast('Berhasil masuk!'); })
-                .catch(() => {
-                    errorDiv.innerText = "Email atau kata sandi salah / belum terdaftar.";
-                    errorDiv.style.display = 'block';
-                });
-        }
-
-        function handleLogout() {
-            if (confirm("Apakah Anda yakin ingin keluar dari akun?")) {
-                window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
-            }
-        }
 
         history.replaceState({ screen: 'menu' }, '', '');
 
