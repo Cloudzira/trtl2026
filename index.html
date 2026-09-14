@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tartili Digital - Platform Belajar & Setoran Mengaji Interaktif</title>
+    <title>Tartili Digital - Platform Belajar & Setoran Mengaji Interaktif (Supabase Edition)</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -34,15 +34,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Firebase SDK (Modular v9) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, query, where, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
-        
-        window.firebaseModules = { initializeApp, getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, query, where, addDoc, serverTimestamp, getStorage, storageRef, uploadBytes, getDownloadURL };
-    </script>
+    <!-- Supabase JS SDK (v2) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         .glass-panel {
@@ -91,7 +84,7 @@
                     </div>
                     <div>
                         <h1 class="font-bold text-lg leading-tight tracking-tight bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">Tartili Digital</h1>
-                        <p class="text-xs text-slate-400" id="headerSubtitle">Platform Belajar & Setoran Mengaji</p>
+                        <p class="text-xs text-slate-400" id="headerSubtitle">Platform Belajar & Setoran Mengaji (Supabase)</p>
                     </div>
                 </div>
 
@@ -131,16 +124,16 @@
                         <p class="text-sm text-slate-400">Masuk untuk melanjutkan setoran atau kelola kelas</p>
                     </div>
 
-                    <!-- Setup Firebase Warning / Config Trigger -->
-                    <div id="firebaseConfigNotice" class="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs leading-relaxed hidden">
+                    <!-- Setup Supabase Warning / Config Trigger -->
+                    <div id="supabaseConfigNotice" class="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs leading-relaxed hidden">
                         <div class="flex items-start gap-2">
                             <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
                             <div>
-                                <span class="font-semibold">Konfigurasi Firebase Diperlukan:</span> Masukkan kredensial Firebase Anda pada tombol di bawah sebelum masuk aplikasi.
+                                <span class="font-semibold">Konfigurasi Supabase Diperlukan:</span> Masukkan URL dan Key Supabase Anda sebelum masuk aplikasi.
                             </div>
                         </div>
                         <button onclick="openConfigModal()" class="mt-3 w-full py-2 bg-amber-500 hover:bg-amber-600 text-gray-950 font-semibold rounded-lg text-xs transition-colors">
-                            Atur Kredensial Firebase
+                            Atur Kredensial Supabase
                         </button>
                     </div>
 
@@ -168,7 +161,6 @@
                             <select id="authRole" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3.5 py-3 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
                                 <option value="student">Siswa / Santri</option>
                                 <option value="teacher">Guru / Pengampu</option>
-                                <option value="admin">Master Admin</option>
                             </select>
                         </div>
 
@@ -185,7 +177,7 @@
 
                     <div class="mt-8 pt-4 border-t border-gray-800/80 text-center">
                         <button onclick="openConfigModal()" class="text-[11px] text-slate-400 hover:text-slate-200 transition-colors inline-flex items-center gap-1.5">
-                            <i class="fa-solid fa-gear"></i> Konfigurasi Firebase / Pengaturan Sistem
+                            <i class="fa-solid fa-gear"></i> Pengaturan Kredensial Supabase
                         </button>
                     </div>
                 </div>
@@ -316,7 +308,7 @@
 
         <!-- FOOTER -->
         <footer class="mt-auto py-6 text-center text-xs text-slate-500 border-t border-gray-900">
-            &copy; 2026 Tartili Digital &bull; Platform Pendidikan Al-Quran Berbasis Web Modern
+            &copy; 2026 Tartili Digital &bull; Platform Pendidikan Al-Quran Berbasis Web Modern (Supabase)
         </footer>
     </div>
 
@@ -341,7 +333,7 @@
 
             <!-- Content Area (Reader Pages & Audio Recording) -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow overflow-y-auto pr-1">
-                <!-- Viewer / Halaman Buku (Simulasi Visual Teks Arab) -->
+                <!-- Viewer / Halaman Buku -->
                 <div class="lg:col-span-2 bg-gray-900/60 border border-gray-800/80 rounded-2xl p-6 flex flex-col items-center justify-center text-center relative min-h-[300px]">
                     <div class="absolute top-4 left-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Halaman Pembelajaran</div>
                     <div class="my-auto space-y-4">
@@ -371,7 +363,7 @@
                             <div id="recordTitle" class="text-xs text-slate-400">Siap Merekam</div>
                         </div>
 
-                        <!-- Audio Preview Player (Hidden until recorded) -->
+                        <!-- Audio Preview Player -->
                         <div id="audioPreviewContainer" class="hidden mb-4">
                             <span class="text-[11px] text-slate-400 block mb-1">Pratinjau Rekaman:</span>
                             <audio id="audioPreviewPlayer" controls class="w-full h-10"></audio>
@@ -433,57 +425,41 @@
         </div>
     </div>
 
-    <!-- MODAL: FIREBASE CONFIGURATION SETUP -->
+    <!-- MODAL: SUPABASE CONFIGURATION SETUP -->
     <div id="modalConfig" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
         <div class="glass-panel w-full max-w-md p-6 rounded-3xl relative">
             <div class="flex items-center justify-between pb-3 border-b border-gray-800 mb-4">
-                <h3 class="text-base font-bold text-white">Konfigurasi Firebase SDK</h3>
+                <h3 class="text-base font-bold text-white">Konfigurasi Supabase</h3>
                 <button onclick="closeConfigModal()" class="w-8 h-8 rounded-xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-slate-400 hover:text-white">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
             <p class="text-xs text-slate-400 mb-4 leading-relaxed">
-                Masukkan konfigurasi objek Firebase Anda untuk menghubungkan aplikasi ini ke database Firestore dan Storage.
+                Masukkan Project URL dan Anon Public Key dari dasbor Supabase Anda.
             </p>
 
             <form onsubmit="handleConfigSubmit(event)" class="space-y-3">
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">API Key</label>
-                    <input type="text" id="cfgApiKey" placeholder="AIzaSy..." class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Supabase Project URL</label>
+                    <input type="text" id="cfgSupabaseUrl" placeholder="https://xyzcompany.supabase.co" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500" required>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Auth Domain</label>
-                    <input type="text" id="cfgAuthDomain" placeholder="project.firebaseapp.com" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Project ID</label>
-                    <input type="text" id="cfgProjectId" placeholder="project-id" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Storage Bucket</label>
-                    <input type="text" id="cfgStorageBucket" placeholder="project.appspot.com" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Messaging Sender ID</label>
-                    <input type="text" id="cfgMessagingSenderId" placeholder="123456789" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">App ID</label>
-                    <input type="text" id="cfgAppId" placeholder="1:123:web:abc" class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Supabase Anon Key</label>
+                    <input type="text" id="cfgSupabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsIn..." class="w-full bg-gray-900/60 border border-gray-700/60 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500" required>
                 </div>
 
                 <button type="submit" class="w-full mt-2 py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl text-xs transition-all">
-                    Simpan Konfigurasi & Hubungkan
+                    Simpan & Hubungkan Supabase
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- APPLICATION CORE SCRIPT -->
+    <!-- APPLICATION CORE SCRIPT (SUPABASE VERSION) -->
     <script>
         // Global App State
-        let db = null, auth = null, storage = null;
+        let supabaseClient = null;
         let currentUser = null;
         let currentUserRole = 'student';
         let isRegisterMode = false;
@@ -510,7 +486,7 @@
         // Initialize App on DOM Load
         document.addEventListener('DOMContentLoaded', () => {
             initTheme();
-            checkStoredFirebaseConfig();
+            checkStoredSupabaseConfig();
         });
 
         // Toast Notification System
@@ -560,35 +536,22 @@
             document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-moon text-sm' : 'fa-solid fa-sun text-sm';
         }
 
-        // Firebase Config Management
-        function checkStoredFirebaseConfig() {
-            const stored = localStorage.getItem('tartili_fb_config');
-            if (stored) {
-                try {
-                    const cfg = JSON.parse(stored);
-                    initFirebase(cfg);
-                    document.getElementById('firebaseConfigNotice').classList.add('hidden');
-                } catch (e) {
-                    document.getElementById('firebaseConfigNotice').classList.remove('hidden');
-                }
+        // Supabase Config Management
+        function checkStoredSupabaseConfig() {
+            const storedUrl = localStorage.getItem('supabase_url');
+            const storedKey = localStorage.getItem('supabase_key');
+
+            if (storedUrl && storedKey) {
+                initSupabase(storedUrl, storedKey);
+                document.getElementById('supabaseConfigNotice').classList.add('hidden');
             } else {
-                document.getElementById('firebaseConfigNotice').classList.remove('hidden');
+                document.getElementById('supabaseConfigNotice').classList.remove('hidden');
             }
         }
 
         function openConfigModal() {
-            const stored = localStorage.getItem('tartili_fb_config');
-            if (stored) {
-                try {
-                    const cfg = JSON.parse(stored);
-                    document.getElementById('cfgApiKey').value = cfg.apiKey || '';
-                    document.getElementById('cfgAuthDomain').value = cfg.authDomain || '';
-                    document.getElementById('cfgProjectId').value = cfg.projectId || '';
-                    document.getElementById('cfgStorageBucket').value = cfg.storageBucket || '';
-                    document.getElementById('cfgMessagingSenderId').value = cfg.messagingSenderId || '';
-                    document.getElementById('cfgAppId').value = cfg.appId || '';
-                } catch(e) {}
-            }
+            document.getElementById('cfgSupabaseUrl').value = localStorage.getItem('supabase_url') || '';
+            document.getElementById('cfgSupabaseKey').value = localStorage.getItem('supabase_key') || '';
             document.getElementById('modalConfig').classList.remove('hidden');
         }
 
@@ -598,43 +561,38 @@
 
         function handleConfigSubmit(e) {
             e.preventDefault();
-            const cfg = {
-                apiKey: document.getElementById('cfgApiKey').value.trim(),
-                authDomain: document.getElementById('cfgAuthDomain').value.trim(),
-                projectId: document.getElementById('cfgProjectId').value.trim(),
-                storageBucket: document.getElementById('cfgStorageBucket').value.trim(),
-                messagingSenderId: document.getElementById('cfgMessagingSenderId').value.trim(),
-                appId: document.getElementById('cfgAppId').value.trim()
-            };
+            const url = document.getElementById('cfgSupabaseUrl').value.trim();
+            const key = document.getElementById('cfgSupabaseKey').value.trim();
 
-            localStorage.setItem('tartili_fb_config', JSON.stringify(cfg));
-            initFirebase(cfg);
+            localStorage.setItem('supabase_url', url);
+            localStorage.setItem('supabase_key', key);
+
+            initSupabase(url, key);
             closeConfigModal();
-            showToast('Konfigurasi Firebase berhasil disimpan!', 'success');
-            document.getElementById('firebaseConfigNotice').classList.add('hidden');
+            showToast('Konfigurasi Supabase berhasil disimpan!', 'success');
+            document.getElementById('supabaseConfigNotice').classList.add('hidden');
         }
 
-        function initFirebase(config) {
+        function initSupabase(url, key) {
             try {
-                const { initializeApp, getAuth, getFirestore, getStorage, onAuthStateChanged } = window.firebaseModules;
-                const app = initializeApp(config);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                storage = getStorage(app);
-
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        currentUser = user;
-                        await fetchUserRoleAndRedirect(user.uid);
-                    } else {
-                        currentUser = null;
-                        switchView('viewLogin');
-                        document.getElementById('userNavInfo').classList.add('hidden');
-                    }
-                });
+                supabaseClient = window.supabase.createClient(url, key);
+                checkAuthSession();
             } catch (err) {
-                console.error("Firebase Init Error:", err);
-                showToast('Gagal menginisialisasi Firebase. Periksa kembali konfigurasi Anda.', 'error');
+                console.error("Supabase Init Error:", err);
+                showToast('Gagal menghubungkan Supabase. Periksa URL dan Anon Key.', 'error');
+            }
+        }
+
+        async function checkAuthSession() {
+            if (!supabaseClient) return;
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                currentUser = session.user;
+                await handleUserLoginState();
+            } else {
+                currentUser = null;
+                switchView('viewLogin');
+                document.getElementById('userNavInfo').classList.add('hidden');
             }
         }
 
@@ -658,32 +616,45 @@
 
         async function handleAuthSubmit(e) {
             e.preventDefault();
-            if (!auth) {
-                showToast('Konfigurasi Firebase belum diatur!', 'error');
+            if (!supabaseClient) {
+                showToast('Kredensial Supabase belum diatur!', 'error');
                 openConfigModal();
                 return;
             }
 
             const email = document.getElementById('authEmail').value;
             const password = document.getElementById('authPassword').value;
-            const { signInWithEmailAndPassword, createUserWithEmailAndPassword, setDoc, doc, serverTimestamp } = window.firebaseModules;
 
             try {
                 if (isRegisterMode) {
                     const role = document.getElementById('authRole').value;
-                    const res = await createUserWithEmailAndPassword(auth, email, password);
-                    // Save user profile to Firestore
-                    await setDoc(doc(db, "users", res.user.uid), {
-                        uid: res.user.uid,
+                    const { data, error } = await supabaseClient.auth.signUp({
                         email: email,
-                        role: role,
-                        name: email.split('@')[0],
-                        createdAt: serverTimestamp()
+                        password: password,
+                        options: {
+                            data: { role: role, name: email.split('@')[0] }
+                        }
                     });
-                    showToast('Akun berhasil didaftarkan!', 'success');
+                    if (error) throw error;
+
+                    // Insert ke tabel users jika belum ada trigger
+                    await supabaseClient.from('users').upsert([
+                        { id: data.user.id, email: email, role: role, name: email.split('@')[0] }
+                    ]);
+
+                    showToast('Registrasi berhasil! Silakan masuk.', 'success');
+                    isRegisterMode = false;
+                    toggleAuthMode();
                 } else {
-                    await signInWithEmailAndPassword(auth, email, password);
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    });
+                    if (error) throw error;
+
+                    currentUser = data.user;
                     showToast('Berhasil masuk ke aplikasi!', 'success');
+                    await handleUserLoginState();
                 }
             } catch (err) {
                 showToast(err.message, 'error');
@@ -691,40 +662,48 @@
         }
 
         async function handleLogout() {
-            if (!auth) return;
-            const { signOut } = window.firebaseModules;
-            await signOut(auth);
+            if (!supabaseClient) return;
+            await supabaseClient.auth.signOut();
+            currentUser = null;
+            switchView('viewLogin');
+            document.getElementById('userNavInfo').classList.add('hidden');
             showToast('Berhasil keluar akun.', 'info');
         }
 
-        async function fetchUserRoleAndRedirect(uid) {
-            const { getDoc, doc } = window.firebaseModules;
+        async function handleUserLoginState() {
+            if (!currentUser) return;
             try {
-                const userDoc = await getDoc(doc(db, "users", uid));
-                if (userDoc.exists()) {
-                    const data = userDoc.data();
-                    currentUserRole = data.role || 'student';
-                    
-                    document.getElementById('navUserName').textContent = data.name || currentUser.email.split('@')[0];
-                    document.getElementById('navUserRole').textContent = currentUserRole.toUpperCase();
-                    document.getElementById('userNavInfo').classList.remove('hidden');
+                // Ambil data role pengguna dari tabel 'users' Supabase
+                let { data, error } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .eq('id', currentUser.id)
+                    .single();
 
-                    if (currentUserRole === 'student') {
-                        switchView('viewStudent');
-                        loadStudentData();
-                    } else {
-                        switchView('viewTeacher');
-                        loadTeacherData();
-                    }
+                if (error || !data) {
+                    // Fallback jika belum tersimpan di tabel users
+                    currentUserRole = currentUser.user_metadata?.role || 'student';
+                    data = { name: currentUser.email.split('@')[0], role: currentUserRole };
                 } else {
-                    // Default fallback
-                    currentUserRole = 'student';
+                    currentUserRole = data.role || 'student';
+                }
+                
+                document.getElementById('navUserName').textContent = data.name || currentUser.email.split('@')[0];
+                document.getElementById('navUserRole').textContent = currentUserRole.toUpperCase();
+                document.getElementById('userNavInfo').classList.remove('hidden');
+
+                if (currentUserRole === 'student') {
                     switchView('viewStudent');
                     loadStudentData();
+                } else {
+                    switchView('viewTeacher');
+                    loadTeacherData();
                 }
             } catch (err) {
-                console.error("Fetch Role Error:", err);
+                console.error("User State Error:", err);
+                currentUserRole = 'student';
                 switchView('viewStudent');
+                loadStudentData();
             }
         }
 
@@ -765,46 +744,49 @@
         }
 
         async function fetchStudentSubmissions() {
-            const { collection, query, where, getDocs } = window.firebaseModules;
             const tableBody = document.getElementById('studentHistoryTable');
             tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500">Memuat riwayat setoran...</td></tr>`;
 
             try {
-                const q = query(collection(db, "submissions"), where("studentId", "==", currentUser.uid));
-                const snapshot = await getDocs(q);
-                
-                document.getElementById('studentTotalSetoran').textContent = snapshot.size;
+                const { data, error } = await supabaseClient
+                    .from('submissions')
+                    .select('*')
+                    .eq('student_id', currentUser.id)
+                    .order('created_at', { ascending: false });
 
-                if (snapshot.empty) {
+                if (error) throw error;
+                
+                document.getElementById('studentTotalSetoran').textContent = data ? data.length : 0;
+
+                if (!data || data.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500">Belum ada riwayat setoran mengaji. Pilih jilid di atas untuk mulai merekam.</td></tr>`;
                     return;
                 }
 
                 tableBody.innerHTML = '';
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const dateStr = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Baru saja';
+                data.forEach(item => {
+                    const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Baru saja';
                     
                     const row = document.createElement('tr');
                     row.className = "hover:bg-gray-900/30 transition-colors";
                     row.innerHTML = `
-                        <td class="py-3 px-4 font-semibold text-white">Jilid ${data.jilidId} - ${data.materiTitle || ''}</td>
+                        <td class="py-3 px-4 font-semibold text-white">Jilid ${item.jilid_id} - ${item.materi_title || ''}</td>
                         <td class="py-3 px-4 text-slate-400">${dateStr}</td>
                         <td class="py-3 px-4">
-                            <audio controls src="${data.audioUrl}" class="h-8 w-36 sm:w-48"></audio>
+                            <audio controls src="${item.audio_url}" class="h-8 w-36 sm:w-48"></audio>
                         </td>
                         <td class="py-3 px-4">
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold ${data.status === 'Lulus / Bagus' ? 'bg-emerald-500/20 text-emerald-400' : data.status === 'Ulangi / Perbaiki' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}">
-                                ${data.status || 'Menunggu Dinilai'}
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold ${item.status === 'Lulus / Bagus' ? 'bg-emerald-500/20 text-emerald-400' : item.status === 'Ulangi / Perbaiki' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}">
+                                ${item.status || 'Menunggu Dinilai'}
                             </span>
                         </td>
-                        <td class="py-3 px-4 text-slate-400 italic">${data.notes || '-'}</td>
+                        <td class="py-3 px-4 text-slate-400 italic">${item.notes || '-'}</td>
                     `;
                     tableBody.appendChild(row);
                 });
             } catch (err) {
                 console.error("Fetch Student Submissions Error:", err);
-                tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-rose-400">Gagal memuat riwayat.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-rose-400">Gagal memuat riwayat. Pastikan tabel 'submissions' sudah dibuat di Supabase.</td></tr>`;
             }
         }
 
@@ -930,96 +912,116 @@
                 return;
             }
 
-            showToast('Mengunggah setoran ke server...', 'info');
-            const { ref: storageRef, uploadBytes, getDownloadURL } = window.firebaseModules;
-            const { collection, addDoc, serverTimestamp, getDoc, doc } = window.firebaseModules;
+            showToast('Mengunggah setoran ke Supabase Storage...', 'info');
 
             try {
-                // Fetch student name first
-                const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-                const studentName = userDoc.exists() ? userDoc.data().name : currentUser.email.split('@')[0];
+                // Ambil data user dari tabel users
+                const { data: userData } = await supabaseClient
+                    .from('users')
+                    .select('name')
+                    .eq('id', currentUser.id)
+                    .single();
+                const studentName = userData ? userData.name : currentUser.email.split('@')[0];
 
-                const fileName = `submissions/${currentUser.uid}_jilid${currentSelectedJilid}_${Date.now()}.webm`;
-                const fileRef = storageRef(storage, fileName);
+                const fileName = `submissions/${currentUser.id}_jilid${currentSelectedJilid}_${Date.now()}.webm`;
                 
-                await uploadBytes(fileRef, recordedBlob);
-                const audioUrl = await getDownloadURL(fileRef);
+                // Upload ke Supabase Storage (Pastikan bucket 'audio-submissions' sudah dibuat dan Public)
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    .from('audio-submissions')
+                    .upload(fileName, recordedBlob, { contentType: 'audio/webm' });
 
+                if (uploadError) throw uploadError;
+
+                // Ambil Public URL File
+                const { data: publicUrlData } = supabaseClient.storage
+                    .from('audio-submissions')
+                    .getPublicUrl(fileName);
+
+                const audioUrl = publicUrlData.publicUrl;
                 const jilidObj = jilidData.find(j => j.id === currentSelectedJilid);
 
-                await addDoc(collection(db, "submissions"), {
-                    studentId: currentUser.uid,
-                    studentName: studentName,
-                    jilidId: currentSelectedJilid,
-                    materiTitle: jilidObj ? jilidObj.title : `Jilid ${currentSelectedJilid}`,
-                    audioUrl: audioUrl,
-                    status: 'Menunggu Dinilai',
-                    notes: '',
-                    createdAt: serverTimestamp()
-                });
+                // Insert ke Tabel submissions Supabase
+                const { error: dbError } = await supabaseClient
+                    .from('submissions')
+                    .insert([
+                        {
+                            student_id: currentUser.id,
+                            student_name: studentName,
+                            jilid_id: currentSelectedJilid,
+                            materi_title: jilidObj ? jilidObj.title : `Jilid ${currentSelectedJilid}`,
+                            audio_url: audioUrl,
+                            status: 'Menunggu Dinilai',
+                            notes: ''
+                        }
+                    ]);
+
+                if (dbError) throw dbError;
 
                 showToast('Setoran mengaji berhasil dikirim!', 'success');
                 closeReaderModal();
                 fetchStudentSubmissions();
             } catch (err) {
                 console.error("Upload Submission Error:", err);
-                showToast('Gagal mengunggah setoran. Periksa Storage Rules Firebase Anda.', 'error');
+                showToast('Gagal mengunggah. Buat bucket Supabase Storage bernama "audio-submissions" (Public).', 'error');
             }
         }
 
         // --- TEACHER / ADMIN DASHBOARD LOGIC ---
         async function loadTeacherData() {
-            const { collection, getDocs } = window.firebaseModules;
             const tableBody = document.getElementById('teacherSubmissionsTable');
             tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500">Memuat data setoran siswa...</td></tr>`;
 
             try {
-                const snapshot = await getDocs(collection(db, "submissions"));
-                const usersSnap = await getDocs(collection(db, "users"));
+                const { data: studentsData } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .eq('role', 'student');
                 
-                let totalStudents = 0;
-                usersSnap.forEach(d => { if (d.data().role === 'student') totalStudents++; });
-                document.getElementById('statTotalStudents').textContent = totalStudents;
+                document.getElementById('statTotalStudents').textContent = studentsData ? studentsData.length : 0;
+
+                const { data: subsData, error } = await supabaseClient
+                    .from('submissions')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
 
                 let pendingCount = 0;
                 let gradedCount = 0;
 
                 tableBody.innerHTML = '';
-                if (snapshot.empty) {
+                if (!subsData || subsData.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500">Belum ada setoran masuk dari siswa.</td></tr>`;
                     document.getElementById('statPendingSubmissions').textContent = 0;
                     document.getElementById('statGradedSubmissions').textContent = 0;
                     return;
                 }
 
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const subId = docSnap.id;
-
-                    if (data.status === 'Menunggu Dinilai' || !data.status) {
+                subsData.forEach(item => {
+                    if (item.status === 'Menunggu Dinilai' || !item.status) {
                         pendingCount++;
                     } else {
                         gradedCount++;
                     }
 
-                    const dateStr = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Baru saja';
+                    const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Baru saja';
 
                     const row = document.createElement('tr');
                     row.className = "hover:bg-gray-900/35 transition-colors";
                     row.innerHTML = `
-                        <td class="py-3 px-4 font-semibold text-white">${data.studentName || 'Siswa'}</td>
-                        <td class="py-3 px-4 text-slate-300">Jilid ${data.jilidId} - ${data.materiTitle || ''}</td>
+                        <td class="py-3 px-4 font-semibold text-white">${item.student_name || 'Siswa'}</td>
+                        <td class="py-3 px-4 text-slate-300">Jilid ${item.jilid_id} - ${item.materi_title || ''}</td>
                         <td class="py-3 px-4 text-slate-400">${dateStr}</td>
                         <td class="py-3 px-4">
-                            <audio controls src="${data.audioUrl}" class="h-8 w-36 sm:w-44"></audio>
+                            <audio controls src="${item.audio_url}" class="h-8 w-36 sm:w-44"></audio>
                         </td>
                         <td class="py-3 px-4">
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold ${data.status === 'Lulus / Bagus' ? 'bg-emerald-500/20 text-emerald-400' : data.status === 'Ulangi / Perbaiki' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}">
-                                ${data.status || 'Menunggu Dinilai'}
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold ${item.status === 'Lulus / Bagus' ? 'bg-emerald-500/20 text-emerald-400' : item.status === 'Ulangi / Perbaiki' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}">
+                                ${item.status || 'Menunggu Dinilai'}
                             </span>
                         </td>
                         <td class="py-3 px-4 text-right">
-                            <button onclick="openGradeModal('${subId}', '${data.studentName || 'Siswa'}', '${data.materiTitle || 'Jilid'}', '${data.audioUrl}', '${data.status || ''}', '${data.notes || ''}')" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-xl text-xs transition-all">
+                            <button onclick="openGradeModal('${item.id}', '${item.student_name || 'Siswa'}', '${item.materi_title || 'Jilid'}', '${item.audio_url}', '${item.status || ''}', '${item.notes || ''}')" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-xl text-xs transition-all">
                                 <i class="fa-solid fa-pen-to-square mr-1"></i> Nilai
                             </button>
                         </td>
@@ -1056,12 +1058,13 @@
             const status = document.getElementById('gradeStatusSelect').value;
             const notes = document.getElementById('gradeNotesInput').value;
 
-            const { doc, updateDoc } = window.firebaseModules;
             try {
-                await updateDoc(doc(db, "submissions", subId), {
-                    status: status,
-                    notes: notes
-                });
+                const { error } = await supabaseClient
+                    .from('submissions')
+                    .update({ status: status, notes: notes })
+                    .eq('id', subId);
+
+                if (error) throw error;
 
                 showToast('Penilaian berhasil disimpan!', 'success');
                 closeGradeModal();
