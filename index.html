@@ -768,7 +768,7 @@
                 <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover2.jpg"></button>
                 <button class="btn-cover" id="cover-btn-2" onclick="openJilid(3, 'a')" onmouseenter="selectedMenuCoverIndex=2; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover3.jpg"></button>
                 <button class="btn-cover" id="cover-btn-3" onclick="openJilid(4, 'a')" onmouseenter="selectedMenuCoverIndex=3; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover4.jpg"></button>
-                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=4; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover5.jpg"></button>
+                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover5.jpg"></button>
                 <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover6.jpg"></button>
             </div>
             
@@ -1540,6 +1540,21 @@
             });
         }
 
+        function directOpen(context) {
+            let jilidId = 'jumpJilidMenu';
+            let pageId = 'jumpPageSelectMenu';
+            if (context === 'Read') {
+                jilidId = 'jumpJilidRead';
+                pageId = 'jumpPageSelectRead';
+            } else if (context === 'Bookmarks') {
+                jilidId = 'jumpJilidBookmarks';
+                pageId = 'jumpPageSelectBookmarks';
+            }
+            const jilid = parseInt(document.getElementById(jilidId).value);
+            const page = document.getElementById(pageId).value;
+            openJilid(jilid, page);
+        }
+
         function openJilid(jilid, page) {
             currentJilid = jilid; currentPage = page; appState = 'read';
             document.getElementById('read-screen').classList.add('active');
@@ -1752,7 +1767,9 @@
         function resetRecording() {
             if (mediaRecorder && mediaRecorder.state !== "inactive") {
                 mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                if (mediaRecorder.stream) {
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                }
             }
             audioChunks = []; recordedAudioBlob = null; generatedWhatsAppUrl = "";
             const btnRec = document.getElementById('btnRec');
@@ -1779,125 +1796,87 @@
             if (recordedAudioBlob) resetRecording();
             const recordTitle = document.getElementById('recordTitle');
             const btnRec = document.getElementById('btnRec');
+            const btnStop = document.getElementById('btnStop');
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 44100 } });
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
-                mediaRecorder.ondataavailable = event => { if (event.data.size > 0) audioChunks.push(event.data); };
-                mediaRecorder.onstop = () => {
-                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-                    document.getElementById('btnOk').disabled = false;
-                    if (recordTitle) {
-                        recordTitle.innerText = "Simpan atau rekam ulang?";
-                        recordTitle.style.color = "#059669";
-                    }
-                };
-                mediaRecorder.start();
-                btnRec.disabled = true;
-                btnRec.classList.add('is-recording');
-                document.getElementById('btnStop').disabled = false;
-                document.getElementById('btnOk').disabled = true;
-                document.getElementById('btnSend').disabled = true;
                 
+                mediaRecorder.ondataavailable = event => { 
+                    if (event.data.size > 0) audioChunks.push(event.data); 
+                };
+                
+                mediaRecorder.onstop = () => {
+                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    if (stream) stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                if (btnRec) {
+                    btnRec.innerText = "Merekam...";
+                    btnRec.disabled = true;
+                    btnRec.classList.add('is-recording');
+                }
+                if (btnStop) btnStop.disabled = false;
                 if (recordTitle) {
-                    recordTitle.innerText = "🔴 Merekam audio...";
+                    recordTitle.innerText = "Merekam suara...";
                     recordTitle.style.color = "#ef4444";
                 }
-            } catch (err) { 
-                showToast("Gagal mengakses mikrofon.");
-                if (recordTitle) {
-                    recordTitle.innerText = "Gagal akses mic";
-                    recordTitle.style.color = "#ef4444";
-                }
+                showToast('Mulai merekam suara...');
+            } catch (err) {
+                console.error("Gagal mengaktifkan mikrofon:", err);
+                showToast('Akses mikrofon ditolak atau tidak tersedia');
             }
         }
 
         function stopRecording() {
             if (mediaRecorder && mediaRecorder.state !== "inactive") {
                 mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
             }
             const btnRec = document.getElementById('btnRec');
+            const btnStop = document.getElementById('btnStop');
+            const btnOk = document.getElementById('btnOk');
+            const recordTitle = document.getElementById('recordTitle');
+
             if (btnRec) {
+                btnRec.innerText = "Rekam Ulang";
                 btnRec.disabled = false;
-                btnRec.innerText = "Rekam";
                 btnRec.classList.remove('is-recording');
             }
-            document.getElementById('btnStop').disabled = true;
+            if (btnStop) btnStop.disabled = true;
+            if (btnOk) btnOk.disabled = false;
+            if (recordTitle) {
+                recordTitle.innerText = "Rekaman selesai";
+                recordTitle.style.color = "#10b981";
+            }
+            showToast('Rekaman dihentikan, siap disimpan');
         }
 
-        async function uploadRecordingToDrive() {
-            if (!recordedAudioBlob) return;
-            document.getElementById('btnOk').disabled = true;
-            const recordTitle = document.getElementById('recordTitle');
-            
-            if (recordTitle) {
-                recordTitle.innerText = "⏳ Menyimpan audio...";
-                recordTitle.style.color = "#d97706";
+        function uploadRecordingToDrive() {
+            if (!recordedAudioBlob) {
+                showToast('Belum ada rekaman suara');
+                return;
             }
 
-            try {
-                const reader = new FileReader();
-                reader.readAsDataURL(recordedAudioBlob);
-                reader.onloadend = async function () {
-                    const base64data = reader.result.split(',')[1];
-                    const fileName = `Setoran_Jilid${currentJilid}_Hal${currentPage}_${Date.now()}.mp3`;
-                    
-                    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyySbRNNw4mbYj8hyTy8I0KKrh5w8_XrDJz6gR-UMGmDS3eouiABheOV3Ovill_so/exec";
+            const userName = window.currentUserProfile ? window.currentUserProfile.name : 'Siswa';
+            const message = `Assalamu'alaikum Guru, berikut setoran membaca Tartili Jilid ${currentJilid} Halaman ${currentPage} dari ${userName}.`;
+            generatedWhatsAppUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
 
-                    let formData = new URLSearchParams();
-                    formData.append("data", base64data);
-                    formData.append("mimetype", "audio/mp3");
-                    formData.append("filename", fileName);
+            const btnSend = document.getElementById('btnSend');
+            const btnOk = document.getElementById('btnOk');
+            if (btnSend) btnSend.disabled = false;
+            if (btnOk) btnOk.disabled = true;
 
-                    let response = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData });
-                    let fileUrl = await response.text();
-
-                    if (fileUrl.startsWith("http")) {
-                        let pesan = `Assalamu'alaikum Ustadz/Ustadzah, ini setoran Tartili saya (Jilid ${currentJilid} Halaman ${currentPage}):\n${fileUrl.trim()}\n\n_(Audio otomatis terhapus setelah 7 hari)_`;
-                        generatedWhatsAppUrl = `https://wa.me/?text=${encodeURIComponent(pesan)}`;
-                        document.getElementById('btnSend').disabled = false;
-                        
-                        if (recordTitle) {
-                            recordTitle.innerText = "Audio siap dikirim";
-                            recordTitle.style.color = "#059669";
-                        }
-                        
-                        showToast('Audio berhasil disimpan!');
-                        window.open(generatedWhatsAppUrl, '_blank');
-                    } else {
-                        throw new Error(fileUrl);
-                    }
-                };
-            } catch (e) {
-                console.error(e);
-                if (recordTitle) {
-                    recordTitle.innerText = "Gagal. Coba lagi!";
-                    recordTitle.style.color = "#ef4444";
-                }
-                showToast('Gagal mengunggah rekaman.', true);
-                document.getElementById('btnOk').disabled = false;
-            }
+            showToast('Rekaman berhasil disimpan! Silakan Kirim WA');
         }
 
         function sendToWhatsApp() {
-            if (generatedWhatsAppUrl) { window.open(generatedWhatsAppUrl, '_blank'); }
-        }
-
-        function directOpen(context) {
-            let selectJilidId = 'jumpJilidMenu';
-            let selectPageId = 'jumpPageSelectMenu';
-            if (context === 'Read') {
-                selectJilidId = 'jumpJilidRead';
-                selectPageId = 'jumpPageSelectRead';
-            } else if (context === 'Bookmarks') {
-                selectJilidId = 'jumpJilidBookmarks';
-                selectPageId = 'jumpPageSelectBookmarks';
+            if (generatedWhatsAppUrl) {
+                window.open(generatedWhatsAppUrl, '_blank');
+            } else {
+                showToast('Simpan rekaman terlebih dahulu');
             }
-            
-            let jilid = parseInt(document.getElementById(selectJilidId).value);
-            let page = document.getElementById(selectPageId).value;
-            openJilid(jilid, page);
         }
     </script>
 </body>
