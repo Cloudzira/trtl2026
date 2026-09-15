@@ -605,6 +605,23 @@
         
         .shortcut-container { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
         .shortcut-left { flex: 2; display: flex; flex-direction: column; gap: 4px; }
+
+        .bulk-action-bar {
+            display: flex; gap: 8px; margin-bottom: 8px; width: 100%;
+        }
+        .btn-bulk-approve {
+            flex: 1; padding: 9px 10px; border: none; border-radius: 10px; cursor: pointer;
+            background: linear-gradient(135deg, #10b981, #059669); color: white; font-weight: 700; font-size: 12px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); transition: var(--transition);
+        }
+        .btn-bulk-approve:hover { opacity: 0.95; transform: translateY(-1px); }
+        .btn-bulk-reject {
+            flex: 1; padding: 9px 10px; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; cursor: pointer;
+            background: rgba(239, 68, 68, 0.12); color: #ef4444; font-weight: 700; font-size: 12px;
+            transition: var(--transition);
+        }
+        .btn-bulk-reject:hover { background: #ef4444; color: white; transform: translateY(-1px); }
+        .bulk-action-bar button:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
     </style>
 </head>
 <body class="light-theme">
@@ -685,6 +702,11 @@
         <div class="login-card" style="max-width: 650px; height: 88vh; display: flex; flex-direction: column;">
             <h2>Panel Master Admin</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Daftar akun baru (Siswa & Guru) yang menunggu verifikasi awal:</p>
+
+            <div class="bulk-action-bar">
+                <button class="btn-bulk-approve" id="btnApproveAllMaster" onclick="approveAllMasterUsers()">✅ Setujui Semua</button>
+                <button class="btn-bulk-reject" id="btnRejectAllMaster" onclick="rejectAllMasterUsers()">✕ Tolak Semua</button>
+            </div>
             
             <div id="pendingMasterUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
                 <!-- Diisi dinamis via JS -->
@@ -706,6 +728,12 @@
             <button onclick="openClassMembersScreen()" style="width: 100%; padding: 10px; background: var(--accent-gradient); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-bottom: 8px;">👥 Lihat Daftar Siswa di Kelas</button>
 
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-align: left;">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
+
+            <div class="bulk-action-bar">
+                <button class="btn-bulk-approve" id="btnApproveAllStudents" onclick="approveAllStudents()">✅ Terima Semua</button>
+                <button class="btn-bulk-reject" id="btnRejectAllStudents" onclick="rejectAllStudents()">✕ Tolak Semua</button>
+            </div>
+
             <div id="pendingStudentContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
                 <!-- Diisi dinamis via JS -->
             </div>
@@ -1140,6 +1168,8 @@
         }
 
         // --- MASTER ADMIN PANEL ---
+        let currentPendingMasterUsers = [];
+
         async function openMasterAdminScreen() {
             appState = 'admin';
             document.getElementById('menu-screen').classList.remove('active');
@@ -1147,10 +1177,25 @@
             await loadMasterPendingUsers();
         }
 
+        function setBulkButtonsDisabled(disabled) {
+            const btnA = document.getElementById('btnApproveAllMaster');
+            const btnR = document.getElementById('btnRejectAllMaster');
+            if (btnA) btnA.disabled = disabled;
+            if (btnR) btnR.disabled = disabled;
+        }
+
+        function setStudentBulkButtonsDisabled(disabled) {
+            const btnA = document.getElementById('btnApproveAllStudents');
+            const btnR = document.getElementById('btnRejectAllStudents');
+            if (btnA) btnA.disabled = disabled;
+            if (btnR) btnR.disabled = disabled;
+        }
+
         async function loadMasterPendingUsers() {
             const container = document.getElementById('pendingMasterUsersContainer');
             if (!container) return;
             container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat data pendaftar...</div>`;
+            currentPendingMasterUsers = [];
 
             try {
                 const q = window.query(window.collection(window.firebaseDb, "users"), window.where("isMasterApproved", "==", false));
@@ -1159,12 +1204,16 @@
                 container.innerHTML = "";
                 if (querySnapshot.empty) {
                     container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada akun yang menunggu persetujuan Master.</div>`;
+                    setBulkButtonsDisabled(true);
                     return;
                 }
+
+                setBulkButtonsDisabled(false);
 
                 querySnapshot.forEach((docSnap) => {
                     const data = docSnap.data();
                     const userId = docSnap.id;
+                    currentPendingMasterUsers.push({ id: userId, name: data.name });
 
                     let item = document.createElement('div');
                     item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; gap: 8px;";
@@ -1184,6 +1233,7 @@
             } catch (e) {
                 console.error(e);
                 container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat data.</div>`;
+                setBulkButtonsDisabled(true);
             }
         }
 
@@ -1196,6 +1246,54 @@
                 console.error(e);
                 showToast('Gagal menyetujui akun.');
             }
+        }
+
+        async function approveAllMasterUsers() {
+            if (currentPendingMasterUsers.length === 0) {
+                showToast('Tidak ada akun yang menunggu persetujuan.');
+                return;
+            }
+            if (!confirm(`Setujui semua ${currentPendingMasterUsers.length} akun yang menunggu verifikasi Master?`)) return;
+
+            setBulkButtonsDisabled(true);
+            const targets = [...currentPendingMasterUsers];
+            let successCount = 0;
+
+            for (const u of targets) {
+                try {
+                    await window.updateDoc(window.doc(window.firebaseDb, "users", u.id), { isMasterApproved: true });
+                    successCount++;
+                } catch (e) {
+                    console.error(`Gagal menyetujui ${u.name}:`, e);
+                }
+            }
+
+            showToast(`${successCount} dari ${targets.length} akun berhasil disetujui.`);
+            await loadMasterPendingUsers();
+        }
+
+        async function rejectAllMasterUsers() {
+            if (currentPendingMasterUsers.length === 0) {
+                showToast('Tidak ada akun yang menunggu persetujuan.');
+                return;
+            }
+            if (!confirm(`Tolak dan hapus semua ${currentPendingMasterUsers.length} akun yang menunggu verifikasi Master? Tindakan ini tidak dapat dibatalkan.`)) return;
+
+            setBulkButtonsDisabled(true);
+            const targets = [...currentPendingMasterUsers];
+            let successCount = 0;
+
+            for (const u of targets) {
+                try {
+                    await window.deleteDoc(window.doc(window.firebaseDb, "users", u.id));
+                    successCount++;
+                } catch (e) {
+                    console.error(`Gagal menghapus ${u.name}:`, e);
+                }
+            }
+
+            showToast(`${successCount} dari ${targets.length} akun berhasil ditolak/dihapus.`);
+            await loadMasterPendingUsers();
         }
 
         async function deleteUserAccount(userId, userName) {
@@ -1211,6 +1309,8 @@
         }
 
         // --- TEACHER PANEL ---
+        let currentPendingStudents = [];
+
         async function openTeacherAdminScreen() {
             appState = 'teacher-admin';
             document.getElementById('menu-screen').classList.remove('active');
@@ -1227,6 +1327,7 @@
             const container = document.getElementById('pendingStudentContainer');
             if (!container) return;
             container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat data siswa...</div>`;
+            currentPendingStudents = [];
 
             try {
                 const teacherClassCode = window.currentUserProfile.classCode;
@@ -1241,12 +1342,16 @@
                 container.innerHTML = "";
                 if (querySnapshot.empty) {
                     container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada siswa baru yang mendaftar ke kelas Anda.</div>`;
+                    setStudentBulkButtonsDisabled(true);
                     return;
                 }
+
+                setStudentBulkButtonsDisabled(false);
 
                 querySnapshot.forEach((docSnap) => {
                     const data = docSnap.data();
                     const userId = docSnap.id;
+                    currentPendingStudents.push({ id: userId, name: data.name });
 
                     let item = document.createElement('div');
                     item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
@@ -1265,6 +1370,7 @@
             } catch (e) {
                 console.error(e);
                 container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat siswa kelas.</div>`;
+                setStudentBulkButtonsDisabled(true);
             }
         }
 
@@ -1277,6 +1383,54 @@
                 console.error(e);
                 showToast('Gagal menerima siswa.');
             }
+        }
+
+        async function approveAllStudents() {
+            if (currentPendingStudents.length === 0) {
+                showToast('Tidak ada siswa yang menunggu persetujuan.');
+                return;
+            }
+            if (!confirm(`Terima semua ${currentPendingStudents.length} siswa yang mendaftar ke kelas Anda?`)) return;
+
+            setStudentBulkButtonsDisabled(true);
+            const targets = [...currentPendingStudents];
+            let successCount = 0;
+
+            for (const s of targets) {
+                try {
+                    await window.updateDoc(window.doc(window.firebaseDb, "users", s.id), { isTeacherApproved: true });
+                    successCount++;
+                } catch (e) {
+                    console.error(`Gagal menerima ${s.name}:`, e);
+                }
+            }
+
+            showToast(`${successCount} dari ${targets.length} siswa berhasil diterima.`);
+            await loadTeacherPendingStudents();
+        }
+
+        async function rejectAllStudents() {
+            if (currentPendingStudents.length === 0) {
+                showToast('Tidak ada siswa yang menunggu persetujuan.');
+                return;
+            }
+            if (!confirm(`Tolak dan hapus semua ${currentPendingStudents.length} siswa yang mendaftar ke kelas Anda? Tindakan ini tidak dapat dibatalkan.`)) return;
+
+            setStudentBulkButtonsDisabled(true);
+            const targets = [...currentPendingStudents];
+            let successCount = 0;
+
+            for (const s of targets) {
+                try {
+                    await window.deleteDoc(window.doc(window.firebaseDb, "users", s.id));
+                    successCount++;
+                } catch (e) {
+                    console.error(`Gagal menolak ${s.name}:`, e);
+                }
+            }
+
+            showToast(`${successCount} dari ${targets.length} siswa berhasil ditolak/dihapus.`);
+            await loadTeacherPendingStudents();
         }
 
         // --- CLASS MEMBERS SCREEN ---
