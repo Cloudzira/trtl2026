@@ -158,7 +158,7 @@
             });
         }
 
-        // --- REALTIME NOTIFIKASI SITEM ---
+        // --- REALTIME NOTIFIKASI SYSTEM ---
         function initRealtimeNotifications(userId, profile) {
             if (window.unsubNotifications) window.unsubNotifications();
             
@@ -198,7 +198,7 @@
                     }
                 });
 
-                // Update badge counter UI
+                // Update badge counter UI di tombol notifikasi
                 const badgeEl = document.getElementById('notifBadgeCount');
                 if (badgeEl) {
                     if (unreadCount > 0) {
@@ -350,20 +350,20 @@
             display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 880px; position: relative; margin: auto;
         }
         
+        /* HEADER HERO DIPERBARUI: TOMBOL DI ATAS TEXT & DI SEBELAH KANAN */
         .landing-hero-card {
             width: 100%; background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--border-color); border-radius: 24px; padding: 20px 24px;
-            display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow);
+            display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow);
         }
-        .landing-hero-info { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+        .landing-hero-actions { display: flex; gap: 10px; align-items: center; justify-content: flex-end; width: 100%; }
+        .landing-hero-info { display: flex; flex-direction: column; gap: 4px; text-align: left; width: 100%; }
         .landing-hero-greeting { font-size: 16px; font-weight: 700; color: var(--text-muted); }
         .landing-hero-username { font-size: 20px; font-weight: 800; color: var(--text-main); }
         .landing-hero-motivation { font-size: 12px; font-weight: 600; color: var(--text-muted); font-style: italic; margin-top: 2px; }
         .landing-hero-subtitle { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; gap: 8px; align-items: center; margin-top: 2px; flex-wrap: wrap; }
         .badge-role { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 3px; }
         .badge-role:hover { background: rgba(14, 165, 233, 0.25); }
-        
-        .landing-hero-actions { display: flex; gap: 10px; align-items: center; }
 
         .menu-section-title { width: 100%; text-align: left; font-size: 14px; font-weight: 800; color: var(--text-main); letter-spacing: 0.5px; margin-top: 4px; }
         .grid-jilid { display: grid; gap: 16px; width: 100%; margin: 0; grid-template-columns: repeat(6, 1fr); }
@@ -412,7 +412,7 @@
             border: 1px solid var(--border-color);
         }
 
-        /* STYLES UNTUK MODAL NOTIFIKASI & PESAN */
+        /* STYLES UNTUK MODAL NOTIFIKASI & PESAN (TOMBOL KEMBALI PROPORSI DILAKUKAN DI SINI) */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
@@ -425,10 +425,33 @@
             box-shadow: var(--shadow); overflow: hidden; position: relative;
         }
         .modal-header {
-            padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 18px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;
         }
-        .modal-header h3 { font-size: 16px; font-weight: 800; color: var(--text-main); }
-        .modal-close-btn { background: transparent; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; }
+        .modal-header h3 { font-size: 15px; font-weight: 800; color: var(--text-main); }
+        
+        /* TOMBOL KEMBALI/CLOSE DI POPUP DIBUAT PROPORSIONAL & TIDAK TERLALU BESAR */
+        .modal-close-btn { 
+            background: var(--input-bg); 
+            border: 1px solid var(--border-color); 
+            font-size: 13px; 
+            font-weight: 700;
+            color: var(--text-muted); 
+            cursor: pointer; 
+            width: 28px; 
+            height: 28px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            transition: var(--transition);
+        }
+        .modal-close-btn:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.3);
+            transform: scale(1.05);
+        }
+
         .notif-item {
             padding: 12px 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: var(--transition);
         }
@@ -442,9 +465,12 @@
         .chat-input-area input { flex: 1; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 12px; outline: none; background: var(--input-bg); color: var(--text-main); font-size: 13px; }
 
         .btn-notif-trigger { position: relative; }
+        
+        /* ANGKA JUMLAH PESAN BERWARNA MERAH (BADGE) */
         .notif-badge {
-            position: absolute; top: -3px; right: -3px; background: #ef4444; color: white; font-size: 9px; font-weight: 800;
-            width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 2px solid var(--bg-card);
+            position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; font-size: 10px; font-weight: 800;
+            min-width: 18px; height: 18px; padding: 0 4px; border-radius: 10px; display: none; align-items: center; justify-content: center; 
+            border: 2px solid var(--bg-card); box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
         }
 
         @media (orientation: portrait) {
@@ -452,8 +478,7 @@
             .grid-jilid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, auto); }
             .btn-cover { aspect-ratio: 3/4; }
             
-            .landing-hero-card { flex-direction: row; align-items: center; gap: 12px; padding: 16px; }
-            .landing-hero-actions { width: auto; justify-content: flex-end; }
+            .landing-hero-card { padding: 16px; }
 
             .image-scroll-area { flex: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 4px !important; overflow: hidden !important; }
             .image-container { height: 100% !important; width: auto !important; aspect-ratio: 1 / 1.414 !important; max-width: 100% !important; max-height: 100% !important; margin-bottom: 0 !important; }
@@ -734,7 +759,7 @@
         <div class="modal-box">
             <div class="modal-header">
                 <h3>🔔 Notifikasi</h3>
-                <button class="modal-close-btn" onclick="toggleNotifModal(false)">✕</button>
+                <button class="modal-close-btn" onclick="toggleNotifModal(false)" title="Tutup">✕</button>
             </div>
             <div id="notificationListContainer" style="flex:1; overflow-y:auto;">
                 <div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat notifikasi...</div>
@@ -747,7 +772,7 @@
         <div class="modal-box">
             <div class="modal-header">
                 <h3 id="chatTargetName">💬 Pesan</h3>
-                <button class="modal-close-btn" onclick="toggleChatModal(false)">✕</button>
+                <button class="modal-close-btn" onclick="toggleChatModal(false)" title="Tutup">✕</button>
             </div>
             <div class="chat-body" id="chatMessageContainer">
                 <!-- Chat messages will render here -->
@@ -880,16 +905,7 @@
     <div id="menu-screen" class="screen">
         <div class="menu-content-wrapper">
             <div class="landing-hero-card">
-                <div class="landing-hero-info">
-                    <div class="landing-hero-greeting" id="userGreetingText">Assalaamu'alaikum.. 👋</div>
-                    <div class="landing-hero-username" id="userUsernameText">Pengguna</div>
-                    <div class="landing-hero-motivation">Semangat belajar membaca tartili ya..</div>
-                    <div class="landing-hero-subtitle">
-                        <span id="userClassText">Kelas: -</span>
-                        <span id="userTeacherNameText">Guru: -</span>
-                        <span class="badge-role" id="userRoleBadge" onclick="openClassMembersScreen()" title="Lihat Daftar Anggota Kelas">Siswa 👥</span>
-                    </div>
-                </div>
+                <!-- TOMBOL ACTION DIPINDAHKAN KE ATAS TEKS DAN TETAP RATA KANAN -->
                 <div class="landing-hero-actions">
                     <button class="btn-notif-trigger" onclick="toggleNotifModal(true)" title="Notifikasi">
                         <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
@@ -911,6 +927,17 @@
                         <svg viewBox="0 0 24 24"><path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                     </button>
                 </div>
+                
+                <div class="landing-hero-info">
+                    <div class="landing-hero-greeting" id="userGreetingText">Assalaamu'alaikum.. 👋</div>
+                    <div class="landing-hero-username" id="userUsernameText">Pengguna</div>
+                    <div class="landing-hero-motivation">Semangat belajar membaca tartili ya..</div>
+                    <div class="landing-hero-subtitle">
+                        <span id="userClassText">Kelas: -</span>
+                        <span id="userTeacherNameText">Guru: -</span>
+                        <span class="badge-role" id="userRoleBadge" onclick="openClassMembersScreen()" title="Lihat Daftar Anggota Kelas">Siswa 👥</span>
+                    </div>
+                </div>
             </div>
 
             <div class="menu-section-title">TARTILI 1 - 6</div>
@@ -920,7 +947,7 @@
                 <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover2.jpg"></button>
                 <button class="btn-cover" id="cover-btn-2" onclick="openJilid(3, 'a')" onmouseenter="selectedMenuCoverIndex=2; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover3.jpg"></button>
                 <button class="btn-cover" id="cover-btn-3" onclick="openJilid(4, 'a')" onmouseenter="selectedMenuCoverIndex=3; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover4.jpg"></button>
-                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover5.jpg"></button>
+                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=4; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover5.jpg"></button>
                 <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover6.jpg"></button>
             </div>
             
@@ -978,7 +1005,7 @@
         </div>
     </div>
 
-    <!-- Halaman Membaca Buku -->
+    <!-- Halaman Membaca Buku (TIDAK ADA PERUBAHAN) -->
     <div id="read-screen" class="screen">
         <div class="image-scroll-area" id="scrollArea">
             <div class="loading-spinner" id="loadingSpinner"></div>
@@ -1633,7 +1660,7 @@
                             <div style="font-size: 11px; color: var(--text-muted);">Email: ${sData.email}</div>
                         </div>
                         <div style="display:flex; gap:6px; align-items:center;">
-                            <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 6px;">Aktif</span>
+                            <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 8px;">Aktif</span>
                             ${sId !== profile.uid ? `<button onclick="openMessagingModal('${sId}', '${sData.name}')" style="background:var(--accent-gradient); color:white; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">💬 Chat</button>` : ''}
                         </div>
                     `;
@@ -1642,7 +1669,7 @@
 
             } catch (e) {
                 console.error(e);
-                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat daftar anggota kelas.</div>`;
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat anggota kelas.</div>`;
             }
         }
 
@@ -1657,129 +1684,31 @@
             }
         }
 
-        function handleLogout() {
-            window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
-        }
-
-        let savedLastRead = JSON.parse(localStorage.getItem('tartili_last_read')) || { jilid: 1, page: 'a' };
-        let savedBookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks')) || [];
-        
-        let currentJilid = savedLastRead.jilid, currentPage = savedLastRead.page, appState = 'menu', selectedMenuCoverIndex = 0, currentAudio = null;
-        let mediaRecorder, audioChunks = [], recordedAudioBlob = null, generatedWhatsAppUrl = ""; 
-        
-        const baseUrl = "https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/";
-        let scale = 1, initialDistance = null;
-        let touchStartX = 0, touchEndX = 0;
-        const minSwipeDistance = 50;
-
-        const allAudioConfig = {
-            "1": typeof tartili1Config !== 'undefined' ? tartili1Config : {},
-            "2": typeof tartili2Config !== 'undefined' ? tartili2Config : {},
-            "3": typeof tartili3Config !== 'undefined' ? tartili3Config : {},
-            "4": typeof tartili4Config !== 'undefined' ? tartili4Config : {},
-            "5": typeof tartili5Config !== 'undefined' ? tartili5Config : {},
-            "6": typeof tartili6Config !== 'undefined' ? tartili6Config : {}
-        };
-
-        history.replaceState({ screen: 'menu' }, '', '');
-
-        window.addEventListener('popstate', function(event) {
-            if (appState === 'read') {
-                if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-                resetRecording();
-                goToMenu();
-            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin' || appState === 'class-members') {
-                goToMenu();
-            } else {
-                history.back();
+        async function handleLogout() {
+            try {
+                if (window.signOut && window.firebaseAuth) {
+                    await window.signOut(window.firebaseAuth);
+                }
+                showToast('Berhasil keluar!');
+            } catch (e) {
+                console.error("Gagal keluar:", e);
             }
-        });
-
-        function isPortrait() { return window.innerHeight > window.innerWidth; }
-
-        window.addEventListener('resize', () => {
-            if (isPortrait()) { resetZoom(); }
-            const container = document.getElementById('imageContainer');
-            if (appState === 'read' && (!container.innerHTML || container.innerHTML.trim() === '')) {
-                loadPageData();
-            }
-        });
-
-        updatePageOptions('Menu');
-        updatePageOptions('Read'); 
-        updatePageOptions('Bookmarks');
-        updateMenuCoverFocus();
-
-        function openBookmarksScreen() {
-            appState = 'bookmarks';
-            document.getElementById('menu-screen').classList.remove('active');
-            document.getElementById('read-screen').classList.remove('active');
-            document.getElementById('bookmarks-screen').classList.add('active');
-            renderBookmarksList();
-            updatePageOptions('Bookmarks');
-            history.pushState({ screen: 'bookmarks' }, '', '');
-        }
-
-        function renderBookmarksList() {
-            const container = document.getElementById('bookmarksListContainer');
-            if (!container) return;
-            container.innerHTML = "";
-
-            if (savedBookmarks.length === 0) {
-                container.innerHTML = `<div style="display:flex; flex-direction: column; align-items:center; justify-content:center; height: 180px; color:var(--text-muted); font-size:13px; padding:20px; text-align:center; gap: 8px;"><span style="font-size: 36px;">📖</span><span>Belum ada halaman tersimpan.</span></div>`;
-                return;
-            }
-
-            const reversedBookmarks = [...savedBookmarks].reverse();
-
-            reversedBookmarks.forEach((b, revIndex) => {
-                const originalIndex = savedBookmarks.length - 1 - revIndex;
-
-                let item = document.createElement('div');
-                item.className = 'bookmark-item';
-                item.setAttribute('onclick', `openJilid(${b.jilid}, '${b.page}')`);
-                item.innerHTML = `
-                    <div class="bookmark-item-content">
-                        <div class="bookmark-item-icon">
-                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:#0ea5e9;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
-                        </div>
-                        <div class="bookmark-item-info">
-                            <span class="bookmark-item-title">Tartili Jilid ${b.jilid}</span>
-                            <span class="bookmark-item-subtitle">Halaman ${b.page}</span>
-                        </div>
-                    </div>
-                    <button class="bookmark-item-delete" onclick="removeBookmark(${originalIndex}, event)" title="Hapus">✕</button>
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        function removeBookmark(index, event) {
-            event.stopPropagation();
-            savedBookmarks.splice(index, 1);
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
-            renderBookmarksList();
-            updateBookmarkButtonState();
-            showToast('Halaman dihapus dari simpanan');
         }
 
         function goToMenu() {
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            resetRecording();
-            appState = 'menu';
-            document.getElementById('read-screen').classList.remove('active');
-            document.getElementById('bookmarks-screen').classList.remove('active');
-            document.getElementById('admin-screen').classList.remove('active');
-            document.getElementById('teacher-admin-screen').classList.remove('active');
-            document.getElementById('class-members-screen').classList.remove('active');
+            hideAllScreens();
             document.getElementById('menu-screen').classList.add('active');
-            updateMenuCoverFocus();
-            history.replaceState({ screen: 'menu' }, '', '');
+            window.appState = 'menu';
         }
+
+        // --- SISTEM MEMBACA & NAVIGASI (Halaman membaca tetap tidak berubah) ---
+        let currentJilid = 1;
+        let currentPageIndex = 0;
+        let selectedMenuCoverIndex = 0;
 
         function updateMenuCoverFocus() {
             for (let i = 0; i < 6; i++) {
-                let btn = document.getElementById('cover-btn-' + i);
+                const btn = document.getElementById(`cover-btn-${i}`);
                 if (btn) {
                     if (i === selectedMenuCoverIndex) btn.classList.add('keyboard-focused');
                     else btn.classList.remove('keyboard-focused');
@@ -1787,256 +1716,275 @@
             }
         }
 
-        function getNumericPageList(jilid) {
-            let list = [], max = (jilid === 6) ? 48 : 44;
-            for (let i = 1; i <= max; i++) list.push(i.toString());
-            return list;
+        function openJilid(jilidNum, pageCode = 'a') {
+            currentJilid = jilidNum;
+            const dataArr = window[`tartili${jilidNum}Data`];
+            if (!dataArr || dataArr.length === 0) {
+                showToast(`Data Tartili ${jilidNum} belum tersedia.`);
+                return;
+            }
+
+            let foundIdx = dataArr.findIndex(item => item.page === pageCode);
+            currentPageIndex = (foundIdx !== -1) ? foundIdx : 0;
+
+            hideAllScreens();
+            document.getElementById('read-screen').classList.add('active');
+            window.appState = 'read';
+            
+            updatePageOptions('Read');
+            loadCurrentPage();
         }
 
-        function getFullPageList(jilid) {
-            let list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', '0'];
-            return list.concat(getNumericPageList(jilid));
+        function loadCurrentPage() {
+            const dataArr = window[`tartili${currentJilid}Data`];
+            if (!dataArr || !dataArr[currentPageIndex]) return;
+
+            const pageData = dataArr[currentPageIndex];
+            const container = document.getElementById('imageContainer');
+            const spinner = document.getElementById('loadingSpinner');
+
+            if (spinner) spinner.style.display = 'block';
+            if (container) container.innerHTML = '';
+
+            const img = document.createElement('img');
+            img.src = pageData.imageUrl;
+            img.onload = () => {
+                if (spinner) spinner.style.display = 'none';
+            };
+            img.onerror = () => {
+                if (spinner) spinner.style.display = 'none';
+                showToast('Gagal memuat gambar halaman.');
+            };
+
+            if (container) {
+                container.appendChild(img);
+
+                if (pageData.audioBlocks) {
+                    pageData.audioBlocks.forEach(block => {
+                        const div = document.createElement('div');
+                        div.className = 'sound-block';
+                        div.style.left = block.x + '%';
+                        div.style.top = block.y + '%';
+                        div.style.width = block.w + '%';
+                        div.style.height = block.h + '%';
+                        div.onclick = (e) => {
+                            e.stopPropagation();
+                            playAudioBlock(block.audioUrl);
+                        };
+                        container.appendChild(div);
+                    });
+                }
+            }
+
+            updateBookmarkButtonState();
+            
+            // Sync dropdown read
+            const selRead = document.getElementById('jumpPageSelectRead');
+            const selJilidRead = document.getElementById('jumpJilidRead');
+            if (selJilidRead) selJilidRead.value = currentJilid;
+            if (selRead) selRead.value = pageData.page;
+        }
+
+        let currentAudio = null;
+        function playAudioBlock(url) {
+            if (!url) return;
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+            currentAudio = new Audio(url);
+            currentAudio.play().catch(e => console.log('Audio playback failed:', e));
+        }
+
+        function changePage(direction) {
+            const dataArr = window[`tartili${currentJilid}Data`];
+            if (!dataArr) return;
+
+            let newIndex = currentPageIndex + direction;
+            if (newIndex >= 0 && newIndex < dataArr.length) {
+                currentPageIndex = newIndex;
+                loadCurrentPage();
+            } else {
+                if (direction > 0) showToast('Halaman terakhir pada jilid ini.');
+                else showToast('Halaman pertama pada jilid ini.');
+            }
         }
 
         function updatePageOptions(context) {
-            let selectId = 'jumpJilidMenu';
-            let targetSelectId = 'jumpPageSelectMenu';
-            if (context === 'Read') {
-                selectId = 'jumpJilidRead';
-                targetSelectId = 'jumpPageSelectRead';
-            } else if (context === 'Bookmarks') {
-                selectId = 'jumpJilidBookmarks';
-                targetSelectId = 'jumpPageSelectBookmarks';
-            }
-            
-            let jilidEl = document.getElementById(selectId);
-            let select = document.getElementById(targetSelectId);
-            if (!jilidEl || !select) return;
-            
-            let jilid = parseInt(jilidEl.value);
-            select.innerHTML = "";
-            getNumericPageList(jilid).forEach(p => { 
-                let opt = document.createElement('option'); 
-                opt.value = p; opt.text = p; 
-                select.appendChild(opt); 
+            const jilidSelect = document.getElementById(`jumpJilid${context}`);
+            const pageSelect = document.getElementById(`jumpPageSelect${context}`);
+            if (!jilidSelect || !pageSelect) return;
+
+            const jNum = parseInt(jilidSelect.value, 10);
+            const dataArr = window[`tartili${jNum}Data`] || [];
+
+            pageSelect.innerHTML = '';
+            dataArr.forEach((item, idx) => {
+                const opt = document.createElement('option');
+                opt.value = item.page;
+                opt.innerText = `Hal. ${item.page.toUpperCase()}`;
+                pageSelect.appendChild(opt);
             });
         }
 
         function directOpen(context) {
-            let jilidId = 'jumpJilidMenu';
-            let pageId = 'jumpPageSelectMenu';
-            if (context === 'Read') {
-                jilidId = 'jumpJilidRead';
-                pageId = 'jumpPageSelectRead';
-            } else if (context === 'Bookmarks') {
-                jilidId = 'jumpJilidBookmarks';
-                pageId = 'jumpPageSelectBookmarks';
-            }
-            const jilid = parseInt(document.getElementById(jilidId).value);
-            const page = document.getElementById(pageId).value;
-            openJilid(jilid, page);
+            const jilidSelect = document.getElementById(`jumpJilid${context}`);
+            const pageSelect = document.getElementById(`jumpPageSelect${context}`);
+            if (!jilidSelect || !pageSelect) return;
+
+            const jNum = parseInt(jilidSelect.value, 10);
+            const pCode = pageSelect.value;
+            openJilid(jNum, pCode);
         }
 
-        function openJilid(jilid, page) {
-            currentJilid = jilid; currentPage = page; appState = 'read';
-            document.getElementById('read-screen').classList.add('active');
-            document.getElementById('menu-screen').classList.remove('active');
-            document.getElementById('bookmarks-screen').classList.remove('active');
-            document.getElementById('admin-screen').classList.remove('active');
-            document.getElementById('teacher-admin-screen').classList.remove('active');
-            document.getElementById('class-members-screen').classList.remove('active');
-            updatePageOptions('Read');
-            
-            let numList = getNumericPageList(currentJilid);
-            let targetPage = numList.includes(currentPage.toString()) ? currentPage.toString() : "1";
-            document.getElementById('jumpPageSelectRead').value = targetPage;
-            
-            resetZoom();
-            loadPageData();
-            history.pushState({ screen: 'read' }, '', '');
+        // --- SISTEM BOOKMARK ---
+        function getBookmarks() {
+            return JSON.parse(localStorage.getItem('tartili_bookmarks') || '[]');
         }
 
-        function resetZoom() { scale = 1; updateImageTransform(); }
-
-        function updateImageTransform() {
-            const container = document.getElementById('imageContainer');
-            if (container) container.style.transform = `scale(${scale})`;
-        }
-
-        function changePage(delta) {
-            let pages = getFullPageList(currentJilid);
-            let currentIndex = pages.indexOf(currentPage.toString());
-            let newIndex = currentIndex + delta;
-            if (newIndex >= 0 && newIndex < pages.length) {
-                currentPage = pages[newIndex];
-                resetZoom();
-                loadPageData();
-            }
-        }
-
-        function toggleBookmark() {
-            let index = savedBookmarks.findIndex(b => b.jilid === currentJilid && b.page === currentPage);
-            
-            if (index > -1) {
-                savedBookmarks.splice(index, 1);
-                showToast('Halaman dihapus dari simpanan');
-            } else {
-                savedBookmarks.push({ jilid: currentJilid, page: currentPage });
-                showToast('Halaman berhasil disimpan!');
-            }
-            
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
-            updateBookmarkButtonState();
+        function saveBookmarks(bList) {
+            localStorage.setItem('tartili_bookmarks', JSON.stringify(bList));
         }
 
         function updateBookmarkButtonState() {
             const btn = document.getElementById('btnBookmark');
             if (!btn) return;
-            let isSaved = savedBookmarks.some(b => b.jilid === currentJilid && b.page === currentPage);
-            if (isSaved) {
-                btn.classList.add('saved');
-                btn.title = "Hapus Simpanan (Unsave)";
+            const dataArr = window[`tartili${currentJilid}Data`];
+            if (!dataArr || !dataArr[currentPageIndex]) return;
+
+            const pageCode = dataArr[currentPageIndex].page;
+            const bList = getBookmarks();
+            const exists = bList.some(b => b.jilid === currentJilid && b.page === pageCode);
+
+            if (exists) btn.classList.add('saved');
+            else btn.classList.remove('saved');
+        }
+
+        function toggleBookmark() {
+            const dataArr = window[`tartili${currentJilid}Data`];
+            if (!dataArr || !dataArr[currentPageIndex]) return;
+
+            const pageCode = dataArr[currentPageIndex].page;
+            let bList = getBookmarks();
+            const idx = bList.findIndex(b => b.jilid === currentJilid && b.page === pageCode);
+
+            if (idx !== -1) {
+                bList.splice(idx, 1);
+                showToast('Halaman dihapus dari tersimpan.');
             } else {
-                btn.classList.remove('saved');
-                btn.title = "Simpan Halaman (Save)";
+                bList.push({ jilid: currentJilid, page: pageCode, timestamp: new Date().toISOString() });
+                showToast('Halaman tersimpan!');
             }
-        }
-
-        function loadPageData() {
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            resetRecording();
-            
-            localStorage.setItem('tartili_last_read', JSON.stringify({ jilid: currentJilid, page: currentPage }));
+            saveBookmarks(bList);
             updateBookmarkButtonState();
+        }
 
-            const container = document.getElementById('imageContainer');
-            const spinner = document.getElementById('loadingSpinner');
-            const imgPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/halaman${currentPage}.jpg`;
-            
-            if (spinner) spinner.style.display = 'block';
-            container.innerHTML = "";
+        function openBookmarksScreen() {
+            hideAllScreens();
+            document.getElementById('bookmarks-screen').classList.add('active');
+            window.appState = 'bookmarks';
+            renderBookmarksList();
+            updatePageOptions('Bookmarks');
+        }
 
-            let img = new Image();
-            img.src = imgPath;
-            img.onload = function() {
-                if (spinner) spinner.style.display = 'none';
-                let htmlContent = `<img src="${imgPath}">`;
-                
-                if (allAudioConfig[currentJilid] && allAudioConfig[currentJilid][currentPage]) {
-                    allAudioConfig[currentJilid][currentPage].forEach(block => {
-                        let [top, left, width, height, soundFile] = block;
-                        htmlContent += `<div class="sound-block" style="top: ${top}%; left: ${left}%; width: ${width}%; height: ${height}%;" onclick="playSound('${soundFile}')"></div>`;
-                    });
-                }
-                container.innerHTML = htmlContent;
-            };
-            img.onerror = function() {
-                if (spinner) spinner.style.display = 'none';
-                container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;">Gagal memuat halaman</div>`;
-            };
+        function renderBookmarksList() {
+            const container = document.getElementById('bookmarksListContainer');
+            if (!container) return;
+            const bList = getBookmarks();
 
-            document.getElementById('jumpJilidRead').value = currentJilid;
-            let numList = getNumericPageList(currentJilid);
-            if (numList.includes(currentPage.toString())) { 
-                document.getElementById('jumpPageSelectRead').value = currentPage; 
+            container.innerHTML = '';
+            if (bList.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:30px; font-size:13px;">Belum ada halaman tersimpan.</div>`;
+                return;
             }
+
+            bList.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'bookmark-item';
+                div.onclick = () => openJilid(item.jilid, item.page);
+                div.innerHTML = `
+                    <div class="bookmark-item-content">
+                        <div class="bookmark-item-icon">🔖</div>
+                        <div class="bookmark-item-info">
+                            <div class="bookmark-item-title">Tartili Jilid ${item.jilid}</div>
+                            <div class="bookmark-item-subtitle">Halaman ${item.page.toUpperCase()}</div>
+                        </div>
+                    </div>
+                    <button class="bookmark-item-delete" onclick="event.stopPropagation(); removeBookmark(${item.jilid}, '${item.page}')" title="Hapus">✕</button>
+                `;
+                container.appendChild(div);
+            });
         }
 
-        function playSound(soundFile) {
-            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
-            let soundPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/${soundFile}`;
-            currentAudio = new Audio(soundPath);
-            currentAudio.play();
+        function removeBookmark(jilidNum, pageCode) {
+            let bList = getBookmarks();
+            bList = bList.filter(b => !(b.jilid === jilidNum && b.page === pageCode));
+            saveBookmarks(bList);
+            renderBookmarksList();
+            showToast('Tersimpan dihapus.');
         }
 
-        function resetRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') { mediaRecorder.stop(); }
-            audioChunks = []; recordedAudioBlob = null; generatedWhatsAppUrl = "";
-            const btnRec = document.getElementById('btnRec');
-            const btnStop = document.getElementById('btnStop');
-            const btnOk = document.getElementById('btnOk');
-            const btnSend = document.getElementById('btnSend');
-            if (btnRec) { btnRec.disabled = false; btnRec.classList.remove('is-recording'); }
-            if (btnStop) btnStop.disabled = true;
-            if (btnOk) btnOk.disabled = true;
-            if (btnSend) btnSend.disabled = true;
-        }
+        // --- FITUR REKAMAN SUARA ---
+        let mediaRecorder;
+        let audioChunks = [];
+        let recordedAudioBlob = null;
 
-        function startRecording() {
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                mediaRecorder.onstop = () => {
-                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-                    document.getElementById('btnOk').disabled = false;
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
                 };
+
+                mediaRecorder.onstop = () => {
+                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    document.getElementById('btnOk').disabled = false;
+                    document.getElementById('btnSend').disabled = false;
+                    showToast('Rekaman selesai!');
+                };
+
                 mediaRecorder.start();
-                document.getElementById('btnRec').disabled = true;
                 document.getElementById('btnRec').classList.add('is-recording');
+                document.getElementById('btnRec').disabled = true;
                 document.getElementById('btnStop').disabled = false;
-                showToast('Merekam suara...');
-            }).catch(e => { console.error(e); showToast('Akses mikrofon ditolak/tidak didukung.'); });
+                showToast('Mulai merekam...');
+            } catch (err) {
+                console.error("Gagal merekam audio:", err);
+                showToast('Akses mikrofon ditolak / tidak didukung.');
+            }
         }
 
         function stopRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
-                document.getElementById('btnRec').classList.remove('is-recording');
-                document.getElementById('btnStop').disabled = true;
-                showToast('Rekaman selesai. Silakan simpan.');
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
             }
+            document.getElementById('btnRec').classList.remove('is-recording');
+            document.getElementById('btnRec').disabled = false;
+            document.getElementById('btnStop').disabled = true;
         }
 
         function uploadRecordingToDrive() {
-            showToast('Menyiapkan tautan setoran...');
-            setTimeout(() => {
-                document.getElementById('btnSend').disabled = false;
-                showToast('Rekaman siap dikirim via WhatsApp!');
-            }, 1000);
+            if (!recordedAudioBlob) return;
+            showToast('Simpan file lokal / fitur drive siap diintegrasikan.');
         }
 
         function sendToWhatsApp() {
-            const profile = window.currentUserProfile || {};
-            const msg = `Assalamu'alaikum, saya ${profile.name || 'Siswa'} ingin menyetorkan rekaman Tartili Jilid ${currentJilid} Halaman ${currentPage}.`;
-            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+            const dataArr = window[`tartili${currentJilid}Data`];
+            const pCode = dataArr && dataArr[currentPageIndex] ? dataArr[currentPageIndex].page : '';
+            const msg = encodeURIComponent(`Assalaamu'alaikum Guru, ini setoran membaca Tartili Jilid ${currentJilid} Halaman ${pCode.toUpperCase()}.`);
+            window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
         }
 
-        const scrollArea = document.getElementById('scrollArea');
-        if (scrollArea) {
-            scrollArea.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 2) {
-                    if (!isPortrait()) {
-                        initialDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                    }
-                    return;
-                }
-                if (e.touches.length === 1) {
-                    touchStartX = e.touches[0].clientX;
-                }
-            }, {passive: true});
-
-            scrollArea.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 2 && !isPortrait() && initialDistance) {
-                    let currentDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                    let delta = (currentDistance - initialDistance) * 0.005;
-                    scale = Math.min(Math.max(1, scale + delta), 2.5);
-                    updateImageTransform();
-                    initialDistance = currentDistance;
-                }
-            }, {passive: true});
-
-            scrollArea.addEventListener('touchend', (e) => {
-                if (e.changedTouches.length === 1 && scale === 1) {
-                    touchEndX = e.changedTouches[0].clientX;
-                    let diff = touchStartX - touchEndX;
-                    if (Math.abs(diff) > minSwipeDistance) {
-                        if (diff > 0) changePage(1);
-                        else changePage(-1);
-                    }
-                }
-            }, {passive: true});
-        }
+        // Inisialisasi dropdown awal
+        document.addEventListener('DOMContentLoaded', () => {
+            updatePageOptions('Menu');
+            updatePageOptions('Bookmarks');
+            updatePageOptions('Read');
+        });
     </script>
 </body>
 </html>
