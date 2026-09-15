@@ -158,7 +158,7 @@
             });
         }
 
-        // --- REALTIME NOTIFIKASI SYSTEM ---
+        // --- REALTIME NOTIFIKASI SITEM ---
         function initRealtimeNotifications(userId, profile) {
             if (window.unsubNotifications) window.unsubNotifications();
             
@@ -853,16 +853,8 @@
             
             <button onclick="openClassMembersScreen()" style="width: 100%; padding: 10px; background: var(--accent-gradient); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-bottom: 8px;">👥 Lihat Daftar Siswa di Kelas</button>
 
-            <!-- TAB / SECTION DAFTAR SETORAN SISWA -->
-            <div style="text-align: left; margin-bottom: 4px; border-top: 1px solid var(--border-color); padding-top: 8px;">
-                <span style="font-size: 13px; font-weight: 800; color: var(--text-main);">🎤 Setoran Rekaman Masuk</span>
-            </div>
-            <div id="submissionsContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px; margin-bottom: 8px;">
-                <!-- Diisi dinamis via JS -->
-            </div>
-
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-align: left; border-top: 1px solid var(--border-color); padding-top: 8px;">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
-            <div id="pendingStudentContainer" style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-align: left;">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
+            <div id="pendingStudentContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
                 <!-- Diisi dinamis via JS -->
             </div>
 
@@ -928,7 +920,7 @@
                 <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover2.jpg"></button>
                 <button class="btn-cover" id="cover-btn-2" onclick="openJilid(3, 'a')" onmouseenter="selectedMenuCoverIndex=2; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover3.jpg"></button>
                 <button class="btn-cover" id="cover-btn-3" onclick="openJilid(4, 'a')" onmouseenter="selectedMenuCoverIndex=3; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover4.jpg"></button>
-                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=4; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover5.jpg"></button>
+                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover5.jpg"></button>
                 <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover6.jpg"></button>
             </div>
             
@@ -1041,7 +1033,8 @@
                 <div class="record-buttons">
                     <button class="universal-btn btn-record" id="btnRec" onclick="startRecording()">Rekam</button>
                     <button class="universal-btn btn-stop" id="btnStop" onclick="stopRecording()" disabled>Stop</button>
-                    <button class="universal-btn btn-send" id="btnSend" onclick="sendToTeacherDirect()" disabled>Kirim ke Guru</button>
+                    <button class="universal-btn btn-ok" id="btnOk" onclick="uploadRecordingToDrive()" disabled>Simpan</button>
+                    <button class="universal-btn btn-send" id="btnSend" onclick="sendToWhatsApp()" disabled>Kirim WA</button>
                 </div>
             </div>
         </div>
@@ -1054,7 +1047,7 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const swCode = `
-                    const CACHE_NAME = 'tartili-cache-v10';
+                    const CACHE_NAME = 'tartili-cache-v9';
                     self.addEventListener('install', (e) => { self.skipWaiting(); });
                     self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
                     self.addEventListener('fetch', (e) => {
@@ -1483,7 +1476,7 @@
             }
         }
 
-        // --- TEACHER PANEL & SUBMISSION SYSTEM ---
+        // --- TEACHER PANEL ---
         async function openTeacherAdminScreen() {
             appState = 'teacher-admin';
             document.getElementById('menu-screen').classList.remove('active');
@@ -1494,7 +1487,6 @@
             if (codeDisplay) codeDisplay.innerText = profile.classCode || '-';
 
             await loadTeacherPendingStudents();
-            await loadStudentSubmissions();
         }
 
         async function loadTeacherPendingStudents() {
@@ -1563,89 +1555,6 @@
             }
         }
 
-        async function loadStudentSubmissions() {
-            const container = document.getElementById('submissionsContainer');
-            if (!container) return;
-            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat setoran siswa...</div>`;
-
-            try {
-                const teacherClassCode = window.currentUserProfile.classCode;
-                const q = window.query(
-                    window.collection(window.firebaseDb, "submissions"),
-                    window.where("classCode", "==", teacherClassCode),
-                    window.orderBy("createdAt", "desc")
-                );
-                const querySnapshot = await window.getDocs(q);
-
-                container.innerHTML = "";
-                if (querySnapshot.empty) {
-                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Belum ada setoran audio dari siswa.</div>`;
-                    return;
-                }
-
-                querySnapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    const subId = docSnap.id;
-
-                    let item = document.createElement('div');
-                    item.style.cssText = "padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; display: flex; flex-direction: column; gap: 8px;";
-                    item.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${data.studentName}</div>
-                                <div style="font-size: 11px; color: var(--text-muted);">Tartili ${data.jilid} - Halaman ${data.page}</div>
-                            </div>
-                            <span style="font-size: 10px; opacity: 0.7;">${data.createdAt ? new Date(data.createdAt.toDate()).toLocaleDateString([], {day:'2-digit', month:'short'}) : ''}</span>
-                        </div>
-                        
-                        <audio controls src="${data.audioBase64}" style="width: 100%; height: 36px; border-radius: 8px;"></audio>
-
-                        <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
-                            <input type="text" id="feedbackInput_${subId}" placeholder="Tulis feedback / catatan evaluasi..." value="${data.feedback || ''}" style="padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 12px; outline: none; background: var(--bg-card); color: var(--text-main);" />
-                            <button onclick="submitTeacherFeedback('${subId}', '${data.studentId}')" style="background: var(--accent-gradient); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer; align-self: flex-end;">${data.feedback ? 'Perbarui Feedback' : 'Kirim Feedback'}</button>
-                        </div>
-                    `;
-                    container.appendChild(item);
-                });
-            } catch (e) {
-                console.error(e);
-                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px; font-size:12px;">Gagal memuat setoran siswa.</div>`;
-            }
-        }
-
-        async function submitTeacherFeedback(subId, studentId) {
-            const input = document.getElementById(`feedbackInput_${subId}`);
-            if (!input) return;
-            const feedbackText = input.value.trim();
-
-            if (!feedbackText) {
-                showToast("Feedback tidak boleh kosong.");
-                return;
-            }
-
-            try {
-                await window.updateDoc(window.doc(window.firebaseDb, "submissions", subId), {
-                    feedback: feedbackText,
-                    feedbackAt: window.serverTimestamp()
-                });
-
-                // Kirim notifikasi ke siswa terkait feedback setoran
-                await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
-                    targetUserId: studentId,
-                    title: "Feedback Setoran Tartili!",
-                    message: `Guru telah memberikan feedback pada setoran Anda: "${feedbackText}"`,
-                    readBy: [],
-                    createdAt: window.serverTimestamp()
-                });
-
-                showToast("Feedback berhasil dikirim ke siswa!");
-            } catch (e) {
-                console.error(e);
-                showToast("Gagal mengirim feedback.");
-            }
-        }
-        window.submitTeacherFeedback = submitTeacherFeedback;
-
         // --- CLASS MEMBERS SCREEN ---
         let previousScreenBeforeMembers = 'menu';
 
@@ -1707,29 +1616,33 @@
 
                 if (snapStudents.empty) {
                     let emptyItem = document.createElement('div');
-                    emptyItem.style.cssText = "text-align:center; color:var(--text-muted); padding:20px;";
-                    emptyItem.innerText = "Belum ada siswa aktif dalam kelas ini.";
+                    emptyItem.style.cssText = "text-align:center; color:var(--text-muted); padding:15px; font-size:12px;";
+                    emptyItem.innerText = "Belum ada siswa lain yang aktif di kelas ini.";
                     container.appendChild(emptyItem);
-                } else {
-                    snapStudents.forEach(docSnap => {
-                        const sData = docSnap.data();
-                        const sId = docSnap.id;
-                        let item = document.createElement('div');
-                        item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
-                        item.innerHTML = `
-                            <div>
-                                <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${sData.name}</div>
-                                <div style="font-size: 11px; color: var(--text-muted);">Email: ${sData.email}</div>
-                            </div>
-                            ${sId !== profile.uid ? `<button onclick="openMessagingModal('${sId}', '${sData.name}')" style="background:var(--accent-gradient); color:white; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">💬 Chat</button>` : ''}
-                        `;
-                        container.appendChild(item);
-                    });
+                    return;
                 }
+
+                snapStudents.forEach((docSnap) => {
+                    const sData = docSnap.data();
+                    const sId = docSnap.id;
+                    let item = document.createElement('div');
+                    item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
+                    item.innerHTML = `
+                        <div>
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👤 ${sData.name}</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${sData.email}</div>
+                        </div>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 6px;">Aktif</span>
+                            ${sId !== profile.uid ? `<button onclick="openMessagingModal('${sId}', '${sData.name}')" style="background:var(--accent-gradient); color:white; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">💬 Chat</button>` : ''}
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
 
             } catch (e) {
                 console.error(e);
-                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat anggota kelas.</div>`;
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat daftar anggota kelas.</div>`;
             }
         }
 
@@ -1744,28 +1657,129 @@
             }
         }
 
-        async function handleLogout() {
-            try {
-                if (window.unsubNotifications) window.unsubNotifications();
-                await window.signOut(window.firebaseAuth);
-                showToast('Berhasil keluar akun.');
-            } catch (e) {
-                console.error("Gagal keluar:", e);
-            }
+        function handleLogout() {
+            window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
         }
 
-        // --- NAVIGATION & TARTILI VIEWER LOGIC ---
-        let currentJilid = 1;
-        let currentPageIndex = 0;
-        let appState = 'login';
-        let selectedMenuCoverIndex = 0;
-        let recordedAudioBlob = null;
-        let mediaRecorder = null;
-        let audioChunks = [];
+        let savedLastRead = JSON.parse(localStorage.getItem('tartili_last_read')) || { jilid: 1, page: 'a' };
+        let savedBookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks')) || [];
+        
+        let currentJilid = savedLastRead.jilid, currentPage = savedLastRead.page, appState = 'menu', selectedMenuCoverIndex = 0, currentAudio = null;
+        let mediaRecorder, audioChunks = [], recordedAudioBlob = null, generatedWhatsAppUrl = ""; 
+        
+        const baseUrl = "https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/";
+        let scale = 1, initialDistance = null;
+        let touchStartX = 0, touchEndX = 0;
+        const minSwipeDistance = 50;
+
+        const allAudioConfig = {
+            "1": typeof tartili1Config !== 'undefined' ? tartili1Config : {},
+            "2": typeof tartili2Config !== 'undefined' ? tartili2Config : {},
+            "3": typeof tartili3Config !== 'undefined' ? tartili3Config : {},
+            "4": typeof tartili4Config !== 'undefined' ? tartili4Config : {},
+            "5": typeof tartili5Config !== 'undefined' ? tartili5Config : {},
+            "6": typeof tartili6Config !== 'undefined' ? tartili6Config : {}
+        };
+
+        history.replaceState({ screen: 'menu' }, '', '');
+
+        window.addEventListener('popstate', function(event) {
+            if (appState === 'read') {
+                if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+                resetRecording();
+                goToMenu();
+            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin' || appState === 'class-members') {
+                goToMenu();
+            } else {
+                history.back();
+            }
+        });
+
+        function isPortrait() { return window.innerHeight > window.innerWidth; }
+
+        window.addEventListener('resize', () => {
+            if (isPortrait()) { resetZoom(); }
+            const container = document.getElementById('imageContainer');
+            if (appState === 'read' && (!container.innerHTML || container.innerHTML.trim() === '')) {
+                loadPageData();
+            }
+        });
+
+        updatePageOptions('Menu');
+        updatePageOptions('Read'); 
+        updatePageOptions('Bookmarks');
+        updateMenuCoverFocus();
+
+        function openBookmarksScreen() {
+            appState = 'bookmarks';
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('read-screen').classList.remove('active');
+            document.getElementById('bookmarks-screen').classList.add('active');
+            renderBookmarksList();
+            updatePageOptions('Bookmarks');
+            history.pushState({ screen: 'bookmarks' }, '', '');
+        }
+
+        function renderBookmarksList() {
+            const container = document.getElementById('bookmarksListContainer');
+            if (!container) return;
+            container.innerHTML = "";
+
+            if (savedBookmarks.length === 0) {
+                container.innerHTML = `<div style="display:flex; flex-direction: column; align-items:center; justify-content:center; height: 180px; color:var(--text-muted); font-size:13px; padding:20px; text-align:center; gap: 8px;"><span style="font-size: 36px;">📖</span><span>Belum ada halaman tersimpan.</span></div>`;
+                return;
+            }
+
+            const reversedBookmarks = [...savedBookmarks].reverse();
+
+            reversedBookmarks.forEach((b, revIndex) => {
+                const originalIndex = savedBookmarks.length - 1 - revIndex;
+
+                let item = document.createElement('div');
+                item.className = 'bookmark-item';
+                item.setAttribute('onclick', `openJilid(${b.jilid}, '${b.page}')`);
+                item.innerHTML = `
+                    <div class="bookmark-item-content">
+                        <div class="bookmark-item-icon">
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:#0ea5e9;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
+                        </div>
+                        <div class="bookmark-item-info">
+                            <span class="bookmark-item-title">Tartili Jilid ${b.jilid}</span>
+                            <span class="bookmark-item-subtitle">Halaman ${b.page}</span>
+                        </div>
+                    </div>
+                    <button class="bookmark-item-delete" onclick="removeBookmark(${originalIndex}, event)" title="Hapus">✕</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function removeBookmark(index, event) {
+            event.stopPropagation();
+            savedBookmarks.splice(index, 1);
+            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
+            renderBookmarksList();
+            updateBookmarkButtonState();
+            showToast('Halaman dihapus dari simpanan');
+        }
+
+        function goToMenu() {
+            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+            resetRecording();
+            appState = 'menu';
+            document.getElementById('read-screen').classList.remove('active');
+            document.getElementById('bookmarks-screen').classList.remove('active');
+            document.getElementById('admin-screen').classList.remove('active');
+            document.getElementById('teacher-admin-screen').classList.remove('active');
+            document.getElementById('class-members-screen').classList.remove('active');
+            document.getElementById('menu-screen').classList.add('active');
+            updateMenuCoverFocus();
+            history.replaceState({ screen: 'menu' }, '', '');
+        }
 
         function updateMenuCoverFocus() {
             for (let i = 0; i < 6; i++) {
-                const btn = document.getElementById(`cover-btn-${i}`);
+                let btn = document.getElementById('cover-btn-' + i);
                 if (btn) {
                     if (i === selectedMenuCoverIndex) btn.classList.add('keyboard-focused');
                     else btn.classList.remove('keyboard-focused');
@@ -1773,362 +1787,296 @@
             }
         }
 
-        function openJilid(jilidNum, pageCode) {
-            currentJilid = jilidNum;
-            const data = getJilidData(jilidNum);
-            if (!data) return;
-
-            let foundIdx = 0;
-            if (pageCode) {
-                foundIdx = data.findIndex(p => p.halaman === pageCode);
-                if (foundIdx === -1) foundIdx = 0;
-            }
-
-            currentPageIndex = foundIdx;
-            hideAllScreens();
-            document.getElementById('read-screen').classList.add('active');
-            appState = 'read';
-            
-            updatePageOptions('Read');
-            renderPage();
+        function getNumericPageList(jilid) {
+            let list = [], max = (jilid === 6) ? 48 : 44;
+            for (let i = 1; i <= max; i++) list.push(i.toString());
+            return list;
         }
 
-        function getJilidData(jilidNum) {
-            switch(parseInt(jilidNum)) {
-                case 1: return typeof tartili1Data !== 'undefined' ? tartili1Data : [];
-                case 2: return typeof tartili2Data !== 'undefined' ? tartili2Data : [];
-                case 3: return typeof tartili3Data !== 'undefined' ? tartili3Data : [];
-                case 4: return typeof tartili4Data !== 'undefined' ? tartili4Data : [];
-                case 5: return typeof tartili5Data !== 'undefined' ? tartili5Data : [];
-                case 6: return typeof tartili6Data !== 'undefined' ? tartili6Data : [];
-                default: return [];
-            }
-        }
-
-        function renderPage() {
-            const data = getJilidData(currentJilid);
-            if (!data || data.length === 0) return;
-
-            const pageObj = data[currentPageIndex];
-            const container = document.getElementById('imageContainer');
-            const spinner = document.getElementById('loadingSpinner');
-
-            if (spinner) spinner.style.display = 'block';
-            container.innerHTML = '';
-
-            const img = document.createElement('img');
-            img.src = pageObj.gambar;
-            img.onload = () => { if (spinner) spinner.style.display = 'none'; };
-            img.onerror = () => { if (spinner) spinner.style.display = 'none'; };
-
-            container.appendChild(img);
-
-            if (pageObj.suara) {
-                pageObj.suara.forEach(s => {
-                    const block = document.createElement('div');
-                    block.className = 'sound-block';
-                    block.style.left = s.koordinat.left;
-                    block.style.top = s.koordinat.top;
-                    block.style.width = s.koordinat.width;
-                    block.style.height = s.koordinat.height;
-                    block.onclick = () => playAudio(s.audioUrl);
-                    container.appendChild(block);
-                });
-            }
-
-            const jumpSelect = document.getElementById('jumpPageSelectRead');
-            if (jumpSelect) jumpSelect.value = pageObj.halaman;
-
-            updateBookmarkButtonState();
-            resetRecorderUI();
-        }
-
-        let activeAudio = null;
-        function playAudio(url) {
-            if (activeAudio) { activeAudio.pause(); activeAudio = null; }
-            activeAudio = new Audio(url);
-            activeAudio.play().catch(e => console.log(e));
-        }
-
-        function changePage(delta) {
-            const data = getJilidData(currentJilid);
-            let nextIdx = currentPageIndex + delta;
-            if (nextIdx >= 0 && nextIdx < data.length) {
-                currentPageIndex = nextIdx;
-                renderPage();
-            }
+        function getFullPageList(jilid) {
+            let list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', '0'];
+            return list.concat(getNumericPageList(jilid));
         }
 
         function updatePageOptions(context) {
-            let jilidVal = 1;
-            let targetSelect = null;
-
-            if (context === 'Menu') {
-                jilidVal = document.getElementById('jumpJilidMenu').value;
-                targetSelect = document.getElementById('jumpPageSelectMenu');
+            let selectId = 'jumpJilidMenu';
+            let targetSelectId = 'jumpPageSelectMenu';
+            if (context === 'Read') {
+                selectId = 'jumpJilidRead';
+                targetSelectId = 'jumpPageSelectRead';
             } else if (context === 'Bookmarks') {
-                jilidVal = document.getElementById('jumpJilidBookmarks').value;
-                targetSelect = document.getElementById('jumpPageSelectBookmarks');
-            } else if (context === 'Read') {
-                jilidVal = currentJilid;
-                const jilidSelect = document.getElementById('jumpJilidRead');
-                if (jilidSelect) jilidSelect.value = currentJilid;
-                targetSelect = document.getElementById('jumpPageSelectRead');
+                selectId = 'jumpJilidBookmarks';
+                targetSelectId = 'jumpPageSelectBookmarks';
             }
-
-            if (!targetSelect) return;
-            const data = getJilidData(jilidVal);
-            targetSelect.innerHTML = '';
-
-            data.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.halaman;
-                opt.innerText = `Hal. ${p.halaman}`;
-                targetSelect.appendChild(opt);
+            
+            let jilidEl = document.getElementById(selectId);
+            let select = document.getElementById(targetSelectId);
+            if (!jilidEl || !select) return;
+            
+            let jilid = parseInt(jilidEl.value);
+            select.innerHTML = "";
+            getNumericPageList(jilid).forEach(p => { 
+                let opt = document.createElement('option'); 
+                opt.value = p; opt.text = p; 
+                select.appendChild(opt); 
             });
         }
 
         function directOpen(context) {
-            let jilidVal = 1;
-            let pageVal = '';
-
-            if (context === 'Menu') {
-                jilidVal = document.getElementById('jumpJilidMenu').value;
-                pageVal = document.getElementById('jumpPageSelectMenu').value;
+            let jilidId = 'jumpJilidMenu';
+            let pageId = 'jumpPageSelectMenu';
+            if (context === 'Read') {
+                jilidId = 'jumpJilidRead';
+                pageId = 'jumpPageSelectRead';
             } else if (context === 'Bookmarks') {
-                jilidVal = document.getElementById('jumpJilidBookmarks').value;
-                pageVal = document.getElementById('jumpPageSelectBookmarks').value;
-            } else if (context === 'Read') {
-                jilidVal = document.getElementById('jumpJilidRead').value;
-                pageVal = document.getElementById('jumpPageSelectRead').value;
+                jilidId = 'jumpJilidBookmarks';
+                pageId = 'jumpPageSelectBookmarks';
             }
-
-            openJilid(jilidVal, pageVal);
+            const jilid = parseInt(document.getElementById(jilidId).value);
+            const page = document.getElementById(pageId).value;
+            openJilid(jilid, page);
         }
 
-        function goToMenu() {
-            hideAllScreens();
-            document.getElementById('menu-screen').classList.add('active');
-            appState = 'menu';
-            updatePageOptions('Menu');
+        function openJilid(jilid, page) {
+            currentJilid = jilid; currentPage = page; appState = 'read';
+            document.getElementById('read-screen').classList.add('active');
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('bookmarks-screen').classList.remove('active');
+            document.getElementById('admin-screen').classList.remove('active');
+            document.getElementById('teacher-admin-screen').classList.remove('active');
+            document.getElementById('class-members-screen').classList.remove('active');
+            updatePageOptions('Read');
+            
+            let numList = getNumericPageList(currentJilid);
+            let targetPage = numList.includes(currentPage.toString()) ? currentPage.toString() : "1";
+            document.getElementById('jumpPageSelectRead').value = targetPage;
+            
+            resetZoom();
+            loadPageData();
+            history.pushState({ screen: 'read' }, '', '');
         }
 
-        function openBookmarksScreen() {
-            hideAllScreens();
-            document.getElementById('bookmarks-screen').classList.add('active');
-            appState = 'bookmarks';
-            renderBookmarksList();
-            updatePageOptions('Bookmarks');
+        function resetZoom() { scale = 1; updateImageTransform(); }
+
+        function updateImageTransform() {
+            const container = document.getElementById('imageContainer');
+            if (container) container.style.transform = `scale(${scale})`;
         }
 
-        function getBookmarks() {
-            return JSON.parse(localStorage.getItem('tartili_bookmarks') || '[]');
+        function changePage(delta) {
+            let pages = getFullPageList(currentJilid);
+            let currentIndex = pages.indexOf(currentPage.toString());
+            let newIndex = currentIndex + delta;
+            if (newIndex >= 0 && newIndex < pages.length) {
+                currentPage = pages[newIndex];
+                resetZoom();
+                loadPageData();
+            }
         }
 
         function toggleBookmark() {
-            const data = getJilidData(currentJilid);
-            if (!data[currentPageIndex]) return;
-            const currentPageObj = data[currentPageIndex];
-
-            let bookmarks = getBookmarks();
-            const existIdx = bookmarks.findIndex(b => b.jilid === currentJilid && b.halaman === currentPageObj.halaman);
-
-            if (existIdx !== -1) {
-                bookmarks.splice(existIdx, 1);
-                showToast("Dihapus dari Halaman Tersimpan");
+            let index = savedBookmarks.findIndex(b => b.jilid === currentJilid && b.page === currentPage);
+            
+            if (index > -1) {
+                savedBookmarks.splice(index, 1);
+                showToast('Halaman dihapus dari simpanan');
             } else {
-                bookmarks.push({ jilid: currentJilid, halaman: currentPageObj.halaman, date: new Date().toLocaleDateString() });
-                showToast("Disimpan ke Halaman Tersimpan");
+                savedBookmarks.push({ jilid: currentJilid, page: currentPage });
+                showToast('Halaman berhasil disimpan!');
             }
-
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(bookmarks));
+            
+            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
             updateBookmarkButtonState();
         }
 
         function updateBookmarkButtonState() {
             const btn = document.getElementById('btnBookmark');
             if (!btn) return;
-            const data = getJilidData(currentJilid);
-            if (!data[currentPageIndex]) return;
-
-            let bookmarks = getBookmarks();
-            const exist = bookmarks.some(b => b.jilid === currentJilid && b.halaman === data[currentPageIndex].halaman);
-
-            if (exist) btn.classList.add('saved');
-            else btn.classList.remove('saved');
-        }
-
-        function renderBookmarksList() {
-            const container = document.getElementById('bookmarksListContainer');
-            if (!container) return;
-            const bookmarks = getBookmarks();
-
-            container.innerHTML = '';
-            if (bookmarks.length === 0) {
-                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:30px; font-size:13px;">Belum ada halaman yang disimpan.</div>`;
-                return;
+            let isSaved = savedBookmarks.some(b => b.jilid === currentJilid && b.page === currentPage);
+            if (isSaved) {
+                btn.classList.add('saved');
+                btn.title = "Hapus Simpanan (Unsave)";
+            } else {
+                btn.classList.remove('saved');
+                btn.title = "Simpan Halaman (Save)";
             }
-
-            bookmarks.forEach((b, index) => {
-                const item = document.createElement('div');
-                item.className = 'bookmark-item';
-                item.onclick = () => openJilid(b.jilid, b.halaman);
-                item.innerHTML = `
-                    <div class="bookmark-item-content">
-                        <div class="bookmark-item-icon">📖</div>
-                        <div class="bookmark-item-info">
-                            <div class="bookmark-item-title">Tartili ${b.jilid} - Halaman ${b.halaman}</div>
-                            <div class="bookmark-item-subtitle">Disimpan: ${b.date || '-'}</div>
-                        </div>
-                    </div>
-                    <button class="bookmark-item-delete" onclick="event.stopPropagation(); deleteBookmark(${index});" title="Hapus">✕</button>
-                `;
-                container.appendChild(item);
-            });
         }
 
-        function deleteBookmark(index) {
-            let bookmarks = getBookmarks();
-            bookmarks.splice(index, 1);
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(bookmarks));
-            renderBookmarksList();
-            showToast("Halaman tersimpan dihapus");
+        function loadPageData() {
+            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+            resetRecording();
+            
+            localStorage.setItem('tartili_last_read', JSON.stringify({ jilid: currentJilid, page: currentPage }));
+            updateBookmarkButtonState();
+
+            const container = document.getElementById('imageContainer');
+            const spinner = document.getElementById('loadingSpinner');
+            const imgPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/halaman${currentPage}.jpg`;
+            
+            if (spinner) spinner.style.display = 'block';
+            container.innerHTML = "";
+
+            let img = new Image();
+            img.src = imgPath;
+            img.onload = function() {
+                if (spinner) spinner.style.display = 'none';
+                let htmlContent = `<img src="${imgPath}">`;
+                
+                if (allAudioConfig[currentJilid] && allAudioConfig[currentJilid][currentPage]) {
+                    allAudioConfig[currentJilid][currentPage].forEach(block => {
+                        let [top, left, width, height, soundFile] = block;
+                        htmlContent += `<div class="sound-block" style="top: ${top}%; left: ${left}%; width: ${width}%; height: ${height}%;" onclick="playSound('${soundFile}')"></div>`;
+                    });
+                }
+                container.innerHTML = htmlContent;
+            };
+            img.onerror = function() {
+                if (spinner) spinner.style.display = 'none';
+                container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;">Gagal memuat halaman</div>`;
+            };
+
+            document.getElementById('jumpJilidRead').value = currentJilid;
+            let numList = getNumericPageList(currentJilid);
+            if (numList.includes(currentPage.toString())) { 
+                document.getElementById('jumpPageSelectRead').value = currentPage; 
+            }
         }
 
-        // --- RECORDING & DIRECT AUDIO SUBMISSION SYSTEM ---
-        function resetRecorderUI() {
-            recordedAudioBlob = null;
+        function playSound(soundFile) {
+            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
+            let soundPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/${soundFile}`;
+            currentAudio = new Audio(soundPath);
+            currentAudio.play();
+        }
+
+        function resetRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') { mediaRecorder.stop(); }
+            audioChunks = []; recordedAudioBlob = null; generatedWhatsAppUrl = "";
             const btnRec = document.getElementById('btnRec');
             const btnStop = document.getElementById('btnStop');
+            const btnOk = document.getElementById('btnOk');
             const btnSend = document.getElementById('btnSend');
-
             if (btnRec) { btnRec.disabled = false; btnRec.classList.remove('is-recording'); }
             if (btnStop) btnStop.disabled = true;
+            if (btnOk) btnOk.disabled = true;
             if (btnSend) btnSend.disabled = true;
         }
 
-        async function startRecording() {
-            audioChunks = [];
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        function startRecording() {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
                 mediaRecorder = new MediaRecorder(stream);
-
-                mediaRecorder.ondataavailable = (e) => {
-                    if (e.data.size > 0) audioChunks.push(e.data);
-                };
-
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
                 mediaRecorder.onstop = () => {
-                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    document.getElementById('btnSend').disabled = false;
-                    showToast("Rekaman selesai! Siap dikirim ke Guru.");
+                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                    document.getElementById('btnOk').disabled = false;
                 };
-
                 mediaRecorder.start();
-                document.getElementById('btnRec').classList.add('is-recording');
                 document.getElementById('btnRec').disabled = true;
+                document.getElementById('btnRec').classList.add('is-recording');
                 document.getElementById('btnStop').disabled = false;
-                showToast("Mulai merekam...");
-
-            } catch (err) {
-                console.error("Izin mikrofon ditolak atau gagal:", err);
-                showToast("Gagal mengakses mikrofon.");
-            }
+                showToast('Merekam suara...');
+            }).catch(e => { console.error(e); showToast('Akses mikrofon ditolak/tidak didukung.'); });
         }
 
         function stopRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
                 document.getElementById('btnRec').classList.remove('is-recording');
-                document.getElementById('btnRec').disabled = false;
                 document.getElementById('btnStop').disabled = true;
+                showToast('Rekaman selesai. Silakan simpan.');
             }
         }
 
-        function blobToBase64(blob) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
+        function uploadRecordingToDrive() {
+            showToast('Menyiapkan tautan setoran...');
+            setTimeout(() => {
+                document.getElementById('btnSend').disabled = false;
+                showToast('Rekaman siap dikirim via WhatsApp!');
+            }, 1000);
         }
 
-        async function sendToTeacherDirect() {
-            if (!recordedAudioBlob) {
-                showToast("Belum ada rekaman yang disiapkan.");
-                return;
-            }
+        function sendToWhatsApp() {
+            const profile = window.currentUserProfile || {};
+            const msg = `Assalamu'alaikum, saya ${profile.name || 'Siswa'} ingin menyetorkan rekaman Tartili Jilid ${currentJilid} Halaman ${currentPage}.`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+        }
 
-            const profile = window.currentUserProfile;
-            if (!profile || profile.role !== 'Siswa') {
-                showToast("Hanya siswa yang dapat mengirim setoran.");
-                return;
-            }
-
-            if (!profile.classCode) {
-                showToast("Anda belum terhubung dengan kode kelas guru.");
-                return;
-            }
-
-            const data = getJilidData(currentJilid);
-            const currentPageObj = data[currentPageIndex];
-
-            const btnSend = document.getElementById('btnSend');
-            btnSend.disabled = true;
-            btnSend.innerText = "Mengirim...";
-
-            try {
-                // Konversi rekaman audio ke Base64 agar dapat disimpan langsung ke Firestore
-                const audioBase64 = await blobToBase64(recordedAudioBlob);
-
-                // Cari data Guru pengampu berdasarkan kode kelas
-                const qTeacher = window.query(
-                    window.collection(window.firebaseDb, "users"),
-                    window.where("role", "==", "Guru"),
-                    window.where("classCode", "==", profile.classCode)
-                );
-                const teacherSnap = await window.getDocs(qTeacher);
-                let teacherId = null;
-                if (!teacherSnap.empty) {
-                    teacherId = teacherSnap.docs[0].id;
+        const scrollArea = document.getElementById('scrollArea');
+        if (scrollArea) {
+            scrollArea.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    if (!isPortrait()) {
+                        initialDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    }
+                    return;
                 }
-
-                // Simpan data setoran ke koleksi submissions
-                await window.addDoc(window.collection(window.firebaseDb, "submissions"), {
-                    studentId: profile.uid,
-                    studentName: profile.name,
-                    classCode: profile.classCode,
-                    jilid: currentJilid,
-                    page: currentPageObj.halaman,
-                    audioBase64: audioBase64,
-                    feedback: "",
-                    createdAt: window.serverTimestamp()
-                });
-
-                // Kirim Notifikasi ke Guru
-                if (teacherId) {
-                    await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
-                        targetUserId: teacherId,
-                        title: `Setoran Rekaman Baru dari ${profile.name}!`,
-                        message: `Siswa mengirimkan setoran Tartili ${currentJilid} - Halaman ${currentPageObj.halaman}.`,
-                        readBy: [],
-                        createdAt: window.serverTimestamp()
-                    });
+                if (e.touches.length === 1) {
+                    touchStartX = e.touches[0].clientX;
                 }
+            }, {passive: true});
 
-                showToast("Setoran rekaman berhasil dikirim langsung ke Guru!");
-                resetRecorderUI();
-
-            } catch (e) {
-                console.error("Gagal mengirim setoran audio:", e);
-                showToast("Gagal mengirim setoran audio.");
-            } finally {
-                if (btnSend) {
-                    btnSend.innerText = "Kirim ke Guru";
+            scrollArea.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2 && !isPortrait() && initialDistance) {
+                    let currentDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    let delta = (currentDistance - initialDistance) * 0.005;
+                    scale = Math.min(Math.max(1, scale + delta), 2.5);
+                    updateImageTransform();
+                    initialDistance = currentDistance;
                 }
-            }
+            }, {passive: true});
+
+            scrollArea.addEventListener('touchend', (e) => {
+                if (e.changedTouches.length === 1 && scale === 1) {
+                    touchEndX = e.changedTouches[0].clientX;
+                    let diff = touchStartX - touchEndX;
+                    if (Math.abs(diff) > minSwipeDistance) {
+                        if (diff > 0) changePage(1);
+                        else changePage(-1);
+                    }
+                }
+            }, {passive: true});
         }
     </script>
+<!-- KODE MEMATIKAN ZOOM (Cukup tempel di satu tempat ini saja) -->
+<style>
+    html, body {
+        touch-action: manipulation;
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+</style>
+
+<script>
+    // 1. Ubah meta viewport secara otomatis via JavaScript
+    var meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'viewport';
+        document.head.appendChild(meta);
+    }
+    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+
+    // 2. Mencegah zoom dari Keyboard (Ctrl +, Ctrl -, Ctrl 0)
+    window.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // 3. Mencegah zoom dari Scroll Mouse (Ctrl + Roda Mouse)
+    window.addEventListener('wheel', function (e) {
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // 4. Mencegah Gesture Pinch Zoom pada HP/Touchpad
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+</script>
+    
 </body>
 </html>
