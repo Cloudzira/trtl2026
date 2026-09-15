@@ -455,7 +455,7 @@
             .landing-hero-card { flex-direction: row; align-items: center; gap: 12px; padding: 16px; }
             .landing-hero-actions { width: auto; justify-content: flex-end; }
 
-            .image-scroll-area { flex: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 4px !important; overflow: hidden !important; }
+            .image-scroll-area { flex: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 4px !important; overflow: hidden !important; touch-action: none; }
             .image-container { height: 100% !important; width: auto !important; aspect-ratio: 1 / 1.414 !important; max-width: 100% !important; max-height: 100% !important; margin-bottom: 0 !important; }
             .image-container img { width: 100% !important; height: 100% !important; object-fit: fill !important; }
 
@@ -512,13 +512,13 @@
 
             .image-scroll-area {
                 display: flex !important; flex-direction: column !important; align-items: center !important;
-                justify-content: flex-start !important; overflow-y: auto !important; overflow-x: hidden !important;
-                padding-top: 4px !important; padding-bottom: 4px !important;
+                justify-content: flex-start !important; overflow: hidden !important;
+                padding-top: 4px !important; padding-bottom: 4px !important; touch-action: none;
             }
             
             .image-container { 
                 max-width: 550px !important; height: auto !important; aspect-ratio: 1 / 1.414 !important; 
-                margin: 0 auto !important; transform-origin: top center !important;
+                margin: 0 auto !important; transform-origin: center center !important;
             }
             .image-container img { width: 100% !important; height: 100% !important; object-fit: fill !important; }
 
@@ -645,9 +645,9 @@
         #read-screen.active { display: flex; flex-direction: column; }
 
         .image-scroll-area {
-            flex: 1; width: 100%; overflow-y: auto; overflow-x: hidden;
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            padding: 6px 0; position: relative;
+            flex: 1; width: 100%; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 6px 0; position: relative; touch-action: none;
         }
 
         .loading-spinner {
@@ -661,8 +661,9 @@
             position: relative; display: block; border-radius: 18px; background: var(--bg-card);
             box-shadow: var(--shadow); width: 92%; max-width: 440px;
             aspect-ratio: 1 / 1.414; transform-origin: center center; will-change: transform;
-            transition: transform 0.05s ease-out; border: 1px solid var(--border-color);
+            border: 1px solid var(--border-color); cursor: grab; user-select: none;
         }
+        .image-container:active { cursor: grabbing; }
 
         .image-container img { width: 100%; height: 100%; display: block; border-radius: 18px; pointer-events: none; object-fit: fill; }
         
@@ -1397,7 +1398,7 @@
 
         // --- MASTER ADMIN PANEL ---
         async function openMasterAdminScreen() {
-            appState = 'admin';
+            window.appState = 'admin';
             document.getElementById('menu-screen').classList.remove('active');
             document.getElementById('admin-screen').classList.add('active');
             await loadMasterPendingUsers();
@@ -1478,7 +1479,7 @@
 
         // --- TEACHER PANEL ---
         async function openTeacherAdminScreen() {
-            appState = 'teacher-admin';
+            window.appState = 'teacher-admin';
             document.getElementById('menu-screen').classList.remove('active');
             document.getElementById('teacher-admin-screen').classList.add('active');
             
@@ -1559,7 +1560,7 @@
         let previousScreenBeforeMembers = 'menu';
 
         async function openClassMembersScreen() {
-            if (appState === 'teacher-admin') {
+            if (window.appState === 'teacher-admin') {
                 previousScreenBeforeMembers = 'teacher-admin';
                 document.getElementById('teacher-admin-screen').classList.remove('active');
             } else {
@@ -1567,7 +1568,7 @@
                 document.getElementById('menu-screen').classList.remove('active');
             }
 
-            appState = 'class-members';
+            window.appState = 'class-members';
             document.getElementById('class-members-screen').classList.add('active');
 
             const container = document.getElementById('classMembersContainer');
@@ -1642,7 +1643,7 @@
 
             } catch (e) {
                 console.error(e);
-                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat daftar anggota kelas.</div>`;
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat anggota kelas.</div>`;
             }
         }
 
@@ -1650,392 +1651,453 @@
             document.getElementById('class-members-screen').classList.remove('active');
             if (previousScreenBeforeMembers === 'teacher-admin') {
                 document.getElementById('teacher-admin-screen').classList.add('active');
-                appState = 'teacher-admin';
+                window.appState = 'teacher-admin';
             } else {
                 document.getElementById('menu-screen').classList.add('active');
-                appState = 'menu';
+                window.appState = 'menu';
             }
         }
 
-        function handleLogout() {
-            window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
+        async function handleLogout() {
+            try {
+                await window.signOut(window.firebaseAuth);
+                showToast('Berhasil keluar.');
+            } catch (e) {
+                console.error(e);
+            }
         }
 
-        let savedLastRead = JSON.parse(localStorage.getItem('tartili_last_read')) || { jilid: 1, page: 'a' };
-        let savedBookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks')) || [];
-        
-        let currentJilid = savedLastRead.jilid, currentPage = savedLastRead.page, appState = 'menu', selectedMenuCoverIndex = 0, currentAudio = null;
-        let mediaRecorder, audioChunks = [], recordedAudioBlob = null, generatedWhatsAppUrl = ""; 
-        
-        const baseUrl = "https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/";
-        let scale = 1, initialDistance = null;
-        let touchStartX = 0, touchEndX = 0;
-        const minSwipeDistance = 50;
+        // --- MANAJEMEN BACAAN & BUKU ---
+        let currentJilid = 1;
+        let currentPageIndex = 0;
+        let tartiliData = [];
 
-        const allAudioConfig = {
-            "1": typeof tartili1Config !== 'undefined' ? tartili1Config : {},
-            "2": typeof tartili2Config !== 'undefined' ? tartili2Config : {},
-            "3": typeof tartili3Config !== 'undefined' ? tartili3Config : {},
-            "4": typeof tartili4Config !== 'undefined' ? tartili4Config : {},
-            "5": typeof tartili5Config !== 'undefined' ? tartili5Config : {},
-            "6": typeof tartili6Config !== 'undefined' ? tartili6Config : {}
-        };
-
-        history.replaceState({ screen: 'menu' }, '', '');
-
-        window.addEventListener('popstate', function(event) {
-            if (appState === 'read') {
-                if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-                resetRecording();
-                goToMenu();
-            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin' || appState === 'class-members') {
-                goToMenu();
-            } else {
-                history.back();
+        function getJilidData(jilidNum) {
+            switch(jilidNum) {
+                case 1: return typeof tartili1 !== 'undefined' ? tartili1 : [];
+                case 2: return typeof tartili2 !== 'undefined' ? tartili2 : [];
+                case 3: return typeof tartili3 !== 'undefined' ? tartili3 : [];
+                case 4: return typeof tartili4 !== 'undefined' ? tartili4 : [];
+                case 5: return typeof tartili5 !== 'undefined' ? tartili5 : [];
+                case 6: return typeof tartili6 !== 'undefined' ? tartili6 : [];
+                default: return [];
             }
-        });
+        }
 
-        function isPortrait() { return window.innerHeight > window.innerWidth; }
+        function openJilid(jilidNum, pageCode) {
+            currentJilid = jilidNum;
+            tartiliData = getJilidData(jilidNum);
+            
+            let targetIdx = 0;
+            if (pageCode) {
+                targetIdx = tartiliData.findIndex(p => p.page.toLowerCase() === pageCode.toLowerCase());
+                if (targetIdx === -1) targetIdx = 0;
+            }
 
-        window.addEventListener('resize', () => {
-            if (isPortrait()) { resetZoom(); }
+            currentPageIndex = targetIdx;
+            
+            hideAllScreens();
+            document.getElementById('read-screen').classList.add('active');
+            window.appState = 'read';
+
+            updateShortcutDropdowns();
+            renderPage();
+        }
+
+        function renderPage() {
+            // Reset Zoom setiap kali halaman berganti
+            resetImageZoom();
+
+            if (!tartiliData || tartiliData.length === 0) return;
+            const pageData = tartiliData[currentPageIndex];
+            if (!pageData) return;
+
             const container = document.getElementById('imageContainer');
-            if (appState === 'read' && (!container.innerHTML || container.innerHTML.trim() === '')) {
-                loadPageData();
-            }
-        });
+            const spinner = document.getElementById('loadingSpinner');
+            if (spinner) spinner.style.display = 'block';
 
-        updatePageOptions('Menu');
-        updatePageOptions('Read'); 
-        updatePageOptions('Bookmarks');
-        updateMenuCoverFocus();
+            container.innerHTML = "";
+
+            const img = document.createElement('img');
+            img.src = pageData.imageUrl;
+            img.alt = `Tartili ${currentJilid} - Halaman ${pageData.page}`;
+            img.onload = () => { if (spinner) spinner.style.display = 'none'; };
+            img.onerror = () => { if (spinner) spinner.style.display = 'none'; showToast('Gagal memuat gambar.'); };
+
+            container.appendChild(img);
+
+            // Render Titik Audio Suara (Bila ada)
+            if (pageData.sounds && Array.isArray(pageData.sounds)) {
+                pageData.sounds.forEach(sound => {
+                    const soundBlock = document.createElement('div');
+                    soundBlock.className = 'sound-block';
+                    soundBlock.style.left = `${sound.x}%`;
+                    soundBlock.style.top = `${sound.y}%`;
+                    soundBlock.style.width = `${sound.w}%`;
+                    soundBlock.style.height = `${sound.h}%`;
+                    soundBlock.onclick = (e) => {
+                        e.stopPropagation();
+                        playSound(sound.audioUrl);
+                    };
+                    container.appendChild(soundBlock);
+                });
+            }
+
+            updateBookmarkButtonState();
+            syncShortcutSelects();
+        }
+
+        let currentAudio = null;
+        function playSound(audioUrl) {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            if (!audioUrl) return;
+            currentAudio = new Audio(audioUrl);
+            currentAudio.play().catch(e => console.log('Autoplay audio diblokir:', e));
+        }
+
+        function changePage(dir) {
+            const newIndex = currentPageIndex + dir;
+            if (newIndex >= 0 && newIndex < tartiliData.length) {
+                currentPageIndex = newIndex;
+                renderPage();
+            } else {
+                showToast(dir > 0 ? 'Ini adalah halaman terakhir.' : 'Ini adalah halaman pertama.');
+            }
+        }
+
+        function goToMenu() {
+            hideAllScreens();
+            document.getElementById('menu-screen').classList.add('active');
+            window.appState = 'menu';
+        }
+
+        function updateShortcutDropdowns() {
+            ['Menu', 'Bookmarks', 'Read'].forEach(type => {
+                updatePageOptions(type);
+            });
+        }
+
+        function updatePageOptions(type) {
+            const jilidSelect = document.getElementById(`jumpJilid${type}`);
+            const pageSelect = document.getElementById(`jumpPageSelect${type}`);
+            if (!jilidSelect || !pageSelect) return;
+
+            const selectedJilid = parseInt(jilidSelect.value);
+            const data = getJilidData(selectedJilid);
+
+            pageSelect.innerHTML = "";
+            data.forEach((p, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.innerText = `Hal. ${p.page.toUpperCase()}`;
+                pageSelect.appendChild(opt);
+            });
+        }
+
+        function directOpen(type) {
+            const jilidSelect = document.getElementById(`jumpJilid${type}`);
+            const pageSelect = document.getElementById(`jumpPageSelect${type}`);
+            if (!jilidSelect || !pageSelect) return;
+
+            const jilidNum = parseInt(jilidSelect.value);
+            const pageIdx = parseInt(pageSelect.value) || 0;
+
+            currentJilid = jilidNum;
+            tartiliData = getJilidData(jilidNum);
+            currentPageIndex = pageIdx;
+
+            hideAllScreens();
+            document.getElementById('read-screen').classList.add('active');
+            window.appState = 'read';
+
+            renderPage();
+        }
+
+        function syncShortcutSelects() {
+            const readJilid = document.getElementById('jumpJilidRead');
+            const readPage = document.getElementById('jumpPageSelectRead');
+            if (readJilid && readPage) {
+                readJilid.value = currentJilid;
+                updatePageOptions('Read');
+                readPage.value = currentPageIndex;
+            }
+        }
+
+        // --- BOOKMARK LOGIC ---
+        function getBookmarks() {
+            return JSON.parse(localStorage.getItem('tartili_bookmarks') || '[]');
+        }
+
+        function toggleBookmark() {
+            if (!tartiliData[currentPageIndex]) return;
+            const currentPage = tartiliData[currentPageIndex];
+            let bookmarks = getBookmarks();
+
+            const existingIndex = bookmarks.findIndex(b => b.jilid === currentJilid && b.page === currentPage.page);
+            if (existingIndex > -1) {
+                bookmarks.splice(existingIndex, 1);
+                showToast('Halaman dihapus dari simpanan.');
+            } else {
+                bookmarks.push({
+                    jilid: currentJilid,
+                    page: currentPage.page,
+                    title: `Tartili ${currentJilid} - Halaman ${currentPage.page.toUpperCase()}`,
+                    savedAt: new Date().toLocaleDateString('id-ID')
+                });
+                showToast('Halaman berhasil disimpan!');
+            }
+
+            localStorage.setItem('tartili_bookmarks', JSON.stringify(bookmarks));
+            updateBookmarkButtonState();
+        }
+
+        function updateBookmarkButtonState() {
+            const btn = document.getElementById('btnBookmark');
+            if (!btn || !tartiliData[currentPageIndex]) return;
+
+            const currentPage = tartiliData[currentPageIndex];
+            const bookmarks = getBookmarks();
+            const isSaved = bookmarks.some(b => b.jilid === currentJilid && b.page === currentPage.page);
+
+            if (isSaved) btn.classList.add('saved');
+            else btn.classList.remove('saved');
+        }
 
         function openBookmarksScreen() {
-            appState = 'bookmarks';
-            document.getElementById('menu-screen').classList.remove('active');
-            document.getElementById('read-screen').classList.remove('active');
+            hideAllScreens();
             document.getElementById('bookmarks-screen').classList.add('active');
+            window.appState = 'bookmarks';
             renderBookmarksList();
-            updatePageOptions('Bookmarks');
-            history.pushState({ screen: 'bookmarks' }, '', '');
+            updateShortcutDropdowns();
         }
 
         function renderBookmarksList() {
             const container = document.getElementById('bookmarksListContainer');
+            const bookmarks = getBookmarks();
             if (!container) return;
-            container.innerHTML = "";
 
-            if (savedBookmarks.length === 0) {
-                container.innerHTML = `<div style="display:flex; flex-direction: column; align-items:center; justify-content:center; height: 180px; color:var(--text-muted); font-size:13px; padding:20px; text-align:center; gap: 8px;"><span style="font-size: 36px;">📖</span><span>Belum ada halaman tersimpan.</span></div>`;
+            container.innerHTML = "";
+            if (bookmarks.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:40px 20px; font-size:13px;">Belum ada halaman yang disimpan.<br>Tandai halaman saat membaca agar mudah diakses.</div>`;
                 return;
             }
 
-            const reversedBookmarks = [...savedBookmarks].reverse();
-
-            reversedBookmarks.forEach((b, revIndex) => {
-                const originalIndex = savedBookmarks.length - 1 - revIndex;
-
-                let item = document.createElement('div');
+            bookmarks.forEach((bm, idx) => {
+                const item = document.createElement('div');
                 item.className = 'bookmark-item';
-                item.setAttribute('onclick', `openJilid(${b.jilid}, '${b.page}')`);
                 item.innerHTML = `
-                    <div class="bookmark-item-content">
-                        <div class="bookmark-item-icon">
-                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:#0ea5e9;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
-                        </div>
+                    <div class="bookmark-item-content" onclick="openJilid(${bm.jilid}, '${bm.page}')">
+                        <div class="bookmark-item-icon">🔖</div>
                         <div class="bookmark-item-info">
-                            <span class="bookmark-item-title">Tartili Jilid ${b.jilid}</span>
-                            <span class="bookmark-item-subtitle">Halaman ${b.page}</span>
+                            <div class="bookmark-item-title">${bm.title}</div>
+                            <div class="bookmark-item-subtitle">Disimpan: ${bm.savedAt}</div>
                         </div>
                     </div>
-                    <button class="bookmark-item-delete" onclick="removeBookmark(${originalIndex}, event)" title="Hapus">✕</button>
+                    <button class="bookmark-item-delete" onclick="event.stopPropagation(); removeBookmark(${idx});" title="Hapus">✕</button>
                 `;
                 container.appendChild(item);
             });
         }
 
-        function removeBookmark(index, event) {
-            event.stopPropagation();
-            savedBookmarks.splice(index, 1);
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
+        function removeBookmark(index) {
+            let bookmarks = getBookmarks();
+            bookmarks.splice(index, 1);
+            localStorage.setItem('tartili_bookmarks', JSON.stringify(bookmarks));
             renderBookmarksList();
-            updateBookmarkButtonState();
-            showToast('Halaman dihapus dari simpanan');
+            showToast('Bookmark berhasil dihapus.');
         }
 
-        function goToMenu() {
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            resetRecording();
-            appState = 'menu';
-            document.getElementById('read-screen').classList.remove('active');
-            document.getElementById('bookmarks-screen').classList.remove('active');
-            document.getElementById('admin-screen').classList.remove('active');
-            document.getElementById('teacher-admin-screen').classList.remove('active');
-            document.getElementById('class-members-screen').classList.remove('active');
-            document.getElementById('menu-screen').classList.add('active');
-            updateMenuCoverFocus();
-            history.replaceState({ screen: 'menu' }, '', '');
-        }
-
+        // --- FITUR MOUSE / KEYBOARD & MENU COVER FOCUS ---
+        let selectedMenuCoverIndex = 0;
         function updateMenuCoverFocus() {
-            for (let i = 0; i < 6; i++) {
-                let btn = document.getElementById('cover-btn-' + i);
-                if (btn) {
+            for(let i=0; i<6; i++) {
+                const btn = document.getElementById(`cover-btn-${i}`);
+                if(btn) {
                     if (i === selectedMenuCoverIndex) btn.classList.add('keyboard-focused');
                     else btn.classList.remove('keyboard-focused');
                 }
             }
         }
 
-        function getNumericPageList(jilid) {
-            let list = [], max = (jilid === 6) ? 48 : 44;
-            for (let i = 1; i <= max; i++) list.push(i.toString());
-            return list;
-        }
-
-        function getFullPageList(jilid) {
-            let list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', '0'];
-            return list.concat(getNumericPageList(jilid));
-        }
-
-        function updatePageOptions(context) {
-            let selectId = 'jumpJilidMenu';
-            let targetSelectId = 'jumpPageSelectMenu';
-            if (context === 'Read') {
-                selectId = 'jumpJilidRead';
-                targetSelectId = 'jumpPageSelectRead';
-            } else if (context === 'Bookmarks') {
-                selectId = 'jumpJilidBookmarks';
-                targetSelectId = 'jumpPageSelectBookmarks';
-            }
-            
-            let jilidEl = document.getElementById(selectId);
-            let select = document.getElementById(targetSelectId);
-            if (!jilidEl || !select) return;
-            
-            let jilid = parseInt(jilidEl.value);
-            select.innerHTML = "";
-            getNumericPageList(jilid).forEach(p => { 
-                let opt = document.createElement('option'); 
-                opt.value = p; opt.text = p; 
-                select.appendChild(opt); 
-            });
-        }
-
-        function directOpen(context) {
-            let jilidId = 'jumpJilidMenu';
-            let pageId = 'jumpPageSelectMenu';
-            if (context === 'Read') {
-                jilidId = 'jumpJilidRead';
-                pageId = 'jumpPageSelectRead';
-            } else if (context === 'Bookmarks') {
-                jilidId = 'jumpJilidBookmarks';
-                pageId = 'jumpPageSelectBookmarks';
-            }
-            const jilid = parseInt(document.getElementById(jilidId).value);
-            const page = document.getElementById(pageId).value;
-            openJilid(jilid, page);
-        }
-
-        function openJilid(jilid, page) {
-            currentJilid = jilid; currentPage = page; appState = 'read';
-            document.getElementById('read-screen').classList.add('active');
-            document.getElementById('menu-screen').classList.remove('active');
-            document.getElementById('bookmarks-screen').classList.remove('active');
-            document.getElementById('admin-screen').classList.remove('active');
-            document.getElementById('teacher-admin-screen').classList.remove('active');
-            document.getElementById('class-members-screen').classList.remove('active');
-            updatePageOptions('Read');
-            
-            let numList = getNumericPageList(currentJilid);
-            let targetPage = numList.includes(currentPage.toString()) ? currentPage.toString() : "1";
-            document.getElementById('jumpPageSelectRead').value = targetPage;
-            
-            resetZoom();
-            loadPageData();
-            history.pushState({ screen: 'read' }, '', '');
-        }
-
-        function resetZoom() { scale = 1; updateImageTransform(); }
-
-        function updateImageTransform() {
-            const container = document.getElementById('imageContainer');
-            if (container) container.style.transform = `scale(${scale})`;
-        }
-
-        function changePage(delta) {
-            let pages = getFullPageList(currentJilid);
-            let currentIndex = pages.indexOf(currentPage.toString());
-            let newIndex = currentIndex + delta;
-            if (newIndex >= 0 && newIndex < pages.length) {
-                currentPage = pages[newIndex];
-                resetZoom();
-                loadPageData();
-            }
-        }
-
-        function toggleBookmark() {
-            let index = savedBookmarks.findIndex(b => b.jilid === currentJilid && b.page === currentPage);
-            
-            if (index > -1) {
-                savedBookmarks.splice(index, 1);
-                showToast('Halaman dihapus dari simpanan');
-            } else {
-                savedBookmarks.push({ jilid: currentJilid, page: currentPage });
-                showToast('Halaman berhasil disimpan!');
-            }
-            
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
-            updateBookmarkButtonState();
-        }
-
-        function updateBookmarkButtonState() {
-            const btn = document.getElementById('btnBookmark');
-            if (!btn) return;
-            let isSaved = savedBookmarks.some(b => b.jilid === currentJilid && b.page === currentPage);
-            if (isSaved) {
-                btn.classList.add('saved');
-                btn.title = "Hapus Simpanan (Unsave)";
-            } else {
-                btn.classList.remove('saved');
-                btn.title = "Simpan Halaman (Save)";
-            }
-        }
-
-        function loadPageData() {
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            resetRecording();
-            
-            localStorage.setItem('tartili_last_read', JSON.stringify({ jilid: currentJilid, page: currentPage }));
-            updateBookmarkButtonState();
-
-            const container = document.getElementById('imageContainer');
-            const spinner = document.getElementById('loadingSpinner');
-            const imgPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/halaman${currentPage}.jpg`;
-            
-            if (spinner) spinner.style.display = 'block';
-            container.innerHTML = "";
-
-            let img = new Image();
-            img.src = imgPath;
-            img.onload = function() {
-                if (spinner) spinner.style.display = 'none';
-                let htmlContent = `<img src="${imgPath}">`;
-                
-                if (allAudioConfig[currentJilid] && allAudioConfig[currentJilid][currentPage]) {
-                    allAudioConfig[currentJilid][currentPage].forEach(block => {
-                        let [top, left, width, height, soundFile] = block;
-                        htmlContent += `<div class="sound-block" style="top: ${top}%; left: ${left}%; width: ${width}%; height: ${height}%;" onclick="playSound('${soundFile}')"></div>`;
-                    });
+        document.addEventListener('keydown', (e) => {
+            if (window.appState === 'menu') {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                    selectedMenuCoverIndex = (selectedMenuCoverIndex + 1) % 6;
+                    updateMenuCoverFocus();
+                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                    selectedMenuCoverIndex = (selectedMenuCoverIndex - 1 + 6) % 6;
+                    updateMenuCoverFocus();
+                } else if (e.key === 'Enter') {
+                    openJilid(selectedMenuCoverIndex + 1, 'a');
                 }
-                container.innerHTML = htmlContent;
-            };
-            img.onerror = function() {
-                if (spinner) spinner.style.display = 'none';
-                container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;">Gagal memuat halaman</div>`;
-            };
-
-            document.getElementById('jumpJilidRead').value = currentJilid;
-            let numList = getNumericPageList(currentJilid);
-            if (numList.includes(currentPage.toString())) { 
-                document.getElementById('jumpPageSelectRead').value = currentPage; 
+            } else if (window.appState === 'read') {
+                if (e.key === 'ArrowLeft') changePage(-1);
+                else if (e.key === 'ArrowRight') changePage(1);
             }
-        }
+        });
 
-        function playSound(soundFile) {
-            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
-            let soundPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/${soundFile}`;
-            currentAudio = new Audio(soundPath);
-            currentAudio.play();
-        }
+        // --- LOGIKA REKAMAN SUARA ---
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordedBlob = null;
 
-        function resetRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') { mediaRecorder.stop(); }
-            audioChunks = []; recordedAudioBlob = null; generatedWhatsAppUrl = "";
-            const btnRec = document.getElementById('btnRec');
-            const btnStop = document.getElementById('btnStop');
-            const btnOk = document.getElementById('btnOk');
-            const btnSend = document.getElementById('btnSend');
-            if (btnRec) { btnRec.disabled = false; btnRec.classList.remove('is-recording'); }
-            if (btnStop) btnStop.disabled = true;
-            if (btnOk) btnOk.disabled = true;
-            if (btnSend) btnSend.disabled = true;
-        }
-
-        function startRecording() {
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                mediaRecorder.onstop = () => {
-                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-                    document.getElementById('btnOk').disabled = false;
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
                 };
+
+                mediaRecorder.onstop = () => {
+                    recordedBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                    document.getElementById('btnOk').disabled = false;
+                    document.getElementById('btnSend').disabled = false;
+                    showToast('Rekaman selesai! Siap disimpan.');
+                };
+
                 mediaRecorder.start();
-                document.getElementById('btnRec').disabled = true;
                 document.getElementById('btnRec').classList.add('is-recording');
+                document.getElementById('btnRec').disabled = true;
                 document.getElementById('btnStop').disabled = false;
                 showToast('Merekam suara...');
-            }).catch(e => { console.error(e); showToast('Akses mikrofon ditolak/tidak didukung.'); });
+            } catch (err) {
+                console.error("Akses mikrofon ditolak:", err);
+                showToast('Gagal mengakses mikrofon.');
+            }
         }
 
         function stopRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
                 document.getElementById('btnRec').classList.remove('is-recording');
+                document.getElementById('btnRec').disabled = false;
                 document.getElementById('btnStop').disabled = true;
-                showToast('Rekaman selesai. Silakan simpan.');
             }
         }
 
         function uploadRecordingToDrive() {
-            showToast('Menyiapkan tautan setoran...');
-            setTimeout(() => {
-                document.getElementById('btnSend').disabled = false;
-                showToast('Rekaman siap dikirim via WhatsApp!');
-            }, 1000);
+            if (!recordedBlob) return;
+            showToast('Fitur simpan otomatis dalam pengembangan!');
         }
 
         function sendToWhatsApp() {
-            const profile = window.currentUserProfile || {};
-            const msg = `Assalamu'alaikum, saya ${profile.name || 'Siswa'} ingin menyetorkan rekaman Tartili Jilid ${currentJilid} Halaman ${currentPage}.`;
-            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+            if (!recordedBlob) return;
+            const currentPage = tartiliData[currentPageIndex];
+            const msg = `Assalaamu'alaikum Guru, saya menyerahkan setoran membaca Tartili ${currentJilid} - Halaman ${currentPage ? currentPage.page.toUpperCase() : '-'}.`;
+            const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+        }
+
+        // ==========================================
+        // 5. LOGIKA ZOOM & GESER HANYA PAD A GAMBAR
+        // ==========================================
+        let imgScale = 1;
+        let imgTransX = 0;
+        let imgTransY = 0;
+        let isDraggingImg = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let initialPinchDistance = null;
+        let initialScaleOnPinch = 1;
+
+        function applyImageTransform() {
+            const container = document.getElementById('imageContainer');
+            if (container) {
+                container.style.transform = `translate(${imgTransX}px, ${imgTransY}px) scale(${imgScale})`;
+            }
+        }
+
+        function resetImageZoom() {
+            imgScale = 1;
+            imgTransX = 0;
+            imgTransY = 0;
+            applyImageTransform();
         }
 
         const scrollArea = document.getElementById('scrollArea');
+
         if (scrollArea) {
+            // Touch events untuk Pinch Zoom & Drag pada Layar Sentuh
             scrollArea.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 2) {
-                    if (!isPortrait()) {
-                        initialDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                    }
-                    return;
+                    initialPinchDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    initialScaleOnPinch = imgScale;
+                } else if (e.touches.length === 1 && imgScale > 1) {
+                    isDraggingImg = true;
+                    dragStartX = e.touches[0].clientX - imgTransX;
+                    dragStartY = e.touches[0].clientY - imgTransY;
                 }
-                if (e.touches.length === 1) {
-                    touchStartX = e.touches[0].clientX;
-                }
-            }, {passive: true});
+            }, { passive: false });
 
             scrollArea.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 2 && !isPortrait() && initialDistance) {
-                    let currentDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                    let delta = (currentDistance - initialDistance) * 0.005;
-                    scale = Math.min(Math.max(1, scale + delta), 2.5);
-                    updateImageTransform();
-                    initialDistance = currentDistance;
+                if (e.touches.length === 2 && initialPinchDistance) {
+                    e.preventDefault();
+                    const currentDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    imgScale = Math.min(Math.max(initialScaleOnPinch * (currentDist / initialPinchDistance), 1), 4);
+                    if (imgScale === 1) {
+                        imgTransX = 0;
+                        imgTransY = 0;
+                    }
+                    applyImageTransform();
+                } else if (e.touches.length === 1 && isDraggingImg) {
+                    e.preventDefault();
+                    imgTransX = e.touches[0].clientX - dragStartX;
+                    imgTransY = e.touches[0].clientY - dragStartY;
+                    applyImageTransform();
                 }
-            }, {passive: true});
+            }, { passive: false });
 
             scrollArea.addEventListener('touchend', (e) => {
-                if (e.changedTouches.length === 1 && scale === 1) {
-                    touchEndX = e.changedTouches[0].clientX;
-                    let diff = touchStartX - touchEndX;
-                    if (Math.abs(diff) > minSwipeDistance) {
-                        if (diff > 0) changePage(1);
-                        else changePage(-1);
+                if (e.touches.length < 2) initialPinchDistance = null;
+                if (e.touches.length === 0) isDraggingImg = false;
+            });
+
+            // Wheel Event untuk Mouse Zoom pada Desktop
+            scrollArea.addEventListener('wheel', (e) => {
+                if (e.ctrlKey || imgScale > 1) {
+                    e.preventDefault();
+                    const delta = e.deltaY < 0 ? 0.15 : -0.15;
+                    imgScale = Math.min(Math.max(imgScale + delta, 1), 4);
+                    if (imgScale === 1) {
+                        imgTransX = 0;
+                        imgTransY = 0;
                     }
+                    applyImageTransform();
                 }
-            }, {passive: true});
+            }, { passive: false });
+
+            // Mouse Drag untuk Desktop saat di-zoom
+            scrollArea.addEventListener('mousedown', (e) => {
+                if (imgScale > 1) {
+                    isDraggingImg = true;
+                    dragStartX = e.clientX - imgTransX;
+                    dragStartY = e.clientY - imgTransY;
+                }
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDraggingImg && imgScale > 1) {
+                    imgTransX = e.clientX - dragStartX;
+                    imgTransY = e.clientY - dragStartY;
+                    applyImageTransform();
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDraggingImg = false;
+            });
         }
     </script>
 </body>
