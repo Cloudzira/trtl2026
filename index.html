@@ -16,7 +16,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc, addDoc, onSnapshot, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyDCkiYKe-lKkbb0czz9y9ZBGN9SgOhbjmw",
@@ -46,6 +46,10 @@
             window.query = query;
             window.where = where;
             window.getDocs = getDocs;
+            window.addDoc = addDoc;
+            window.onSnapshot = onSnapshot;
+            window.orderBy = orderBy;
+            window.serverTimestamp = serverTimestamp;
 
             onAuthStateChanged(auth, async (user) => {
                 const loginScreen = document.getElementById('login-screen');
@@ -64,9 +68,10 @@
                         const userSnap = await getDoc(userDocRef);
                         
                         if (userSnap.exists()) {
-                            window.currentUserProfile = userSnap.data();
+                            window.currentUserProfile = { uid: user.uid, ...userSnap.data() };
                         } else {
                             window.currentUserProfile = { 
+                                uid: user.uid,
                                 name: user.email.split('@')[0], 
                                 role: user.email === 'admin@tartili.com' ? 'Admin' : 'Siswa', 
                                 classCode: '', 
@@ -76,6 +81,9 @@
                         }
 
                         const profile = window.currentUserProfile;
+
+                        // Setup real-time notifications for user
+                        initRealtimeNotifications(user.uid, profile);
 
                         // Bypass Approval untuk Master Admin
                         if (user.email === 'admin@tartili.com' || profile.role === 'Admin') {
@@ -133,6 +141,7 @@
                     }
                 } else {
                     window.currentUserProfile = null;
+                    if (window.unsubNotifications) window.unsubNotifications();
                     hideAllScreens();
                     loginScreen.classList.add('active');
                     window.appState = 'login';
@@ -148,6 +157,80 @@
                 if (el) el.classList.remove('active');
             });
         }
+
+        // --- REALTIME NOTIFIKASI SITEM ---
+        function initRealtimeNotifications(userId, profile) {
+            if (window.unsubNotifications) window.unsubNotifications();
+            
+            const q = query(
+                collection(window.firebaseDb, "notifications"),
+                where("targetUserId", "in", [userId, "ALL_ADMINS", "ROLE_" + profile.role]),
+                orderBy("createdAt", "desc")
+            );
+
+            window.unsubNotifications = onSnapshot(q, (snapshot) => {
+                let unreadCount = 0;
+                const container = document.getElementById('notificationListContainer');
+                if (container) container.innerHTML = "";
+
+                if (snapshot.empty) {
+                    if (container) container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Tidak ada notifikasi.</div>`;
+                }
+
+                snapshot.docs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const notifId = docSnap.id;
+                    const isRead = data.readBy && data.readBy.includes(userId);
+                    if (!isRead) unreadCount++;
+
+                    if (container) {
+                        const item = document.createElement('div');
+                        item.className = `notif-item ${isRead ? 'read' : 'unread'}`;
+                        item.onclick = () => markNotificationRead(notifId, userId, data);
+                        item.innerHTML = `
+                            <div style="font-weight:700; font-size:12px; color:var(--text-main); display:flex; justify-content:space-between;">
+                                <span>${data.title}</span>
+                                <span style="font-size:10px; opacity:0.7;">${data.createdAt ? new Date(data.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
+                            </div>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${data.message}</div>
+                        `;
+                        container.appendChild(item);
+                    }
+                });
+
+                // Update badge counter UI
+                const badgeEl = document.getElementById('notifBadgeCount');
+                if (badgeEl) {
+                    if (unreadCount > 0) {
+                        badgeEl.innerText = unreadCount > 9 ? '9+' : unreadCount;
+                        badgeEl.style.display = 'flex';
+                    } else {
+                        badgeEl.style.display = 'none';
+                    }
+                }
+            }, (err) => console.log("Notif snapshot info:", err));
+        }
+
+        async function markNotificationRead(notifId, userId, data) {
+            try {
+                const notifRef = doc(window.firebaseDb, "notifications", notifId);
+                const notifSnap = await getDoc(notifRef);
+                if (notifSnap.exists()) {
+                    let readBy = notifSnap.data().readBy || [];
+                    if (!readBy.includes(userId)) {
+                        readBy.push(userId);
+                        await updateDoc(notifRef, { readBy: readBy });
+                    }
+                }
+                if (data.actionUrl === 'chat') {
+                    toggleNotifModal(false);
+                    openMessagingModal(data.senderId, data.senderName);
+                }
+            } catch (e) {
+                console.error("Gagal memperbarui status notifikasi:", e);
+            }
+        }
+        window.markNotificationRead = markNotificationRead;
     </script>
 
     <!-- Berkas Konfigurasi Data Buku Tartili (Jilid 1-6) -->
@@ -270,7 +353,7 @@
         .landing-hero-card {
             width: 100%; background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--border-color); border-radius: 24px; padding: 20px 24px;
-            display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow);
+            display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow);
         }
         .landing-hero-info { display: flex; flex-direction: column; gap: 4px; text-align: left; }
         .landing-hero-greeting { font-size: 16px; font-weight: 700; color: var(--text-muted); }
@@ -280,7 +363,7 @@
         .badge-role { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 3px; }
         .badge-role:hover { background: rgba(14, 165, 233, 0.25); }
         
-        .landing-hero-actions { display: flex; gap: 10px; align-items: center; }
+        .landing-hero-actions { display: flex; gap: 10px; align-items: center; justify-content: flex-end; width: 100%; }
 
         .menu-section-title { width: 100%; text-align: left; font-size: 14px; font-weight: 800; color: var(--text-main); letter-spacing: 0.5px; margin-top: 4px; }
         .grid-jilid { display: grid; gap: 16px; width: 100%; margin: 0; grid-template-columns: repeat(6, 1fr); }
@@ -329,13 +412,48 @@
             border: 1px solid var(--border-color);
         }
 
+        /* STYLES UNTUK MODAL NOTIFIKASI & PESAN */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+            z-index: 10000; display: none; justify-content: center; align-items: center; padding: 16px;
+        }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.3s ease; }
+        .modal-box {
+            background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 24px;
+            width: 100%; max-width: 480px; height: 80vh; max-height: 600px; display: flex; flex-direction: column;
+            box-shadow: var(--shadow); overflow: hidden; position: relative;
+        }
+        .modal-header {
+            padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-header h3 { font-size: 16px; font-weight: 800; color: var(--text-main); }
+        .modal-close-btn { background: transparent; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; }
+        .notif-item {
+            padding: 12px 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: var(--transition);
+        }
+        .notif-item.unread { background: rgba(14, 165, 233, 0.08); border-left: 3px solid #0ea5e9; }
+        .notif-item:hover { background: var(--input-bg); }
+        .chat-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+        .chat-bubble { max-width: 75%; padding: 10px 14px; border-radius: 16px; font-size: 13px; line-height: 1.4; word-break: break-word; }
+        .chat-bubble.mine { align-self: flex-end; background: var(--accent-gradient); color: white; border-bottom-right-radius: 2px; }
+        .chat-bubble.other { align-self: flex-start; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); border-bottom-left-radius: 2px; }
+        .chat-input-area { padding: 12px 16px; border-top: 1px solid var(--border-color); display: flex; gap: 8px; background: var(--bg-card); }
+        .chat-input-area input { flex: 1; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 12px; outline: none; background: var(--input-bg); color: var(--text-main); font-size: 13px; }
+
+        .btn-notif-trigger { position: relative; }
+        .notif-badge {
+            position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; font-size: 9px; font-weight: 800;
+            min-width: 18px; height: 18px; border-radius: 9px; padding: 0 4px; display: none; align-items: center; justify-content: center; border: 2px solid var(--bg-card);
+        }
+
         @media (orientation: portrait) {
             .menu-content-wrapper { max-width: 420px; }
             .grid-jilid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, auto); }
             .btn-cover { aspect-ratio: 3/4; }
             
-            .landing-hero-card { flex-direction: row; align-items: center; gap: 12px; padding: 16px; }
-            .landing-hero-actions { width: auto; justify-content: flex-end; }
+            .landing-hero-card { flex-direction: column; align-items: stretch; gap: 12px; padding: 16px; }
+            .landing-hero-actions { width: 100%; justify-content: flex-end; }
 
             .image-scroll-area { flex: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 4px !important; overflow: hidden !important; }
             .image-container { height: 100% !important; width: auto !important; aspect-ratio: 1 / 1.414 !important; max-width: 100% !important; max-height: 100% !important; margin-bottom: 0 !important; }
@@ -476,12 +594,12 @@
         .btn-cover:hover img { transform: scale(1.03); }
         .btn-cover:active { transform: scale(1.0); }
 
-        .btn-theme-toggle, .btn-bookmark, .btn-logout, .btn-admin, .btn-teacher-panel {
+        .btn-theme-toggle, .btn-bookmark, .btn-logout, .btn-admin, .btn-teacher-panel, .btn-notif-trigger {
             background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
             width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: var(--transition); flex-shrink: 0;
         }
-        .btn-theme-toggle:hover, .btn-bookmark:hover, .btn-admin:hover, .btn-teacher-panel:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; }
+        .btn-theme-toggle:hover, .btn-bookmark:hover, .btn-admin:hover, .btn-teacher-panel:hover, .btn-notif-trigger:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; }
         
         .btn-logout {
             background: rgba(239, 68, 68, 0.12);
@@ -490,7 +608,7 @@
         .btn-logout:hover { transform: scale(1.08); background: #ef4444; border-color: #ef4444; }
         .btn-logout:hover svg { stroke: white; }
 
-        .btn-theme-toggle svg, .btn-bookmark svg, .btn-logout svg, .btn-admin svg, .btn-teacher-panel svg {
+        .btn-theme-toggle svg, .btn-bookmark svg, .btn-logout svg, .btn-admin svg, .btn-teacher-panel svg, .btn-notif-trigger svg {
             width: 18px; height: 18px; fill: none; stroke: var(--text-muted);
             stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: var(--transition);
         }
@@ -610,6 +728,36 @@
 <body class="light-theme">
 
     <div id="toastNotification">Pemberitahuan</div>
+
+    <!-- MODAL NOTIFIKASI -->
+    <div id="notifModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>🔔 Notifikasi</h3>
+                <button class="modal-close-btn" onclick="toggleNotifModal(false)">✕</button>
+            </div>
+            <div id="notificationListContainer" style="flex:1; overflow-y:auto;">
+                <div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat notifikasi...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHAT / PESAN -->
+    <div id="chatModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="chatTargetName">💬 Pesan</h3>
+                <button class="modal-close-btn" onclick="toggleChatModal(false)">✕</button>
+            </div>
+            <div class="chat-body" id="chatMessageContainer">
+                <!-- Chat messages will render here -->
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInputText" placeholder="Tulis pesan..." onkeypress="if(event.key==='Enter') sendChatMessage()" />
+                <button onclick="sendChatMessage()" style="background:var(--accent-gradient); color:white; border:none; padding:8px 16px; border-radius:12px; font-weight:700; cursor:pointer;">Kirim</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ==========================================
          3. STRUKTUR HTML (ANTARMUKA / TAMPILAN)
@@ -732,17 +880,12 @@
     <div id="menu-screen" class="screen">
         <div class="menu-content-wrapper">
             <div class="landing-hero-card">
-                <div class="landing-hero-info">
-                    <div class="landing-hero-greeting" id="userGreetingText">Assalaamu'alaikum.. 👋</div>
-                    <div class="landing-hero-username" id="userUsernameText">Pengguna</div>
-                    <div class="landing-hero-motivation">Semangat belajar membaca tartili ya..</div>
-                    <div class="landing-hero-subtitle">
-                        <span id="userClassText">Kelas: -</span>
-                        <span id="userTeacherNameText">Guru: -</span>
-                        <span class="badge-role" id="userRoleBadge" onclick="openClassMembersScreen()" title="Lihat Daftar Anggota Kelas">Siswa 👥</span>
-                    </div>
-                </div>
+                <!-- Pilihan Tombol Aksi di Atas (Rata Kanan) -->
                 <div class="landing-hero-actions">
+                    <button class="btn-notif-trigger" onclick="toggleNotifModal(true)" title="Notifikasi">
+                        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <span class="notif-badge" id="notifBadgeCount">0</span>
+                    </button>
                     <button class="btn-admin" id="btnMasterAdminPanel" onclick="openMasterAdminScreen()" title="Panel Master Admin">
                         <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
                     </button>
@@ -758,6 +901,18 @@
                     <button class="btn-logout" onclick="handleLogout()" title="Keluar Akun">
                         <svg viewBox="0 0 24 24"><path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                     </button>
+                </div>
+
+                <!-- Detail Informasi Pengguna -->
+                <div class="landing-hero-info">
+                    <div class="landing-hero-greeting" id="userGreetingText">Assalaamu'alaikum.. 👋</div>
+                    <div class="landing-hero-username" id="userUsernameText">Pengguna</div>
+                    <div class="landing-hero-motivation">Semangat belajar membaca tartili ya..</div>
+                    <div class="landing-hero-subtitle">
+                        <span id="userClassText">Kelas: -</span>
+                        <span id="userTeacherNameText">Guru: -</span>
+                        <span class="badge-role" id="userRoleBadge" onclick="openClassMembersScreen()" title="Lihat Daftar Anggota Kelas">Siswa 👥</span>
+                    </div>
                 </div>
             </div>
 
@@ -955,6 +1110,100 @@
             }, 3000);
         }
 
+        function toggleNotifModal(show) {
+            const el = document.getElementById('notifModal');
+            if (show) el.classList.add('active');
+            else el.classList.remove('active');
+        }
+
+        let currentActiveChatUserId = null;
+        let unsubChat = null;
+
+        function toggleChatModal(show) {
+            const el = document.getElementById('chatModal');
+            if (show) el.classList.add('active');
+            else {
+                el.classList.remove('active');
+                if (unsubChat) unsubChat();
+            }
+        }
+
+        function openMessagingModal(targetUserId, targetName) {
+            currentActiveChatUserId = targetUserId;
+            document.getElementById('chatTargetName').innerText = `💬 Pesan dengan ${targetName}`;
+            toggleChatModal(true);
+            loadChatMessages(targetUserId);
+        }
+        window.openMessagingModal = openMessagingModal;
+
+        function loadChatMessages(targetUserId) {
+            const currentUserId = window.currentUserProfile.uid;
+            const chatContainer = document.getElementById('chatMessageContainer');
+            chatContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:10px; font-size:12px;">Memuat pesan...</div>`;
+
+            if (unsubChat) unsubChat();
+
+            const chatId = [currentUserId, targetUserId].sort().join("_");
+            const q = window.query(
+                window.collection(window.firebaseDb, "chats", chatId, "messages"),
+                window.orderBy("createdAt", "asc")
+            );
+
+            unsubChat = window.onSnapshot(q, (snapshot) => {
+                chatContainer.innerHTML = "";
+                if (snapshot.empty) {
+                    chatContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Belum ada percakapan. Mulai kirim pesan!</div>`;
+                    return;
+                }
+                snapshot.docs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const isMine = data.senderId === currentUserId;
+                    const bubble = document.createElement('div');
+                    bubble.className = `chat-bubble ${isMine ? 'mine' : 'other'}`;
+                    bubble.innerText = data.text;
+                    chatContainer.appendChild(bubble);
+                });
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            });
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInputText');
+            const text = input.value.trim();
+            if (!text || !currentActiveChatUserId) return;
+
+            const currentUser = window.currentUserProfile;
+            const chatId = [currentUser.uid, currentActiveChatUserId].sort().join("_");
+
+            try {
+                input.value = "";
+                await window.addDoc(window.collection(window.firebaseDb, "chats", chatId, "messages"), {
+                    senderId: currentUser.uid,
+                    senderName: currentUser.name,
+                    receiverId: currentActiveChatUserId,
+                    text: text,
+                    createdAt: window.serverTimestamp()
+                });
+
+                // Kirim notifikasi ke penerima
+                await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                    targetUserId: currentActiveChatUserId,
+                    title: `Pesan baru dari ${currentUser.name}`,
+                    message: text,
+                    senderId: currentUser.uid,
+                    senderName: currentUser.name,
+                    actionUrl: 'chat',
+                    readBy: [],
+                    createdAt: window.serverTimestamp()
+                });
+
+            } catch (e) {
+                console.error("Gagal mengirim pesan:", e);
+                showToast("Gagal mengirim pesan.");
+            }
+        }
+        window.sendChatMessage = sendChatMessage;
+
         let isRegisterMode = false;
         function switchAuthMode(mode) {
             isRegisterMode = (mode === 'register');
@@ -1066,6 +1315,16 @@
                         isMasterApproved: false,
                         isTeacherApproved: (role === 'Guru'),
                         createdAt: new Date().toISOString()
+                    });
+
+                    // NOTIFIKASI MASTER ADMIN SAAT PENDAFTAR BARU
+                    await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                        targetUserId: "ALL_ADMINS",
+                        title: "Pendaftar Baru!",
+                        message: `Pengguna baru "${name}" (${role}) telah mendaftar dan menunggu verifikasi.`,
+                        actionUrl: 'admin-approval',
+                        readBy: [],
+                        createdAt: window.serverTimestamp()
                     });
 
                     errorDiv.style.display = 'none';
@@ -1190,6 +1449,16 @@
         async function approveMasterUser(userId) {
             try {
                 await window.updateDoc(window.doc(window.firebaseDb, "users", userId), { isMasterApproved: true });
+                
+                // NOTIFIKASI KE USER KETIKA DISETUJUI ADMIN
+                await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                    targetUserId: userId,
+                    title: "Akun Disetujui!",
+                    message: "Akun Anda telah disetujui oleh Master Admin. Selamat belajar!",
+                    readBy: [],
+                    createdAt: window.serverTimestamp()
+                });
+
                 showToast('Akun berhasil disetujui Master Admin!');
                 loadMasterPendingUsers();
             } catch (e) {
@@ -1271,6 +1540,16 @@
         async function approveStudent(userId) {
             try {
                 await window.updateDoc(window.doc(window.firebaseDb, "users", userId), { isTeacherApproved: true });
+                
+                // NOTIFIKASI KE SISWA KETIKA DISETUJUI GURU
+                await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                    targetUserId: userId,
+                    title: "Diterima di Kelas!",
+                    message: "Guru pengampu telah menyetujui Anda untuk bergabung di kelas.",
+                    readBy: [],
+                    createdAt: window.serverTimestamp()
+                });
+
                 showToast('Siswa berhasil diterima di kelas!');
                 loadTeacherPendingStudents();
             } catch (e) {
@@ -1324,6 +1603,7 @@
                 if (!snapTeacher.empty) {
                     snapTeacher.forEach(docSnap => {
                         const tData = docSnap.data();
+                        const tId = docSnap.id;
                         let item = document.createElement('div');
                         item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(14, 165, 233, 0.1); border: 1px solid #0ea5e9; border-radius: 12px;";
                         item.innerHTML = `
@@ -1331,6 +1611,7 @@
                                 <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👨‍🏫 ${tData.name} <span class="badge-role" style="margin-left: 6px;">Guru Pengampu</span></div>
                                 <div style="font-size: 11px; color: var(--text-muted);">Email: ${tData.email}</div>
                             </div>
+                            ${tId !== profile.uid ? `<button onclick="openMessagingModal('${tId}', '${tData.name}')" style="background:var(--accent-gradient); color:white; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">💬 Chat</button>` : ''}
                         `;
                         container.appendChild(item);
                     });
@@ -1346,21 +1627,21 @@
 
                 snapStudents.forEach((docSnap) => {
                     const sData = docSnap.data();
+                    const sId = docSnap.id;
                     let item = document.createElement('div');
                     item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
                     item.innerHTML = `
                         <div>
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👤 ${sData.name}</div>
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${sData.name} ${sId === profile.uid ? '<span style="font-size:10px; color:var(--text-muted);">(Saya)</span>' : ''}</div>
                             <div style="font-size: 11px; color: var(--text-muted);">Email: ${sData.email}</div>
                         </div>
-                        <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 6px;">Aktif</span>
+                        ${sId !== profile.uid ? `<button onclick="openMessagingModal('${sId}', '${sData.name}')" style="background:var(--accent-gradient); color:white; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">💬 Chat</button>` : ''}
                     `;
                     container.appendChild(item);
                 });
-
             } catch (e) {
                 console.error(e);
-                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat daftar anggota kelas.</div>`;
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat anggota kelas.</div>`;
             }
         }
 
@@ -1376,507 +1657,19 @@
         }
 
         function handleLogout() {
-            window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
-        }
-
-        let savedLastRead = JSON.parse(localStorage.getItem('tartili_last_read')) || { jilid: 1, page: 'a' };
-        let savedBookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks')) || [];
-        
-        let currentJilid = savedLastRead.jilid, currentPage = savedLastRead.page, appState = 'menu', selectedMenuCoverIndex = 0, currentAudio = null;
-        let mediaRecorder, audioChunks = [], recordedAudioBlob = null, generatedWhatsAppUrl = ""; 
-        
-        const baseUrl = "https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/";
-        let scale = 1, initialDistance = null;
-        let touchStartX = 0, touchEndX = 0;
-        const minSwipeDistance = 50;
-
-        const allAudioConfig = {
-            "1": typeof tartili1Config !== 'undefined' ? tartili1Config : {},
-            "2": typeof tartili2Config !== 'undefined' ? tartili2Config : {},
-            "3": typeof tartili3Config !== 'undefined' ? tartili3Config : {},
-            "4": typeof tartili4Config !== 'undefined' ? tartili4Config : {},
-            "5": typeof tartili5Config !== 'undefined' ? tartili5Config : {},
-            "6": typeof tartili6Config !== 'undefined' ? tartili6Config : {}
-        };
-
-        history.replaceState({ screen: 'menu' }, '', '');
-
-        window.addEventListener('popstate', function(event) {
-            if (appState === 'read') {
-                if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-                resetRecording();
-                goToMenu();
-            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin' || appState === 'class-members') {
-                goToMenu();
-            } else {
-                history.back();
+            if (window.signOut && window.firebaseAuth) {
+                window.signOut(window.firebaseAuth).then(() => {
+                    showToast("Berhasil keluar.");
+                }).catch((error) => {
+                    console.error("Gagal keluar:", error);
+                });
             }
-        });
-
-        function isPortrait() { return window.innerHeight > window.innerWidth; }
-
-        window.addEventListener('resize', () => {
-            if (isPortrait()) { resetZoom(); }
-            const container = document.getElementById('imageContainer');
-            if (appState === 'read' && (!container.innerHTML || container.innerHTML.trim() === '')) {
-                loadPageData();
-            }
-        });
-
-        updatePageOptions('Menu');
-        updatePageOptions('Read'); 
-        updatePageOptions('Bookmarks');
-        updateMenuCoverFocus();
-
-        function openBookmarksScreen() {
-            appState = 'bookmarks';
-            document.getElementById('menu-screen').classList.remove('active');
-            document.getElementById('read-screen').classList.remove('active');
-            document.getElementById('bookmarks-screen').classList.add('active');
-            renderBookmarksList();
-            updatePageOptions('Bookmarks');
-            history.pushState({ screen: 'bookmarks' }, '', '');
         }
-
-        function renderBookmarksList() {
-            const container = document.getElementById('bookmarksListContainer');
-            if (!container) return;
-            container.innerHTML = "";
-
-            if (savedBookmarks.length === 0) {
-                container.innerHTML = `<div style="display:flex; flex-direction: column; align-items:center; justify-content:center; height: 180px; color:var(--text-muted); font-size:13px; padding:20px; text-align:center; gap: 8px;"><span style="font-size: 36px;">📖</span><span>Belum ada halaman tersimpan.</span></div>`;
-                return;
-            }
-
-            const reversedBookmarks = [...savedBookmarks].reverse();
-
-            reversedBookmarks.forEach((b, revIndex) => {
-                const originalIndex = savedBookmarks.length - 1 - revIndex;
-
-                let item = document.createElement('div');
-                item.className = 'bookmark-item';
-                item.setAttribute('onclick', `openJilid(${b.jilid}, '${b.page}')`);
-                item.innerHTML = `
-                    <div class="bookmark-item-content">
-                        <div class="bookmark-item-icon">
-                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:#0ea5e9;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
-                        </div>
-                        <div class="bookmark-item-info">
-                            <span class="bookmark-item-title">Tartili Jilid ${b.jilid}</span>
-                            <span class="bookmark-item-subtitle">Halaman ${b.page}</span>
-                        </div>
-                    </div>
-                    <button class="bookmark-item-delete" onclick="removeBookmark(${originalIndex}, event)" title="Hapus">✕</button>
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        function removeBookmark(index, event) {
-            event.stopPropagation();
-            savedBookmarks.splice(index, 1);
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
-            renderBookmarksList();
-            updateBookmarkButtonState();
-            showToast('Halaman dihapus dari simpanan');
-        }
-
-        function goToMenu() {
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            resetRecording();
-            appState = 'menu';
-            document.getElementById('read-screen').classList.remove('active');
-            document.getElementById('bookmarks-screen').classList.remove('active');
-            document.getElementById('admin-screen').classList.remove('active');
-            document.getElementById('teacher-admin-screen').classList.remove('active');
-            document.getElementById('class-members-screen').classList.remove('active');
+        window.handleLogout = handleLogout;
+        window.goToMenu = function() {
+            hideAllScreens();
             document.getElementById('menu-screen').classList.add('active');
-            updateMenuCoverFocus();
-            history.replaceState({ screen: 'menu' }, '', '');
-        }
-
-        function updateMenuCoverFocus() {
-            for (let i = 0; i < 6; i++) {
-                let btn = document.getElementById('cover-btn-' + i);
-                if (btn) {
-                    if (i === selectedMenuCoverIndex) btn.classList.add('keyboard-focused');
-                    else btn.classList.remove('keyboard-focused');
-                }
-            }
-        }
-
-        function getNumericPageList(jilid) {
-            let list = [], max = (jilid === 6) ? 48 : 44;
-            for (let i = 1; i <= max; i++) list.push(i.toString());
-            return list;
-        }
-
-        function getFullPageList(jilid) {
-            let list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', '0'];
-            return list.concat(getNumericPageList(jilid));
-        }
-
-        function updatePageOptions(context) {
-            let selectId = 'jumpJilidMenu';
-            let targetSelectId = 'jumpPageSelectMenu';
-            if (context === 'Read') {
-                selectId = 'jumpJilidRead';
-                targetSelectId = 'jumpPageSelectRead';
-            } else if (context === 'Bookmarks') {
-                selectId = 'jumpJilidBookmarks';
-                targetSelectId = 'jumpPageSelectBookmarks';
-            }
-            
-            let jilidEl = document.getElementById(selectId);
-            let select = document.getElementById(targetSelectId);
-            if (!jilidEl || !select) return;
-            
-            let jilid = parseInt(jilidEl.value);
-            select.innerHTML = "";
-            getNumericPageList(jilid).forEach(p => { 
-                let opt = document.createElement('option'); 
-                opt.value = p; opt.text = p; 
-                select.appendChild(opt); 
-            });
-        }
-
-        function directOpen(context) {
-            let jilidId = 'jumpJilidMenu';
-            let pageId = 'jumpPageSelectMenu';
-            if (context === 'Read') {
-                jilidId = 'jumpJilidRead';
-                pageId = 'jumpPageSelectRead';
-            } else if (context === 'Bookmarks') {
-                jilidId = 'jumpJilidBookmarks';
-                pageId = 'jumpPageSelectBookmarks';
-            }
-            const jilid = parseInt(document.getElementById(jilidId).value);
-            const page = document.getElementById(pageId).value;
-            openJilid(jilid, page);
-        }
-
-        function openJilid(jilid, page) {
-            currentJilid = jilid; currentPage = page; appState = 'read';
-            document.getElementById('read-screen').classList.add('active');
-            document.getElementById('menu-screen').classList.remove('active');
-            document.getElementById('bookmarks-screen').classList.remove('active');
-            document.getElementById('admin-screen').classList.remove('active');
-            document.getElementById('teacher-admin-screen').classList.remove('active');
-            document.getElementById('class-members-screen').classList.remove('active');
-            updatePageOptions('Read');
-            
-            let numList = getNumericPageList(currentJilid);
-            let targetPage = numList.includes(currentPage.toString()) ? currentPage.toString() : "1";
-            document.getElementById('jumpPageSelectRead').value = targetPage;
-            
-            resetZoom();
-            loadPageData();
-            history.pushState({ screen: 'read' }, '', '');
-        }
-
-        function resetZoom() { scale = 1; updateImageTransform(); }
-
-        function updateImageTransform() {
-            const container = document.getElementById('imageContainer');
-            if (container) container.style.transform = `scale(${scale})`;
-        }
-
-        function changePage(delta) {
-            let pages = getFullPageList(currentJilid);
-            let currentIndex = pages.indexOf(currentPage.toString());
-            let newIndex = currentIndex + delta;
-            if (newIndex >= 0 && newIndex < pages.length) {
-                currentPage = pages[newIndex];
-                resetZoom();
-                loadPageData();
-            }
-        }
-
-        function toggleBookmark() {
-            let index = savedBookmarks.findIndex(b => b.jilid === currentJilid && b.page === currentPage);
-            
-            if (index > -1) {
-                savedBookmarks.splice(index, 1);
-                showToast('Halaman dihapus dari simpanan');
-            } else {
-                savedBookmarks.push({ jilid: currentJilid, page: currentPage });
-                showToast('Halaman berhasil disimpan!');
-            }
-            
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
-            updateBookmarkButtonState();
-        }
-
-        function updateBookmarkButtonState() {
-            const btn = document.getElementById('btnBookmark');
-            if (!btn) return;
-            let isSaved = savedBookmarks.some(b => b.jilid === currentJilid && b.page === currentPage);
-            if (isSaved) {
-                btn.classList.add('saved');
-                btn.title = "Hapus Simpanan (Unsave)";
-            } else {
-                btn.classList.remove('saved');
-                btn.title = "Simpan Halaman (Save)";
-            }
-        }
-
-        function loadPageData() {
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            resetRecording();
-            
-            localStorage.setItem('tartili_last_read', JSON.stringify({ jilid: currentJilid, page: currentPage }));
-            updateBookmarkButtonState();
-
-            const container = document.getElementById('imageContainer');
-            const spinner = document.getElementById('loadingSpinner');
-            const imgPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/halaman${currentPage}.jpg`;
-            
-            if (spinner) spinner.style.display = 'block';
-            container.innerHTML = "";
-
-            let img = new Image();
-            img.src = imgPath;
-            img.onload = function() {
-                if (spinner) spinner.style.display = 'none';
-                let htmlContent = `<img src="${imgPath}">`;
-                
-                if (allAudioConfig[currentJilid] && allAudioConfig[currentJilid][currentPage]) {
-                    allAudioConfig[currentJilid][currentPage].forEach(block => {
-                        let [top, left, width, height, soundFile] = block;
-                        htmlContent += `<div class="sound-block" style="top: ${top}%; left: ${left}%; width: ${width}%; height: ${height}%;" onclick="playSound('${soundFile}')"></div>`;
-                    });
-                }
-                container.innerHTML = htmlContent;
-            };
-            img.onerror = function() {
-                if (spinner) spinner.style.display = 'none';
-                container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;">Gagal memuat halaman</div>`;
-            };
-
-            document.getElementById('jumpJilidRead').value = currentJilid;
-            let numList = getNumericPageList(currentJilid);
-            if (numList.includes(currentPage.toString())) { 
-                document.getElementById('jumpPageSelectRead').value = currentPage; 
-            }
-        }
-
-        function playSound(soundFile) {
-            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
-            let soundPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/${soundFile}`;
-            currentAudio = new Audio(soundPath);
-            currentAudio.play();
-        }
-
-        const scrollArea = document.getElementById('scrollArea');
-        if (scrollArea) {
-            scrollArea.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 2) {
-                    if (!isPortrait()) {
-                        initialDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                    }
-                    return;
-                }
-                if (e.touches.length === 1) {
-                    touchStartX = e.touches[0].clientX;
-                }
-            }, {passive: true});
-
-            scrollArea.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 2 && !isPortrait() && initialDistance) {
-                    let currentDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                    let zoomFactor = currentDistance / initialDistance;
-                    scale = Math.min(Math.max(1, scale * (zoomFactor > 1 ? 1.04 : 0.96)), 1.8);
-                    initialDistance = currentDistance;
-                    updateImageTransform();
-                }
-            }, {passive: true});
-
-            scrollArea.addEventListener('touchend', (e) => {
-                if (e.touches.length < 2) initialDistance = null;
-                touchEndX = e.changedTouches[0].clientX;
-                handleSwipeGesture();
-            }, {passive: true});
-
-            scrollArea.addEventListener('wheel', (e) => {
-                if (isPortrait()) return; 
-                if (e.ctrlKey) {
-                    e.preventDefault();
-                    let zoomIntensity = 0.15;
-                    if (e.deltaY < 0) { scale = Math.min(scale + zoomIntensity, 1.8); } 
-                    else { scale = Math.max(scale - zoomIntensity, 1); }
-                    updateImageTransform();
-                }
-            }, {passive: false});
-        }
-
-        function handleSwipeGesture() {
-            let distance = touchEndX - touchStartX;
-            if (scale > 1) return;
-
-            if (Math.abs(distance) >= minSwipeDistance) {
-                if (distance > 0) {
-                    changePage(-1);
-                } else {
-                    changePage(1);
-                }
-            }
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (appState === 'menu') {
-                if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-
-                if (e.key === 'ArrowRight') {
-                    selectedMenuCoverIndex = (selectedMenuCoverIndex + 1) % 6;
-                    updateMenuCoverFocus();
-                    e.preventDefault();
-                } else if (e.key === 'ArrowLeft') {
-                    selectedMenuCoverIndex = (selectedMenuCoverIndex - 1 + 6) % 6;
-                    updateMenuCoverFocus();
-                    e.preventDefault();
-                } else if (e.key === 'ArrowDown') {
-                    if (isPortrait()) {
-                        selectedMenuCoverIndex = (selectedMenuCoverIndex + 2) % 6;
-                        updateMenuCoverFocus();
-                        e.preventDefault();
-                    }
-                } else if (e.key === 'ArrowUp') {
-                    if (isPortrait()) {
-                        selectedMenuCoverIndex = (selectedMenuCoverIndex - 2 + 6) % 6;
-                        updateMenuCoverFocus();
-                        e.preventDefault();
-                    }
-                } else if (e.key === 'Enter') {
-                    openJilid(selectedMenuCoverIndex + 1, 'a');
-                    e.preventDefault();
-                }
-                return;
-            }
-
-            if (appState === 'read') {
-                if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-
-                if (e.key === 'ArrowRight') {
-                    changePage(1);
-                } else if (e.key === 'ArrowLeft') {
-                    changePage(-1);
-                }
-            }
-        });
-
-        function resetRecording() {
-            if (mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop();
-                if (mediaRecorder.stream) {
-                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
-                }
-            }
-            audioChunks = []; recordedAudioBlob = null; generatedWhatsAppUrl = "";
-            const btnRec = document.getElementById('btnRec');
-            const btnStop = document.getElementById('btnStop');
-            const btnOk = document.getElementById('btnOk');
-            const btnSend = document.getElementById('btnSend');
-            const recordTitle = document.getElementById('recordTitle');
-            
-            if (btnRec) { 
-                btnRec.innerText = "Rekam"; 
-                btnRec.disabled = false; 
-                btnRec.classList.remove('is-recording'); 
-            }
-            if (btnStop) btnStop.disabled = true;
-            if (btnOk) btnOk.disabled = true;
-            if (btnSend) btnSend.disabled = true;
-            if (recordTitle) {
-                recordTitle.innerText = "Setoran membaca";
-                recordTitle.style.color = "var(--text-muted)";
-            }
-        }
-
-        async function startRecording() {
-            if (recordedAudioBlob) resetRecording();
-            const recordTitle = document.getElementById('recordTitle');
-            const btnRec = document.getElementById('btnRec');
-            const btnStop = document.getElementById('btnStop');
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 44100 } });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                
-                mediaRecorder.ondataavailable = event => { 
-                    if (event.data.size > 0) audioChunks.push(event.data); 
-                };
-                
-                mediaRecorder.onstop = () => {
-                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    if (stream) stream.getTracks().forEach(track => track.stop());
-                };
-
-                mediaRecorder.start();
-                if (btnRec) {
-                    btnRec.innerText = "Merekam...";
-                    btnRec.disabled = true;
-                    btnRec.classList.add('is-recording');
-                }
-                if (btnStop) btnStop.disabled = false;
-                if (recordTitle) {
-                    recordTitle.innerText = "Merekam suara...";
-                    recordTitle.style.color = "#ef4444";
-                }
-                showToast('Mulai merekam suara...');
-            } catch (err) {
-                console.error("Gagal mengaktifkan mikrofon:", err);
-                showToast('Akses mikrofon ditolak atau tidak tersedia');
-            }
-        }
-
-        function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop();
-            }
-            const btnRec = document.getElementById('btnRec');
-            const btnStop = document.getElementById('btnStop');
-            const btnOk = document.getElementById('btnOk');
-            const recordTitle = document.getElementById('recordTitle');
-
-            if (btnRec) {
-                btnRec.innerText = "Rekam Ulang";
-                btnRec.disabled = false;
-                btnRec.classList.remove('is-recording');
-            }
-            if (btnStop) btnStop.disabled = true;
-            if (btnOk) btnOk.disabled = false;
-            if (recordTitle) {
-                recordTitle.innerText = "Rekaman selesai";
-                recordTitle.style.color = "#10b981";
-            }
-            showToast('Rekaman dihentikan, siap disimpan');
-        }
-
-        function uploadRecordingToDrive() {
-            if (!recordedAudioBlob) {
-                showToast('Belum ada rekaman suara');
-                return;
-            }
-
-            const userName = window.currentUserProfile ? window.currentUserProfile.name : 'Siswa';
-            const message = `Assalamu'alaikum Guru, berikut setoran membaca Tartili Jilid ${currentJilid} Halaman ${currentPage} dari ${userName}.`;
-            generatedWhatsAppUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-
-            const btnSend = document.getElementById('btnSend');
-            const btnOk = document.getElementById('btnOk');
-            if (btnSend) btnSend.disabled = false;
-            if (btnOk) btnOk.disabled = true;
-
-            showToast('Rekaman berhasil disimpan! Silakan Kirim WA');
-        }
-
-        function sendToWhatsApp() {
-            if (generatedWhatsAppUrl) {
-                window.open(generatedWhatsAppUrl, '_blank');
-            } else {
-                showToast('Simpan rekaman terlebih dahulu');
-            }
+            appState = 'menu';
         }
     </script>
 </body>
