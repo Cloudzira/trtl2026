@@ -2038,5 +2038,45 @@
             }, {passive: true});
         }
     </script>
+<!-- KODE MEMATIKAN ZOOM (Cukup tempel di satu tempat ini saja) -->
+<style>
+    html, body {
+        touch-action: manipulation;
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+</style>
+
+<script>
+    // 1. Ubah meta viewport secara otomatis via JavaScript
+    var meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'viewport';
+        document.head.appendChild(meta);
+    }
+    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+
+    // 2. Mencegah zoom dari Keyboard (Ctrl +, Ctrl -, Ctrl 0)
+    window.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // 3. Mencegah zoom dari Scroll Mouse (Ctrl + Roda Mouse)
+    window.addEventListener('wheel', function (e) {
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // 4. Mencegah Gesture Pinch Zoom pada HP/Touchpad
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+</script>
+    
 </body>
 </html>
