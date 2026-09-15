@@ -651,9 +651,9 @@
         </div>
     </div>
 
-    <!-- Halaman Panel Master Admin (Menyetujui Pendaftaran Akun Baru Global) -->
+    <!-- Halaman Panel Master Admin (Menyetujui atau Menghapus Pendaftar Akun Baru Global) -->
     <div id="admin-screen" class="screen">
-        <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
+        <div class="login-card" style="max-width: 650px; height: 88vh; display: flex; flex-direction: column;">
             <h2>Panel Master Admin</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Daftar akun baru (Siswa & Guru) yang menunggu verifikasi awal:</p>
             
@@ -867,7 +867,7 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const swCode = `
-                    const CACHE_NAME = 'tartili-cache-v7';
+                    const CACHE_NAME = 'tartili-cache-v8';
                     self.addEventListener('install', (e) => { self.skipWaiting(); });
                     self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
                     self.addEventListener('fetch', (e) => {
@@ -1042,7 +1042,6 @@
                 if (teacherNameEl) {
                     teacherNameEl.style.display = 'inline';
                     teacherNameEl.innerText = "Guru: Memuat...";
-                    // Cari nama guru berdasarkan classCode
                     try {
                         const q = window.query(window.collection(window.firebaseDb, "users"), window.where("role", "==", "Guru"), window.where("classCode", "==", profile.classCode));
                         const snap = await window.getDocs(q);
@@ -1080,7 +1079,7 @@
             }
         }
 
-        // --- MASTER ADMIN PANEL ---
+        // --- MASTER ADMIN PANEL (UPGRADED) ---
         async function openMasterAdminScreen() {
             appState = 'admin';
             document.getElementById('menu-screen').classList.remove('active');
@@ -1091,7 +1090,7 @@
         async function loadMasterPendingUsers() {
             const container = document.getElementById('pendingMasterUsersContainer');
             if (!container) return;
-            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat data...</div>`;
+            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat data pendaftar...</div>`;
 
             try {
                 const q = window.query(window.collection(window.firebaseDb, "users"), window.where("isMasterApproved", "==", false));
@@ -1108,13 +1107,17 @@
                     const userId = docSnap.id;
 
                     let item = document.createElement('div');
-                    item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
+                    item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; gap: 8px;";
                     item.innerHTML = `
-                        <div>
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${data.name} <span class="badge-role" style="margin-left: 6px;">${data.role}</span></div>
-                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${data.email} ${data.role === 'Guru' ? '| Kelas: ' + data.teacherClassName : '| Kode Kelas: ' + data.classCode}</div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${data.name} <span class="badge-role" style="margin-left: 6px;">${data.role}</span></div>
+                            <div style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Email: ${data.email}</div>
+                            <div style="font-size: 10px; color: var(--text-muted);">${data.role === 'Guru' ? 'Kelas: ' + data.teacherClassName : 'Kode Kelas: ' + (data.classCode || '-')}</div>
                         </div>
-                        <button onclick="approveMasterUser('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Setujui</button>
+                        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                            <button onclick="approveMasterUser('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Setujui</button>
+                            <button onclick="deleteUserAccount('${userId}', '${data.name}')" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;" title="Tolak / Hapus">Hapus</button>
+                        </div>
                     `;
                     container.appendChild(item);
                 });
@@ -1132,6 +1135,18 @@
             } catch (e) {
                 console.error(e);
                 showToast('Gagal menyetujui akun.');
+            }
+        }
+
+        async function deleteUserAccount(userId, userName) {
+            if (!confirm(`Apakah Anda yakin ingin menghapus/menolak pendaftaran akun "${userName}"?`)) return;
+            try {
+                await window.deleteDoc(window.doc(window.firebaseDb, "users", userId));
+                showToast(`Akun ${userName} berhasil dihapus.`);
+                loadMasterPendingUsers();
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal menghapus akun.');
             }
         }
 
@@ -1180,7 +1195,10 @@
                             <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${data.name}</div>
                             <div style="font-size: 11px; color: var(--text-muted);">Email: ${data.email}</div>
                         </div>
-                        <button onclick="approveStudent('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Terima</button>
+                        <div style="display: flex; gap: 6px;">
+                            <button onclick="approveStudent('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Terima</button>
+                            <button onclick="deleteUserAccount('${userId}', '${data.name}')" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Tolak</button>
+                        </div>
                     `;
                     container.appendChild(item);
                 });
@@ -1230,11 +1248,9 @@
                 if (titleEl) titleEl.innerText = profile.role === 'Guru' ? `Anggota Kelas (${profile.teacherClassName})` : `Anggota Kelas`;
                 if (subtitleEl) subtitleEl.innerText = profile.role === 'Guru' ? `Daftar siswa yang aktif di kelas Anda:` : `Daftar siswa dan guru dalam kelas Anda:`;
 
-                // Ambil guru kelas
                 const qTeacher = window.query(window.collection(window.firebaseDb, "users"), window.where("role", "==", "Guru"), window.where("classCode", "==", classCode));
                 const snapTeacher = await window.getDocs(qTeacher);
 
-                // Ambil semua siswa yang sudah disetujui di kelas ini
                 const qStudents = window.query(
                     window.collection(window.firebaseDb, "users"), 
                     window.where("role", "==", "Siswa"),
@@ -1245,7 +1261,6 @@
 
                 container.innerHTML = "";
 
-                // Tampilkan info Guru
                 if (!snapTeacher.empty) {
                     snapTeacher.forEach(docSnap => {
                         const tData = docSnap.data();
