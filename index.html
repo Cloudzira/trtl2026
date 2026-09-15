@@ -49,6 +49,7 @@
 
             onAuthStateChanged(auth, async (user) => {
                 const loginScreen = document.getElementById('login-screen');
+                const adminLoginScreen = document.getElementById('admin-login-screen');
                 const verifyScreen = document.getElementById('verify-screen');
                 const menuScreen = document.getElementById('menu-screen');
                 const readScreen = document.getElementById('read-screen');
@@ -67,16 +68,27 @@
                         } else {
                             window.currentUserProfile = { 
                                 name: user.email.split('@')[0], 
-                                role: 'Siswa', 
+                                role: user.email === 'admin@tartili.com' ? 'Admin' : 'Siswa', 
                                 classCode: '', 
-                                isMasterApproved: false,
-                                isTeacherApproved: false 
+                                isMasterApproved: user.email === 'admin@tartili.com',
+                                isTeacherApproved: true 
                             };
                         }
 
                         const profile = window.currentUserProfile;
 
-                        // Level 1 Check: Master Admin Approval (Applies to everyone)
+                        // Bypass Approval untuk Master Admin
+                        if (user.email === 'admin@tartili.com' || profile.role === 'Admin') {
+                            await updateUserGreeting();
+                            setupDashboardAccess();
+                            hideAllScreens();
+                            adminScreen.classList.add('active');
+                            window.appState = 'admin';
+                            await loadMasterPendingUsers();
+                            return;
+                        }
+
+                        // Level 1 Check: Master Admin Approval
                         if (!profile.isMasterApproved) {
                             hideAllScreens();
                             verifyScreen.classList.add('active');
@@ -88,7 +100,7 @@
                             return;
                         }
 
-                        // Level 2 Check: If user is a Student, they need Teacher Approval based on classCode
+                        // Level 2 Check: Teacher Approval for Students
                         if (profile.role === 'Siswa' && !profile.isTeacherApproved) {
                             hideAllScreens();
                             verifyScreen.classList.add('active');
@@ -131,7 +143,7 @@
         }
 
         function hideAllScreens() {
-            ['login-screen', 'verify-screen', 'menu-screen', 'read-screen', 'bookmarks-screen', 'admin-screen', 'teacher-admin-screen', 'class-members-screen'].forEach(id => {
+            ['login-screen', 'admin-login-screen', 'verify-screen', 'menu-screen', 'read-screen', 'bookmarks-screen', 'admin-screen', 'teacher-admin-screen', 'class-members-screen'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('active');
             });
@@ -207,7 +219,7 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        #login-screen, #verify-screen, #admin-screen, #teacher-admin-screen, #class-members-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
+        #login-screen, #admin-login-screen, #verify-screen, #admin-screen, #teacher-admin-screen, #class-members-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
         .login-card {
             background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding: 30px 24px; border-radius: 28px; border: 1px solid var(--border-color);
@@ -603,7 +615,7 @@
          3. STRUKTUR HTML (ANTARMUKA / TAMPILAN)
          ========================================== -->
 
-    <!-- Halaman Login / Pendaftaran Akun -->
+    <!-- Halaman Login Siswa / Guru -->
     <div id="login-screen" class="screen">
         <div class="login-card">
             <h2>Tartili Digital</h2>
@@ -623,18 +635,35 @@
                     <option value="Siswa">Daftar sebagai Siswa</option>
                     <option value="Guru">Daftar sebagai Guru / Pengajar</option>
                 </select>
-                <!-- Input khusus Siswa untuk memasukkan Kode Kelas dari Guru -->
                 <input type="text" id="authClassCode" placeholder="Kode Kelas dari Guru (Contoh: KLS-A1)" />
-                <!-- Input khusus Guru untuk menentukan Nama/Kode Kelas yang ingin dibuat -->
                 <input type="text" id="authTeacherClassName" placeholder="Nama/Kode Kelas Anda (Contoh: 5A - Al-Qur'an)" style="display:none;" />
             </div>
 
             <button class="btn-login" id="authSubmitBtn" onclick="handleAuthSubmit()">Masuk Sekarang</button>
             <div id="loginError" class="login-error">Terjadi kesalahan pada data yang dimasukkan.</div>
+
+            <!-- Tombol Pengarah ke Halaman Masuk Admin -->
+            <button onclick="showAdminLoginScreen()" style="background: transparent; border: none; color: #0ea5e9; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 8px;">🔐 Masuk sebagai Master Admin</button>
         </div>
     </div>
 
-    <!-- Halaman Menunggu Persetujuan (Level 1 atau Level 2) -->
+    <!-- Halaman Masuk Khusus Master Admin -->
+    <div id="admin-login-screen" class="screen">
+        <div class="login-card">
+            <h2>Portal Admin Utama</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 6px;">Masuk menggunakan kredensial Master Admin</p>
+            
+            <input type="email" id="adminAuthEmail" placeholder="Email Admin (admin@tartili.com)" value="admin@tartili.com" />
+            <input type="password" id="adminAuthPassword" placeholder="Kata Sandi Admin" />
+
+            <button class="btn-login" onclick="handleAdminLogin()" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Masuk Panel Admin</button>
+            <div id="adminLoginError" class="login-error">Email atau kata sandi admin salah.</div>
+
+            <button class="auth-mode-btn" onclick="backToLoginScreen()" style="width: 100%; padding: 10px; background: var(--input-bg); border-radius: 12px; color: var(--text-main); font-weight: 700; margin-top: 10px;">Kembali ke Masuk Siswa/Guru</button>
+        </div>
+    </div>
+
+    <!-- Halaman Menunggu Persetujuan -->
     <div id="verify-screen" class="screen">
         <div class="login-card">
             <div style="font-size: 42px; margin-bottom: 2px;">⏳</div>
@@ -651,7 +680,7 @@
         </div>
     </div>
 
-    <!-- Halaman Panel Master Admin (Menyetujui atau Menghapus Pendaftar Akun Baru Global) -->
+    <!-- Halaman Panel Master Admin -->
     <div id="admin-screen" class="screen">
         <div class="login-card" style="max-width: 650px; height: 88vh; display: flex; flex-direction: column;">
             <h2>Panel Master Admin</h2>
@@ -661,11 +690,11 @@
                 <!-- Diisi dinamis via JS -->
             </div>
 
-            <button class="auth-mode-btn" onclick="goToMenu()" style="width: 100%; padding: 10px; background: var(--input-bg); border-radius: 12px; color: var(--text-main); font-weight: 700; margin-top: 8px;">Kembali ke Menu Utama</button>
+            <button class="auth-mode-btn" onclick="handleLogout()" style="width: 100%; padding: 10px; background: rgba(239, 68, 68, 0.12); border-radius: 12px; color: #ef4444; font-weight: 700; margin-top: 8px;">Keluar Akun Admin</button>
         </div>
     </div>
 
-    <!-- Halaman Panel Guru (Manajemen Kelas & Menyetujui Siswa di Kelasnya) -->
+    <!-- Halaman Panel Guru -->
     <div id="teacher-admin-screen" class="screen">
         <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
             <h2>Panel Kelas Guru</h2>
@@ -674,7 +703,6 @@
                 <div id="teacherClassCodeDisplay" style="font-size: 16px; font-weight: 800; color: #0ea5e9; margin-top: 2px;">-</div>
             </div>
             
-            <!-- Tombol Anggota Kelas untuk Guru -->
             <button onclick="openClassMembersScreen()" style="width: 100%; padding: 10px; background: var(--accent-gradient); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-bottom: 8px;">👥 Lihat Daftar Siswa di Kelas</button>
 
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-align: left;">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
@@ -686,7 +714,7 @@
         </div>
     </div>
 
-    <!-- Halaman Daftar Anggota Kelas (Siswa & Guru) -->
+    <!-- Halaman Daftar Anggota Kelas -->
     <div id="class-members-screen" class="screen">
         <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
             <h2 id="classMembersTitle">Daftar Anggota Kelas</h2>
@@ -700,7 +728,7 @@
         </div>
     </div>
 
-    <!-- Halaman Menu Utama (Landing Page Style) -->
+    <!-- Halaman Menu Utama -->
     <div id="menu-screen" class="screen">
         <div class="menu-content-wrapper">
             <div class="landing-hero-card">
@@ -867,7 +895,7 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const swCode = `
-                    const CACHE_NAME = 'tartili-cache-v8';
+                    const CACHE_NAME = 'tartili-cache-v9';
                     self.addEventListener('install', (e) => { self.skipWaiting(); });
                     self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
                     self.addEventListener('fetch', (e) => {
@@ -960,6 +988,38 @@
             } else {
                 classCodeInput.style.display = 'block';
                 teacherClassNameInput.style.display = 'none';
+            }
+        }
+
+        function showAdminLoginScreen() {
+            document.getElementById('login-screen').classList.remove('active');
+            document.getElementById('admin-login-screen').classList.add('active');
+        }
+
+        function backToLoginScreen() {
+            document.getElementById('admin-login-screen').classList.remove('active');
+            document.getElementById('login-screen').classList.add('active');
+        }
+
+        async function handleAdminLogin() {
+            const email = document.getElementById('adminAuthEmail').value;
+            const password = document.getElementById('adminAuthPassword').value;
+            const errorDiv = document.getElementById('adminLoginError');
+
+            if (!email || !password) {
+                errorDiv.innerText = "Email dan kata sandi admin wajib diisi.";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
+                errorDiv.style.display = 'none';
+                showToast('Berhasil masuk sebagai Admin!');
+            } catch (err) {
+                console.error(err);
+                errorDiv.innerText = "Email atau kata sandi admin salah.";
+                errorDiv.style.display = 'block';
             }
         }
 
@@ -1064,7 +1124,7 @@
             if (!btnMaster || !btnTeacher) return;
 
             const profile = window.currentUserProfile;
-            const isMaster = profile.email === 'admin@tartili.com' || profile.isMasterAdmin === true;
+            const isMaster = profile.email === 'admin@tartili.com' || profile.role === 'Admin';
 
             if (isMaster) {
                 btnMaster.style.display = 'flex';
@@ -1079,7 +1139,7 @@
             }
         }
 
-        // --- MASTER ADMIN PANEL (UPGRADED) ---
+        // --- MASTER ADMIN PANEL ---
         async function openMasterAdminScreen() {
             appState = 'admin';
             document.getElementById('menu-screen').classList.remove('active');
@@ -1219,7 +1279,7 @@
             }
         }
 
-        // --- CLASS MEMBERS SCREEN (Siswa & Guru) ---
+        // --- CLASS MEMBERS SCREEN ---
         let previousScreenBeforeMembers = 'menu';
 
         async function openClassMembersScreen() {
