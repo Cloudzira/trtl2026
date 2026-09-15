@@ -82,10 +82,9 @@
 
                         const profile = window.currentUserProfile;
 
-                        // Setup real-time notifications for user
+                        // Realtime notifications
                         initRealtimeNotifications(user.uid, profile);
 
-                        // Bypass Approval untuk Master Admin
                         if (user.email === 'admin@tartili.com' || profile.role === 'Admin') {
                             await updateUserGreeting();
                             setupDashboardAccess();
@@ -96,7 +95,6 @@
                             return;
                         }
 
-                        // Level 1 Check: Master Admin Approval
                         if (!profile.isMasterApproved) {
                             hideAllScreens();
                             verifyScreen.classList.add('active');
@@ -108,7 +106,6 @@
                             return;
                         }
 
-                        // Level 2 Check: Teacher Approval for Students
                         if (profile.role === 'Siswa' && !profile.isTeacherApproved) {
                             hideAllScreens();
                             verifyScreen.classList.add('active');
@@ -158,7 +155,6 @@
             });
         }
 
-        // --- REALTIME NOTIFIKASI SITEM ---
         function initRealtimeNotifications(userId, profile) {
             if (window.unsubNotifications) window.unsubNotifications();
             
@@ -198,7 +194,6 @@
                     }
                 });
 
-                // Update badge counter UI
                 const badgeEl = document.getElementById('notifBadgeCount');
                 if (badgeEl) {
                     if (unreadCount > 0) {
@@ -225,6 +220,9 @@
                 if (data.actionUrl === 'chat') {
                     toggleNotifModal(false);
                     openMessagingModal(data.senderId, data.senderName);
+                } else if (data.actionUrl === 'teacher-submissions') {
+                    toggleNotifModal(false);
+                    openTeacherAdminScreen();
                 }
             } catch (e) {
                 console.error("Gagal memperbarui status notifikasi:", e);
@@ -233,7 +231,6 @@
         window.markNotificationRead = markNotificationRead;
     </script>
 
-    <!-- Berkas Konfigurasi Data Buku Tartili (Jilid 1-6) -->
     <script src="tartili1.js"></script>
     <script src="tartili2.js"></script>
     <script src="tartili3.js"></script>
@@ -241,9 +238,6 @@
     <script src="tartili5.js"></script>
     <script src="tartili6.js"></script>
 
-    <!-- ==========================================
-         2. PENGATURAN TAMPILAN (CSS / GLASS MORPHISM)
-         ========================================== -->
     <style>
         :root {
             --transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
@@ -396,13 +390,6 @@
         .bookmark-item-info { display: flex; flex-direction: column; gap: 2px; width: 100%; }
         .bookmark-item-title { font-size: 13px; font-weight: 700; color: var(--text-main); }
         .bookmark-item-subtitle { font-size: 11px; font-weight: 600; color: var(--text-muted); }
-        
-        .bookmark-item-delete { 
-            background: rgba(239, 68, 68, 0.1); border: none; color: #ef4444; cursor: pointer; 
-            width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
-            font-size: 12px; transition: var(--transition); flex-shrink: 0;
-        }
-        .bookmark-item-delete:hover { background: #ef4444; color: white; transform: scale(1.08); }
 
         #toastNotification {
             position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%) translateY(100px);
@@ -412,7 +399,6 @@
             border: 1px solid var(--border-color);
         }
 
-        /* STYLES UNTUK MODAL NOTIFIKASI & PESAN */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
@@ -446,6 +432,10 @@
             position: absolute; top: -3px; right: -3px; background: #ef4444; color: white; font-size: 9px; font-weight: 800;
             width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 2px solid var(--bg-card);
         }
+
+        .teacher-tab-container { display: flex; gap: 8px; margin-bottom: 8px; }
+        .teacher-tab-btn { flex: 1; padding: 8px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-muted); border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .teacher-tab-btn.active { background: #0ea5e9; color: white; border-color: #0ea5e9; }
 
         @media (orientation: portrait) {
             .menu-content-wrapper { max-width: 420px; }
@@ -701,7 +691,6 @@
         .btn-open-target { background: var(--accent-gradient); }
         .btn-record { background: linear-gradient(135deg, #f43f5e, #e11d48); }
         .btn-stop { background: linear-gradient(135deg, #f59e0b, #d97706); }
-        .btn-ok { background: var(--accent-gradient); }
         .btn-send { background: linear-gradient(135deg, #10b981, #059669); }
         .universal-btn:disabled { background: var(--border-color) !important; color: var(--text-muted) !important; cursor: not-allowed; box-shadow: none !important; transform: none !important; opacity: 0.7; }
 
@@ -749,19 +738,13 @@
                 <h3 id="chatTargetName">💬 Pesan</h3>
                 <button class="modal-close-btn" onclick="toggleChatModal(false)">✕</button>
             </div>
-            <div class="chat-body" id="chatMessageContainer">
-                <!-- Chat messages will render here -->
-            </div>
+            <div class="chat-body" id="chatMessageContainer"></div>
             <div class="chat-input-area">
                 <input type="text" id="chatInputText" placeholder="Tulis pesan..." onkeypress="if(event.key==='Enter') sendChatMessage()" />
                 <button onclick="sendChatMessage()" style="background:var(--accent-gradient); color:white; border:none; padding:8px 16px; border-radius:12px; font-weight:700; cursor:pointer;">Kirim</button>
             </div>
         </div>
     </div>
-
-    <!-- ==========================================
-         3. STRUKTUR HTML (ANTARMUKA / TAMPILAN)
-         ========================================== -->
 
     <!-- Halaman Login Siswa / Guru -->
     <div id="login-screen" class="screen">
@@ -790,7 +773,6 @@
             <button class="btn-login" id="authSubmitBtn" onclick="handleAuthSubmit()">Masuk Sekarang</button>
             <div id="loginError" class="login-error">Terjadi kesalahan pada data yang dimasukkan.</div>
 
-            <!-- Tombol Pengarah ke Halaman Masuk Admin -->
             <button onclick="showAdminLoginScreen()" style="background: transparent; border: none; color: #0ea5e9; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 8px;">🔐 Masuk sebagai Master Admin</button>
         </div>
     </div>
@@ -834,9 +816,7 @@
             <h2>Panel Master Admin</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Daftar akun baru (Siswa & Guru) yang menunggu verifikasi awal:</p>
             
-            <div id="pendingMasterUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
-                <!-- Diisi dinamis via JS -->
-            </div>
+            <div id="pendingMasterUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;"></div>
 
             <button class="auth-mode-btn" onclick="handleLogout()" style="width: 100%; padding: 10px; background: rgba(239, 68, 68, 0.12); border-radius: 12px; color: #ef4444; font-weight: 700; margin-top: 8px;">Keluar Akun Admin</button>
         </div>
@@ -844,18 +824,29 @@
 
     <!-- Halaman Panel Guru -->
     <div id="teacher-admin-screen" class="screen">
-        <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
+        <div class="login-card" style="max-width: 650px; height: 88vh; display: flex; flex-direction: column;">
             <h2>Panel Kelas Guru</h2>
             <div style="background: var(--input-bg); padding: 10px; border-radius: 12px; text-align: left; margin-bottom: 8px;">
                 <div style="font-size: 11px; color: var(--text-muted);">Kode Kelas Anda untuk dibagikan ke Siswa:</div>
                 <div id="teacherClassCodeDisplay" style="font-size: 16px; font-weight: 800; color: #0ea5e9; margin-top: 2px;">-</div>
             </div>
-            
-            <button onclick="openClassMembersScreen()" style="width: 100%; padding: 10px; background: var(--accent-gradient); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-bottom: 8px;">👥 Lihat Daftar Siswa di Kelas</button>
 
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-align: left;">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
-            <div id="pendingStudentContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
-                <!-- Diisi dinamis via JS -->
+            <!-- Tab Navigasi Panel Guru -->
+            <div class="teacher-tab-container">
+                <button class="teacher-tab-btn active" id="tabBtnSubmissions" onclick="switchTeacherTab('submissions')">Setoran Siswa 🎙️</button>
+                <button class="teacher-tab-btn" id="tabBtnApproval" onclick="switchTeacherTab('approval')">Persetujuan Siswa 👤</button>
+            </div>
+            
+            <button onclick="openClassMembersScreen()" style="width: 100%; padding: 8px; background: var(--accent-gradient); color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; margin-bottom: 8px;">👥 Lihat Daftar Siswa di Kelas</button>
+
+            <!-- Container Setoran Rekaman -->
+            <div id="teacherSubmissionsSection" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
+                <div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat setoran siswa...</div>
+            </div>
+
+            <!-- Container Pendaftaran Siswa -->
+            <div id="teacherApprovalSection" style="flex: 1; overflow-y: auto; display: none; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
+                <div id="pendingStudentContainer" style="display: flex; flex-direction: column; gap: 8px;"></div>
             </div>
 
             <button class="auth-mode-btn" onclick="goToMenu()" style="width: 100%; padding: 10px; background: var(--input-bg); border-radius: 12px; color: var(--text-main); font-weight: 700; margin-top: 8px;">Kembali ke Menu Utama</button>
@@ -868,9 +859,7 @@
             <h2 id="classMembersTitle">Daftar Anggota Kelas</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;" id="classMembersSubtitle">Daftar siswa yang tergabung dalam kelas ini:</p>
             
-            <div id="classMembersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
-                <!-- Diisi dinamis via JS -->
-            </div>
+            <div id="classMembersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;"></div>
 
             <button class="auth-mode-btn" onclick="goBackFromClassMembers()" style="width: 100%; padding: 10px; background: var(--input-bg); border-radius: 12px; color: var(--text-main); font-weight: 700; margin-top: 8px;">Kembali</button>
         </div>
@@ -1028,13 +1017,13 @@
                 </div>
             </div>
 
+            <!-- Panel Rekam dan Kirim Langsung Ke Guru -->
             <div class="record-panel">
                 <div class="section-title" id="recordTitle">Setoran membaca</div>
                 <div class="record-buttons">
                     <button class="universal-btn btn-record" id="btnRec" onclick="startRecording()">Rekam</button>
                     <button class="universal-btn btn-stop" id="btnStop" onclick="stopRecording()" disabled>Stop</button>
-                    <button class="universal-btn btn-ok" id="btnOk" onclick="uploadRecordingToDrive()" disabled>Simpan</button>
-                    <button class="universal-btn btn-send" id="btnSend" onclick="sendToWhatsApp()" disabled>Kirim WA</button>
+                    <button class="universal-btn btn-send" id="btnSend" onclick="sendRecordingToTeacher()" disabled>Kirim ke Guru</button>
                 </div>
             </div>
         </div>
@@ -1047,7 +1036,7 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const swCode = `
-                    const CACHE_NAME = 'tartili-cache-v9';
+                    const CACHE_NAME = 'tartili-cache-v10';
                     self.addEventListener('install', (e) => { self.skipWaiting(); });
                     self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
                     self.addEventListener('fetch', (e) => {
@@ -1182,7 +1171,6 @@
                     createdAt: window.serverTimestamp()
                 });
 
-                // Kirim notifikasi ke penerima
                 await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
                     targetUserId: currentActiveChatUserId,
                     title: `Pesan baru dari ${currentUser.name}`,
@@ -1314,7 +1302,6 @@
                         createdAt: new Date().toISOString()
                     });
 
-                    // NOTIFIKASI MASTER ADMIN SAAT PENDAFTAR BARU
                     await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
                         targetUserId: "ALL_ADMINS",
                         title: "Pendaftar Baru!",
@@ -1382,17 +1369,8 @@
             const profile = window.currentUserProfile;
             const isMaster = profile.email === 'admin@tartili.com' || profile.role === 'Admin';
 
-            if (isMaster) {
-                btnMaster.style.display = 'flex';
-            } else {
-                btnMaster.style.display = 'none';
-            }
-
-            if (profile.role === 'Guru') {
-                btnTeacher.style.display = 'flex';
-            } else {
-                btnTeacher.style.display = 'none';
-            }
+            btnMaster.style.display = isMaster ? 'flex' : 'none';
+            btnTeacher.style.display = profile.role === 'Guru' ? 'flex' : 'none';
         }
 
         // --- MASTER ADMIN PANEL ---
@@ -1447,7 +1425,6 @@
             try {
                 await window.updateDoc(window.doc(window.firebaseDb, "users", userId), { isMasterApproved: true });
                 
-                // NOTIFIKASI KE USER KETIKA DISETUJUI ADMIN
                 await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
                     targetUserId: userId,
                     title: "Akun Disetujui!",
@@ -1476,7 +1453,29 @@
             }
         }
 
-        // --- TEACHER PANEL ---
+        // --- TEACHER PANEL & RECORDINGS MANAGEMENT ---
+        function switchTeacherTab(tab) {
+            const btnSub = document.getElementById('tabBtnSubmissions');
+            const btnApp = document.getElementById('tabBtnApproval');
+            const secSub = document.getElementById('teacherSubmissionsSection');
+            const secApp = document.getElementById('teacherApprovalSection');
+
+            if (tab === 'submissions') {
+                btnSub.classList.add('active');
+                btnApp.classList.remove('active');
+                secSub.style.display = 'flex';
+                secApp.style.display = 'none';
+                loadTeacherSubmissions();
+            } else {
+                btnApp.classList.add('active');
+                btnSub.classList.remove('active');
+                secApp.style.display = 'flex';
+                secSub.style.display = 'none';
+                loadTeacherPendingStudents();
+            }
+        }
+        window.switchTeacherTab = switchTeacherTab;
+
         async function openTeacherAdminScreen() {
             appState = 'teacher-admin';
             document.getElementById('menu-screen').classList.remove('active');
@@ -1486,8 +1485,91 @@
             const codeDisplay = document.getElementById('teacherClassCodeDisplay');
             if (codeDisplay) codeDisplay.innerText = profile.classCode || '-';
 
-            await loadTeacherPendingStudents();
+            switchTeacherTab('submissions');
         }
+
+        async function loadTeacherSubmissions() {
+            const container = document.getElementById('teacherSubmissionsSection');
+            if (!container) return;
+            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat setoran rekaman siswa...</div>`;
+
+            try {
+                const teacherClassCode = window.currentUserProfile.classCode;
+                const q = window.query(
+                    window.collection(window.firebaseDb, "submissions"),
+                    window.where("classCode", "==", teacherClassCode),
+                    window.orderBy("createdAt", "desc")
+                );
+                const querySnapshot = await window.getDocs(q);
+
+                container.innerHTML = "";
+                if (querySnapshot.empty) {
+                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada setoran rekaman dari siswa.</div>`;
+                    return;
+                }
+
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const subId = docSnap.id;
+                    const timeStr = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString('id-ID', { dateStyle:'short', timeStyle:'short' }) : '-';
+
+                    let card = document.createElement('div');
+                    card.style.cssText = "background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px;";
+                    card.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <span style="font-weight:800; font-size:13px; color:var(--text-main);">${data.studentName}</span>
+                                <span style="font-size:11px; color:var(--text-muted); margin-left:6px;">(Tartili ${data.jilid} - Hal ${data.page})</span>
+                            </div>
+                            <span style="font-size:10px; color:var(--text-muted);">${timeStr}</span>
+                        </div>
+                        
+                        <audio controls style="width:100%; height:36px; border-radius:8px;" src="${data.audioBase64}"></audio>
+                        
+                        <div style="display:flex; gap:6px; margin-top:4px;">
+                            <input type="text" id="feedbackInput_${subId}" value="${data.feedback || ''}" placeholder="Tulis catatan/feedback..." style="flex:1; padding:6px 10px; border-radius:8px; border:1px solid var(--border-color); font-size:12px; background:var(--bg-card); color:var(--text-main);" />
+                            <input type="number" id="scoreInput_${subId}" value="${data.score || ''}" placeholder="Nilai" style="width:60px; padding:6px 6px; border-radius:8px; border:1px solid var(--border-color); font-size:12px; text-align:center; background:var(--bg-card); color:var(--text-main);" />
+                            <button onclick="saveSubmissionFeedback('${subId}', '${data.studentId}')" style="background:var(--accent-gradient); color:white; border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer;">Simpan</button>
+                        </div>
+                        ${data.score !== undefined && data.score !== '' ? `<div style="font-size:10px; color:#10b981; font-weight:700;">✓ Sudah Dinilai: ${data.score}</div>` : ''}
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat setoran.</div>`;
+            }
+        }
+
+        async function saveSubmissionFeedback(subId, studentId) {
+            const feedbackVal = document.getElementById(`feedbackInput_${subId}`).value.trim();
+            const scoreVal = document.getElementById(`scoreInput_${subId}`).value.trim();
+
+            try {
+                await window.updateDoc(window.doc(window.firebaseDb, "submissions", subId), {
+                    feedback: feedbackVal,
+                    score: scoreVal,
+                    reviewedAt: window.serverTimestamp()
+                });
+
+                // Notifikasi balasan ke siswa
+                await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                    targetUserId: studentId,
+                    title: "Feedback Setoran Tartili 📝",
+                    message: `Guru memberikan nilai: ${scoreVal || '-'}. Catatan: "${feedbackVal || '-'}"`,
+                    createdAt: window.serverTimestamp(),
+                    readBy: []
+                });
+
+                showToast("Feedback berhasil dikirim ke siswa!");
+                loadTeacherSubmissions();
+            } catch (e) {
+                console.error("Gagal menyimpan feedback:", e);
+                showToast("Gagal menyimpan feedback.");
+            }
+        }
+        window.saveSubmissionFeedback = saveSubmissionFeedback;
 
         async function loadTeacherPendingStudents() {
             const container = document.getElementById('pendingStudentContainer');
@@ -1538,7 +1620,6 @@
             try {
                 await window.updateDoc(window.doc(window.firebaseDb, "users", userId), { isTeacherApproved: true });
                 
-                // NOTIFIKASI KE SISWA KETIKA DISETUJUI GURU
                 await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
                     targetUserId: userId,
                     title: "Diterima di Kelas!",
@@ -1616,33 +1697,28 @@
 
                 if (snapStudents.empty) {
                     let emptyItem = document.createElement('div');
-                    emptyItem.style.cssText = "text-align:center; color:var(--text-muted); padding:15px; font-size:12px;";
-                    emptyItem.innerText = "Belum ada siswa lain yang aktif di kelas ini.";
+                    emptyItem.style.cssText = "text-align:center; color:var(--text-muted); padding:16px; font-size:12px;";
+                    emptyItem.innerText = "Belum ada siswa lain di kelas ini.";
                     container.appendChild(emptyItem);
-                    return;
-                }
-
-                snapStudents.forEach((docSnap) => {
-                    const sData = docSnap.data();
-                    const sId = docSnap.id;
-                    let item = document.createElement('div');
-                    item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
-                    item.innerHTML = `
-                        <div>
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👤 ${sData.name}</div>
-                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${sData.email}</div>
-                        </div>
-                        <div style="display:flex; gap:6px; align-items:center;">
-                            <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 6px;">Aktif</span>
+                } else {
+                    snapStudents.forEach(docSnap => {
+                        const sData = docSnap.data();
+                        const sId = docSnap.id;
+                        let item = document.createElement('div');
+                        item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
+                        item.innerHTML = `
+                            <div>
+                                <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${sData.name} ${sId === profile.uid ? '<span style="font-size:10px; opacity:0.7;">(Anda)</span>' : ''}</div>
+                                <div style="font-size: 11px; color: var(--text-muted);">Email: ${sData.email}</div>
+                            </div>
                             ${sId !== profile.uid ? `<button onclick="openMessagingModal('${sId}', '${sData.name}')" style="background:var(--accent-gradient); color:white; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">💬 Chat</button>` : ''}
-                        </div>
-                    `;
-                    container.appendChild(item);
-                });
-
+                        `;
+                        container.appendChild(item);
+                    });
+                }
             } catch (e) {
                 console.error(e);
-                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat daftar anggota kelas.</div>`;
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat anggota kelas.</div>`;
             }
         }
 
@@ -1657,129 +1733,381 @@
             }
         }
 
-        function handleLogout() {
-            window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
+        async function handleLogout() {
+            try {
+                await window.signOut(window.firebaseAuth);
+                showToast('Berhasil keluar.');
+            } catch (e) {
+                console.error(e);
+            }
         }
 
-        let savedLastRead = JSON.parse(localStorage.getItem('tartili_last_read')) || { jilid: 1, page: 'a' };
-        let savedBookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks')) || [];
-        
-        let currentJilid = savedLastRead.jilid, currentPage = savedLastRead.page, appState = 'menu', selectedMenuCoverIndex = 0, currentAudio = null;
-        let mediaRecorder, audioChunks = [], recordedAudioBlob = null, generatedWhatsAppUrl = ""; 
-        
-        const baseUrl = "https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/";
-        let scale = 1, initialDistance = null;
-        let touchStartX = 0, touchEndX = 0;
-        const minSwipeDistance = 50;
+        // --- SISTEM PEMBACA BUKU & REKAM AUDIO SEMENTARA ---
+        let currentJilid = 1;
+        let currentPageIndex = 0;
+        let currentAudio = null;
+        let appState = 'menu'; 
+        let mediaRecorder;
+        let audioChunks = [];
+        let recordedAudioBlob = null;
+        let recordedBase64 = null;
 
-        const allAudioConfig = {
-            "1": typeof tartili1Config !== 'undefined' ? tartili1Config : {},
-            "2": typeof tartili2Config !== 'undefined' ? tartili2Config : {},
-            "3": typeof tartili3Config !== 'undefined' ? tartili3Config : {},
-            "4": typeof tartili4Config !== 'undefined' ? tartili4Config : {},
-            "5": typeof tartili5Config !== 'undefined' ? tartili5Config : {},
-            "6": typeof tartili6Config !== 'undefined' ? tartili6Config : {}
+        const tartiliData = {
+            1: typeof tartili1Data !== 'undefined' ? tartili1Data : [],
+            2: typeof tartili2Data !== 'undefined' ? tartili2Data : [],
+            3: typeof tartili3Data !== 'undefined' ? tartili3Data : [],
+            4: typeof tartili4Data !== 'undefined' ? tartili4Data : [],
+            5: typeof tartili5Data !== 'undefined' ? tartili5Data : [],
+            6: typeof tartili6Data !== 'undefined' ? tartili6Data : []
         };
 
-        history.replaceState({ screen: 'menu' }, '', '');
-
-        window.addEventListener('popstate', function(event) {
-            if (appState === 'read') {
-                if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-                resetRecording();
-                goToMenu();
-            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin' || appState === 'class-members') {
-                goToMenu();
-            } else {
-                history.back();
+        function openJilid(jilidNum, pageCode) {
+            currentJilid = jilidNum;
+            const data = tartiliData[currentJilid];
+            
+            if (!data || data.length === 0) {
+                showToast(`Data Tartili ${jilidNum} belum tersedia.`);
+                return;
             }
-        });
 
-        function isPortrait() { return window.innerHeight > window.innerWidth; }
+            let foundIdx = data.findIndex(p => p.halaman === pageCode);
+            currentPageIndex = (foundIdx !== -1) ? foundIdx : 0;
 
-        window.addEventListener('resize', () => {
-            if (isPortrait()) { resetZoom(); }
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('bookmarks-screen').classList.remove('active');
+            document.getElementById('read-screen').classList.add('active');
+            appState = 'read';
+
+            syncReadDropdowns();
+            renderPage();
+        }
+
+        function renderPage() {
+            const data = tartiliData[currentJilid];
+            if (!data || !data[currentPageIndex]) return;
+
+            const pageObj = data[currentPageIndex];
             const container = document.getElementById('imageContainer');
-            if (appState === 'read' && (!container.innerHTML || container.innerHTML.trim() === '')) {
-                loadPageData();
-            }
-        });
+            const spinner = document.getElementById('loadingSpinner');
 
-        updatePageOptions('Menu');
-        updatePageOptions('Read'); 
-        updatePageOptions('Bookmarks');
-        updateMenuCoverFocus();
+            spinner.style.display = 'block';
+            container.innerHTML = '';
+
+            const img = new Image();
+            img.src = pageObj.url;
+            img.onload = () => {
+                spinner.style.display = 'none';
+                container.appendChild(img);
+
+                if (pageObj.sound_blocks) {
+                    pageObj.sound_blocks.forEach(block => {
+                        const div = document.createElement('div');
+                        div.className = 'sound-block';
+                        div.style.left = block.x + '%';
+                        div.style.top = block.y + '%';
+                        div.style.width = block.w + '%';
+                        div.style.height = block.h + '%';
+                        div.onclick = () => playAudio(block.audio);
+                        container.appendChild(div);
+                    });
+                }
+            };
+
+            updateBookmarkBtnUI();
+            resetAudioRecorderUI();
+        }
+
+        function playAudio(src) {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            currentAudio = new Audio(src);
+            currentAudio.play().catch(e => console.log("Audio play error:", e));
+        }
+
+        function changePage(dir) {
+            const data = tartiliData[currentJilid];
+            if (!data) return;
+
+            let newIdx = currentPageIndex + dir;
+            if (newIdx >= 0 && newIdx < data.length) {
+                currentPageIndex = newIdx;
+                syncReadDropdowns();
+                renderPage();
+            }
+        }
+
+        function goToMenu() {
+            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+            document.getElementById('read-screen').classList.remove('active');
+            document.getElementById('bookmarks-screen').classList.remove('active');
+            document.getElementById('teacher-admin-screen').classList.remove('active');
+            document.getElementById('menu-screen').classList.add('active');
+            appState = 'menu';
+        }
 
         function openBookmarksScreen() {
-            appState = 'bookmarks';
             document.getElementById('menu-screen').classList.remove('active');
             document.getElementById('read-screen').classList.remove('active');
             document.getElementById('bookmarks-screen').classList.add('active');
+            appState = 'bookmarks';
             renderBookmarksList();
             updatePageOptions('Bookmarks');
-            history.pushState({ screen: 'bookmarks' }, '', '');
+        }
+
+        function toggleBookmark() {
+            let bookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks') || '[]');
+            const data = tartiliData[currentJilid];
+            if (!data || !data[currentPageIndex]) return;
+            
+            const currentObj = data[currentPageIndex];
+            const itemKey = `jilid_${currentJilid}_hal_${currentObj.halaman}`;
+            
+            const idx = bookmarks.findIndex(b => b.key === itemKey);
+            if (idx > -1) {
+                bookmarks.splice(idx, 1);
+                showToast("Halaman dihapus dari simpanan.");
+            } else {
+                bookmarks.push({
+                    key: itemKey,
+                    jilid: currentJilid,
+                    halaman: currentObj.halaman,
+                    title: `Tartili ${currentJilid} - Hal ${currentObj.halaman}`,
+                    savedAt: new Date().toLocaleDateString('id-ID')
+                });
+                showToast("Halaman berhasil disimpan!");
+            }
+            
+            localStorage.setItem('tartili_bookmarks', JSON.stringify(bookmarks));
+            updateBookmarkBtnUI();
+        }
+
+        function updateBookmarkBtnUI() {
+            const btn = document.getElementById('btnBookmark');
+            if (!btn) return;
+            let bookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks') || '[]');
+            const data = tartiliData[currentJilid];
+            if (!data || !data[currentPageIndex]) return;
+
+            const itemKey = `jilid_${currentJilid}_hal_${data[currentPageIndex].halaman}`;
+            const exists = bookmarks.some(b => b.key === itemKey);
+
+            if (exists) {
+                btn.classList.add('saved');
+            } else {
+                btn.classList.remove('saved');
+            }
         }
 
         function renderBookmarksList() {
             const container = document.getElementById('bookmarksListContainer');
             if (!container) return;
-            container.innerHTML = "";
-
-            if (savedBookmarks.length === 0) {
-                container.innerHTML = `<div style="display:flex; flex-direction: column; align-items:center; justify-content:center; height: 180px; color:var(--text-muted); font-size:13px; padding:20px; text-align:center; gap: 8px;"><span style="font-size: 36px;">📖</span><span>Belum ada halaman tersimpan.</span></div>`;
+            
+            let bookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks') || '[]');
+            container.innerHTML = '';
+            
+            if (bookmarks.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:30px; font-size:13px;">Belum ada halaman tersimpan.</div>`;
                 return;
             }
 
-            const reversedBookmarks = [...savedBookmarks].reverse();
-
-            reversedBookmarks.forEach((b, revIndex) => {
-                const originalIndex = savedBookmarks.length - 1 - revIndex;
-
-                let item = document.createElement('div');
+            bookmarks.forEach(bm => {
+                const item = document.createElement('div');
                 item.className = 'bookmark-item';
-                item.setAttribute('onclick', `openJilid(${b.jilid}, '${b.page}')`);
                 item.innerHTML = `
-                    <div class="bookmark-item-content">
-                        <div class="bookmark-item-icon">
-                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:#0ea5e9;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
-                        </div>
+                    <div class="bookmark-item-content" onclick="openJilid(${bm.jilid}, '${bm.halaman}')">
+                        <div class="bookmark-item-icon">📖</div>
                         <div class="bookmark-item-info">
-                            <span class="bookmark-item-title">Tartili Jilid ${b.jilid}</span>
-                            <span class="bookmark-item-subtitle">Halaman ${b.page}</span>
+                            <div class="bookmark-item-title">${bm.title}</div>
+                            <div class="bookmark-item-subtitle">Disimpan: ${bm.savedAt}</div>
                         </div>
                     </div>
-                    <button class="bookmark-item-delete" onclick="removeBookmark(${originalIndex}, event)" title="Hapus">✕</button>
+                    <button class="bookmark-item-delete" onclick="deleteBookmark('${bm.key}', event)">✕</button>
                 `;
                 container.appendChild(item);
             });
         }
 
-        function removeBookmark(index, event) {
+        function deleteBookmark(key, event) {
             event.stopPropagation();
-            savedBookmarks.splice(index, 1);
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
+            let bookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks') || '[]');
+            bookmarks = bookmarks.filter(b => b.key !== key);
+            localStorage.setItem('tartili_bookmarks', JSON.stringify(bookmarks));
             renderBookmarksList();
-            updateBookmarkButtonState();
-            showToast('Halaman dihapus dari simpanan');
+            showToast("Halaman dihapus.");
         }
 
-        function goToMenu() {
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            resetRecording();
-            appState = 'menu';
-            document.getElementById('read-screen').classList.remove('active');
-            document.getElementById('bookmarks-screen').classList.remove('active');
-            document.getElementById('admin-screen').classList.remove('active');
-            document.getElementById('teacher-admin-screen').classList.remove('active');
-            document.getElementById('class-members-screen').classList.remove('active');
-            document.getElementById('menu-screen').classList.add('active');
-            updateMenuCoverFocus();
-            history.replaceState({ screen: 'menu' }, '', '');
+        function updatePageOptions(context) {
+            const jilidSelect = document.getElementById(`jumpJilid${context}`);
+            const pageSelect = document.getElementById(`jumpPageSelect${context}`);
+            if (!jilidSelect || !pageSelect) return;
+
+            const selectedJilid = jilidSelect.value;
+            const data = tartiliData[selectedJilid] || [];
+
+            pageSelect.innerHTML = '';
+            data.forEach((p, idx) => {
+                const opt = document.createElement('option');
+                opt.value = p.halaman;
+                opt.innerText = `Hal ${p.halaman}`;
+                pageSelect.appendChild(opt);
+            });
         }
 
+        function directOpen(context) {
+            const jilidSelect = document.getElementById(`jumpJilid${context}`);
+            const pageSelect = document.getElementById(`jumpPageSelect${context}`);
+            if (jilidSelect && pageSelect) {
+                openJilid(parseInt(jilidSelect.value), pageSelect.value);
+            }
+        }
+
+        function syncReadDropdowns() {
+            const jilidRead = document.getElementById('jumpJilidRead');
+            const pageRead = document.getElementById('jumpPageSelectRead');
+            
+            if (jilidRead && pageRead) {
+                jilidRead.value = currentJilid;
+                updatePageOptions('Read');
+                const data = tartiliData[currentJilid];
+                if (data && data[currentPageIndex]) {
+                    pageRead.value = data[currentPageIndex].halaman;
+                }
+            }
+        }
+
+        // --- REKAMAN AUDIO & PENGIRIMAN DENGAN FIRESTORE ---
+        async function startRecording() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showToast("Fitur rekam tidak didukung browser ini.");
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    
+                    const reader = new FileReader();
+                    reader.readAsDataURL(recordedAudioBlob);
+                    reader.onloadend = () => {
+                        recordedBase64 = reader.result;
+                        document.getElementById('btnSend').disabled = false;
+                        showToast("Rekaman selesai! Siap dikirim ke Guru.");
+                    };
+                };
+
+                mediaRecorder.start();
+                document.getElementById('btnRec').classList.add('is-recording');
+                document.getElementById('btnRec').innerText = "Merekam...";
+                document.getElementById('btnStop').disabled = false;
+                document.getElementById('btnSend').disabled = true;
+                showToast("Mulai merekam suara...");
+
+            } catch (err) {
+                console.error("Gagal merekam:", err);
+                showToast("Izin mikrofon ditolak atau error.");
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('btnRec').classList.remove('is-recording');
+            document.getElementById('btnRec').innerText = "Rekam";
+            document.getElementById('btnStop').disabled = true;
+        }
+
+        function resetAudioRecorderUI() {
+            recordedAudioBlob = null;
+            recordedBase64 = null;
+            document.getElementById('btnRec').classList.remove('is-recording');
+            document.getElementById('btnRec').innerText = "Rekam";
+            document.getElementById('btnStop').disabled = true;
+            document.getElementById('btnSend').disabled = true;
+        }
+
+        async function sendRecordingToTeacher() {
+            if (!recordedBase64) {
+                showToast("Tidak ada rekaman untuk dikirim.");
+                return;
+            }
+
+            const currentUser = window.currentUserProfile;
+            if (!currentUser) {
+                showToast("Silakan masuk akun terlebih dahulu.");
+                return;
+            }
+
+            const data = tartiliData[currentJilid];
+            const currentHal = data && data[currentPageIndex] ? data[currentPageIndex].halaman : '-';
+
+            const btnSend = document.getElementById('btnSend');
+            btnSend.disabled = true;
+            btnSend.innerText = "Mengirim...";
+
+            try {
+                // 1. Simpan ke koleksi Firestore "submissions"
+                await window.addDoc(window.collection(window.firebaseDb, "submissions"), {
+                    studentId: currentUser.uid,
+                    studentName: currentUser.name,
+                    studentEmail: currentUser.email,
+                    classCode: currentUser.classCode || '',
+                    jilid: currentJilid,
+                    page: currentHal,
+                    audioBase64: recordedBase64,
+                    feedback: '',
+                    score: '',
+                    createdAt: window.serverTimestamp()
+                });
+
+                // 2. Cari Guru Pengampu Kelas dan Kirimkan Notifikasi
+                const qTeacher = window.query(
+                    window.collection(window.firebaseDb, "users"),
+                    window.where("role", "==", "Guru"),
+                    window.where("classCode", "==", currentUser.classCode || '')
+                );
+                const snapTeacher = await window.getDocs(qTeacher);
+
+                if (!snapTeacher.empty) {
+                    snapTeacher.forEach(async (docSnap) => {
+                        const teacherId = docSnap.id;
+                        await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                            targetUserId: teacherId,
+                            title: `Setoran Rekaman Baru 🎙️`,
+                            message: `${currentUser.name} telah mengirim setoran (Tartili ${currentJilid} - Hal ${currentHal}).`,
+                            actionUrl: 'teacher-submissions',
+                            readBy: [],
+                            createdAt: window.serverTimestamp()
+                        });
+                    });
+                }
+
+                showToast("Setoran rekaman berhasil dikirim ke Guru!");
+                resetAudioRecorderUI();
+
+            } catch (err) {
+                console.error("Gagal mengirim rekaman:", err);
+                showToast("Gagal mengirim setoran.");
+            } finally {
+                btnSend.innerText = "Kirim ke Guru";
+            }
+        }
+
+        let selectedMenuCoverIndex = 0;
         function updateMenuCoverFocus() {
             for (let i = 0; i < 6; i++) {
-                let btn = document.getElementById('cover-btn-' + i);
+                const btn = document.getElementById(`cover-btn-${i}`);
                 if (btn) {
                     if (i === selectedMenuCoverIndex) btn.classList.add('keyboard-focused');
                     else btn.classList.remove('keyboard-focused');
@@ -1787,296 +2115,11 @@
             }
         }
 
-        function getNumericPageList(jilid) {
-            let list = [], max = (jilid === 6) ? 48 : 44;
-            for (let i = 1; i <= max; i++) list.push(i.toString());
-            return list;
-        }
-
-        function getFullPageList(jilid) {
-            let list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', '0'];
-            return list.concat(getNumericPageList(jilid));
-        }
-
-        function updatePageOptions(context) {
-            let selectId = 'jumpJilidMenu';
-            let targetSelectId = 'jumpPageSelectMenu';
-            if (context === 'Read') {
-                selectId = 'jumpJilidRead';
-                targetSelectId = 'jumpPageSelectRead';
-            } else if (context === 'Bookmarks') {
-                selectId = 'jumpJilidBookmarks';
-                targetSelectId = 'jumpPageSelectBookmarks';
-            }
-            
-            let jilidEl = document.getElementById(selectId);
-            let select = document.getElementById(targetSelectId);
-            if (!jilidEl || !select) return;
-            
-            let jilid = parseInt(jilidEl.value);
-            select.innerHTML = "";
-            getNumericPageList(jilid).forEach(p => { 
-                let opt = document.createElement('option'); 
-                opt.value = p; opt.text = p; 
-                select.appendChild(opt); 
-            });
-        }
-
-        function directOpen(context) {
-            let jilidId = 'jumpJilidMenu';
-            let pageId = 'jumpPageSelectMenu';
-            if (context === 'Read') {
-                jilidId = 'jumpJilidRead';
-                pageId = 'jumpPageSelectRead';
-            } else if (context === 'Bookmarks') {
-                jilidId = 'jumpJilidBookmarks';
-                pageId = 'jumpPageSelectBookmarks';
-            }
-            const jilid = parseInt(document.getElementById(jilidId).value);
-            const page = document.getElementById(pageId).value;
-            openJilid(jilid, page);
-        }
-
-        function openJilid(jilid, page) {
-            currentJilid = jilid; currentPage = page; appState = 'read';
-            document.getElementById('read-screen').classList.add('active');
-            document.getElementById('menu-screen').classList.remove('active');
-            document.getElementById('bookmarks-screen').classList.remove('active');
-            document.getElementById('admin-screen').classList.remove('active');
-            document.getElementById('teacher-admin-screen').classList.remove('active');
-            document.getElementById('class-members-screen').classList.remove('active');
+        window.onload = () => {
+            updatePageOptions('Menu');
+            updatePageOptions('Bookmarks');
             updatePageOptions('Read');
-            
-            let numList = getNumericPageList(currentJilid);
-            let targetPage = numList.includes(currentPage.toString()) ? currentPage.toString() : "1";
-            document.getElementById('jumpPageSelectRead').value = targetPage;
-            
-            resetZoom();
-            loadPageData();
-            history.pushState({ screen: 'read' }, '', '');
-        }
-
-        function resetZoom() { scale = 1; updateImageTransform(); }
-
-        function updateImageTransform() {
-            const container = document.getElementById('imageContainer');
-            if (container) container.style.transform = `scale(${scale})`;
-        }
-
-        function changePage(delta) {
-            let pages = getFullPageList(currentJilid);
-            let currentIndex = pages.indexOf(currentPage.toString());
-            let newIndex = currentIndex + delta;
-            if (newIndex >= 0 && newIndex < pages.length) {
-                currentPage = pages[newIndex];
-                resetZoom();
-                loadPageData();
-            }
-        }
-
-        function toggleBookmark() {
-            let index = savedBookmarks.findIndex(b => b.jilid === currentJilid && b.page === currentPage);
-            
-            if (index > -1) {
-                savedBookmarks.splice(index, 1);
-                showToast('Halaman dihapus dari simpanan');
-            } else {
-                savedBookmarks.push({ jilid: currentJilid, page: currentPage });
-                showToast('Halaman berhasil disimpan!');
-            }
-            
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
-            updateBookmarkButtonState();
-        }
-
-        function updateBookmarkButtonState() {
-            const btn = document.getElementById('btnBookmark');
-            if (!btn) return;
-            let isSaved = savedBookmarks.some(b => b.jilid === currentJilid && b.page === currentPage);
-            if (isSaved) {
-                btn.classList.add('saved');
-                btn.title = "Hapus Simpanan (Unsave)";
-            } else {
-                btn.classList.remove('saved');
-                btn.title = "Simpan Halaman (Save)";
-            }
-        }
-
-        function loadPageData() {
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            resetRecording();
-            
-            localStorage.setItem('tartili_last_read', JSON.stringify({ jilid: currentJilid, page: currentPage }));
-            updateBookmarkButtonState();
-
-            const container = document.getElementById('imageContainer');
-            const spinner = document.getElementById('loadingSpinner');
-            const imgPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/halaman${currentPage}.jpg`;
-            
-            if (spinner) spinner.style.display = 'block';
-            container.innerHTML = "";
-
-            let img = new Image();
-            img.src = imgPath;
-            img.onload = function() {
-                if (spinner) spinner.style.display = 'none';
-                let htmlContent = `<img src="${imgPath}">`;
-                
-                if (allAudioConfig[currentJilid] && allAudioConfig[currentJilid][currentPage]) {
-                    allAudioConfig[currentJilid][currentPage].forEach(block => {
-                        let [top, left, width, height, soundFile] = block;
-                        htmlContent += `<div class="sound-block" style="top: ${top}%; left: ${left}%; width: ${width}%; height: ${height}%;" onclick="playSound('${soundFile}')"></div>`;
-                    });
-                }
-                container.innerHTML = htmlContent;
-            };
-            img.onerror = function() {
-                if (spinner) spinner.style.display = 'none';
-                container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;">Gagal memuat halaman</div>`;
-            };
-
-            document.getElementById('jumpJilidRead').value = currentJilid;
-            let numList = getNumericPageList(currentJilid);
-            if (numList.includes(currentPage.toString())) { 
-                document.getElementById('jumpPageSelectRead').value = currentPage; 
-            }
-        }
-
-        function playSound(soundFile) {
-            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
-            let soundPath = `${baseUrl}tar${currentJilid}/halaman${currentPage}/${soundFile}`;
-            currentAudio = new Audio(soundPath);
-            currentAudio.play();
-        }
-
-        function resetRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') { mediaRecorder.stop(); }
-            audioChunks = []; recordedAudioBlob = null; generatedWhatsAppUrl = "";
-            const btnRec = document.getElementById('btnRec');
-            const btnStop = document.getElementById('btnStop');
-            const btnOk = document.getElementById('btnOk');
-            const btnSend = document.getElementById('btnSend');
-            if (btnRec) { btnRec.disabled = false; btnRec.classList.remove('is-recording'); }
-            if (btnStop) btnStop.disabled = true;
-            if (btnOk) btnOk.disabled = true;
-            if (btnSend) btnSend.disabled = true;
-        }
-
-        function startRecording() {
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                mediaRecorder.onstop = () => {
-                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-                    document.getElementById('btnOk').disabled = false;
-                };
-                mediaRecorder.start();
-                document.getElementById('btnRec').disabled = true;
-                document.getElementById('btnRec').classList.add('is-recording');
-                document.getElementById('btnStop').disabled = false;
-                showToast('Merekam suara...');
-            }).catch(e => { console.error(e); showToast('Akses mikrofon ditolak/tidak didukung.'); });
-        }
-
-        function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-                document.getElementById('btnRec').classList.remove('is-recording');
-                document.getElementById('btnStop').disabled = true;
-                showToast('Rekaman selesai. Silakan simpan.');
-            }
-        }
-
-        function uploadRecordingToDrive() {
-            showToast('Menyiapkan tautan setoran...');
-            setTimeout(() => {
-                document.getElementById('btnSend').disabled = false;
-                showToast('Rekaman siap dikirim via WhatsApp!');
-            }, 1000);
-        }
-
-        function sendToWhatsApp() {
-            const profile = window.currentUserProfile || {};
-            const msg = `Assalamu'alaikum, saya ${profile.name || 'Siswa'} ingin menyetorkan rekaman Tartili Jilid ${currentJilid} Halaman ${currentPage}.`;
-            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-        }
-
-        const scrollArea = document.getElementById('scrollArea');
-        if (scrollArea) {
-            scrollArea.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 2) {
-                    if (!isPortrait()) {
-                        initialDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                    }
-                    return;
-                }
-                if (e.touches.length === 1) {
-                    touchStartX = e.touches[0].clientX;
-                }
-            }, {passive: true});
-
-            scrollArea.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 2 && !isPortrait() && initialDistance) {
-                    let currentDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                    let delta = (currentDistance - initialDistance) * 0.005;
-                    scale = Math.min(Math.max(1, scale + delta), 2.5);
-                    updateImageTransform();
-                    initialDistance = currentDistance;
-                }
-            }, {passive: true});
-
-            scrollArea.addEventListener('touchend', (e) => {
-                if (e.changedTouches.length === 1 && scale === 1) {
-                    touchEndX = e.changedTouches[0].clientX;
-                    let diff = touchStartX - touchEndX;
-                    if (Math.abs(diff) > minSwipeDistance) {
-                        if (diff > 0) changePage(1);
-                        else changePage(-1);
-                    }
-                }
-            }, {passive: true});
-        }
+        };
     </script>
-<!-- KODE MEMATIKAN ZOOM (Cukup tempel di satu tempat ini saja) -->
-<style>
-    html, body {
-        touch-action: manipulation;
-        -webkit-text-size-adjust: 100%;
-        -ms-text-size-adjust: 100%;
-        text-size-adjust: 100%;
-    }
-</style>
-
-<script>
-    // 1. Ubah meta viewport secara otomatis via JavaScript
-    var meta = document.querySelector('meta[name="viewport"]');
-    if (!meta) {
-        meta = document.createElement('meta');
-        meta.name = 'viewport';
-        document.head.appendChild(meta);
-    }
-    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-
-    // 2. Mencegah zoom dari Keyboard (Ctrl +, Ctrl -, Ctrl 0)
-    window.addEventListener('keydown', function (e) {
-        if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
-            e.preventDefault();
-        }
-    }, { passive: false });
-
-    // 3. Mencegah zoom dari Scroll Mouse (Ctrl + Roda Mouse)
-    window.addEventListener('wheel', function (e) {
-        if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-        }
-    }, { passive: false });
-
-    // 4. Mencegah Gesture Pinch Zoom pada HP/Touchpad
-    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
-    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
-    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
-</script>
-    
 </body>
 </html>
