@@ -222,7 +222,7 @@
                         await updateDoc(notifRef, { readBy: readBy });
                     }
                 }
-                if (data.action === 'chat') {
+                if (data.actionUrl === 'chat') {
                     toggleNotifModal(false);
                     openMessagingModal(data.senderId, data.senderName);
                 } else if (data.actionUrl === 'setoran') {
@@ -1813,10 +1813,12 @@
             container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat data setoran...</div>`;
 
             try {
+                // Query hanya dengan 1 filter kesetaraan (classCode) agar TIDAK
+                // memerlukan composite index tambahan di Firestore. Pengurutan
+                // terbaru->terlama dilakukan di sisi browser (lihat sort di bawah).
                 const q = window.query(
                     window.collection(window.firebaseDb, "setoran"),
-                    window.where("classCode", "==", profile.classCode),
-                    window.orderBy("createdAt", "desc")
+                    window.where("classCode", "==", profile.classCode)
                 );
                 const snap = await window.getDocs(q);
                 container.innerHTML = "";
@@ -1826,7 +1828,13 @@
                     return;
                 }
 
-                snap.forEach(docSnap => {
+                const items = snap.docs.slice().sort((a, b) => {
+                    const ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
+                    const tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
+                    return tb - ta; // terbaru di atas
+                });
+
+                items.forEach(docSnap => {
                     const d = docSnap.data();
                     const id = docSnap.id;
                     const sudahDinilai = d.status === 'dinilai';
@@ -1853,7 +1861,13 @@
                 });
             } catch (e) {
                 console.error(e);
-                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px; font-size:12px;">Gagal memuat data setoran.</div>`;
+                let hint = e.message || 'Kesalahan tidak diketahui.';
+                if (e.code === 'permission-denied') {
+                    hint = 'Akses ditolak (permission-denied). Periksa Firestore Security Rules untuk koleksi "setoran".';
+                } else if (e.code === 'failed-precondition') {
+                    hint = 'Firestore meminta index tambahan. Buka Console browser (F12) untuk link pembuatan index otomatis.';
+                }
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px; font-size:12px;">Gagal memuat data setoran.<br><span style="font-size:10px; color:var(--text-muted);">${hint}</span></div>`;
             }
         }
 
