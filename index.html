@@ -412,31 +412,33 @@
             border: 1px solid var(--border-color);
         }
 
-       /* 1. Atur kartu putih utama agar membagi ruang kiri & kanan */
+    /* 1. Pembungkus Utama Kartu */
 .landing-hero-card,
 .header-card {
   display: flex !important;
-  justify-content: space-between !important; /* Teks di kiri, tombol di kanan */
-  align-items: center !important;            /* Sejajar secara vertikal */
+  justify-content: space-between !important;
+  align-items: center !important;
   padding: 16px !important;
   box-sizing: border-box !important;
   width: 100% !important;
 }
 
-/* 2. Kunci area tombol agar muat di dalam kartu */
+/* 2. Pembungkus Tombol */
 .landing-hero-actions {
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;             /* Jarak antar tombol sedikit dirapatkan */
-  flex-wrap: wrap !important;      /* Mencegah tombol keluar/terpotong dari kartu */
+  gap: 4px !important;              /* Jarak dirapatkan agar 6 tombol muat */
+  flex-wrap: wrap !important;
   justify-content: flex-end !important;
-  max-width: 55% !important;       /* Membatasi lebar tombol agar tidak menabrak teks */
+  max-width: 60% !important;
 }
 
-/* 3. Pertahankan desain asli tombol, hanya pastikan ukurannya pas */
-.landing-hero-actions button {
-  margin: 0 !important;            /* Menghilangkan margin bawaan yang bikin offside */
-  flex-shrink: 0 !important;       /* Mencegah tombol mengkerut */
+/* 3. Paksa SEMUA Tombol (termasuk tombol Admin/Dolar) Muncul & Rapi */
+.landing-hero-actions button,
+#btnMasterAdminPanel {
+  display: inline-flex !important;  /* Memastikan tombol tidak tersembunyi */
+  margin: 0 !important;
+  flex-shrink: 0 !important;
 }
 
         
