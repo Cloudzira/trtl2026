@@ -1821,7 +1821,21 @@
             updateMenuCoverFocus();
             history.replaceState({ screen: 'menu' }, '', '');
         }
+function updateHeaderActionsByRole(userRole) {
+    const adminBtn = document.getElementById('btnMasterAdminPanel');
+    const teacherBtn = document.getElementById('btnTeacherPanel');
 
+    // Sembunyikan semua tombol khusus secara default
+    if (adminBtn) adminBtn.style.display = 'none';
+    if (teacherBtn) teacherBtn.style.display = 'none';
+
+    // Tampilkan tombol yang sesuai dengan peran (role) pengguna
+    if (userRole === 'MasterAdmin') {
+        if (adminBtn) adminBtn.style.display = 'inline-flex';
+    } else if (userRole === 'Guru') {
+        if (teacherBtn) teacherBtn.style.display = 'inline-flex';
+    }
+        
         function updateMenuCoverFocus() {
             for (let i = 0; i < 6; i++) {
                 let btn = document.getElementById('cover-btn-' + i);
