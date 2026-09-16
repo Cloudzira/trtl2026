@@ -826,7 +826,7 @@
     <div id="login-screen" class="screen">
         <div class="login-card">
             <h2>TARTILI DIGITAL</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 2px;">Metode Praktis Belajar Membaca Al-Qur'an</p>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 2px;">Metode Cepat Tartil Membaca Al-Qur'an</p>
             
             <div class="auth-mode-toggle">
                 <button class="auth-mode-btn active" id="modeLoginBtn" onclick="switchAuthMode('login')">Masuk</button>
@@ -840,17 +840,17 @@
                 <input type="text" id="authName" placeholder="Nama Lengkap" />
                 <select id="authRole" onchange="toggleRoleFields()">
                     <option value="Siswa">Daftar sebagai Siswa</option>
-                    <option value="Guru">Daftar sebagai Guru / Pengajar</option>
+                    <option value="Guru">Daftar sebagai Guru</option>
                 </select>
-                <input type="text" id="authClassCode" placeholder="Kode Kelas dari Guru (Contoh: KLS-A1)" />
-                <input type="text" id="authTeacherClassName" placeholder="Nama/Kode Kelas Anda (Contoh: 5A - Al-Qur'an)" style="display:none;" />
+                <input type="text" id="authClassCode" placeholder="Kode Kelas dari Guru (Contoh: KLS-ABC)" />
+                <input type="text" id="authTeacherClassName" placeholder="Nama Kelas Anda (Contoh: 5A / Al-Qur'an)" style="display:none;" />
             </div>
 
             <button class="btn-login" id="authSubmitBtn" onclick="handleAuthSubmit()">Masuk Sekarang</button>
             <div id="loginError" class="login-error">Terjadi kesalahan pada data yang dimasukkan.</div>
 
             <!-- Tombol Pengarah ke Halaman Masuk Admin -->
-            <button onclick="showAdminLoginScreen()" style="background: transparent; border: none; color: #0ea5e9; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 8px;">🔐 Masuk sebagai Master Admin</button>
+            <button onclick="showAdminLoginScreen()" style="background: transparent; border: none; color: #0ea5e9; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 8px;">🔐 Master Admin</button>
 
             <!-- Footer Aplikasi -->
             <div class="app-footer">Kurniapedia | 2026</div>
@@ -941,12 +941,12 @@
     <!-- Halaman Menu Utama -->
     <div id="menu-screen" class="screen">
         <div class="menu-content-wrapper">
-            <div class="app-brand-title">Tartili Digital</div>
+            <div class="app-brand-title">TARTILI DIGITAL</div>
             <div class="landing-hero-card">
                 <div class="landing-hero-info">
-                    <div class="landing-hero-greeting" id="userGreetingText">Assalaamu'alaikum.. 👋</div>
+                    <div class="landing-hero-greeting" id="userGreetingText">Assalaamu'alaikum</div>
                     <div class="landing-hero-username" id="userUsernameText">Pengguna</div>
-                    <div class="landing-hero-motivation">Semangat belajar membaca tartili ya..</div>
+                    <div class="landing-hero-motivation">Selamat belajar TARTILI</div>
                     <div class="landing-hero-subtitle">
                         <span id="userClassText">Kelas: -</span>
                         <span id="userTeacherNameText">Guru: -</span>
@@ -976,7 +976,7 @@
                 </div>
             </div>
 
-            <div class="menu-section-title">DALAM PENGEMBANGAN</div>
+            <div class="menu-section-title">DALAM PENGEMBANGAN KURNIAPEDIA</div>
             
             <div class="grid-jilid">
                 <button class="btn-cover" id="cover-btn-0" onclick="openJilid(1, 'a')" onmouseenter="selectedMenuCoverIndex=0; updateMenuCoverFocus();"><img src="https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/cover1.jpg"></button>
