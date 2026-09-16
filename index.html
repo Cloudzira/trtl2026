@@ -412,6 +412,34 @@
             border: 1px solid var(--border-color);
         }
 
+            /* Merapikan wadah tombol agar berbaris miring/ke samping */
+.landing-hero-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;              /* Jarak seragam antar tombol */
+  flex-shrink: 0 !important;
+}
+
+/* Merapikan bentuk setiap tombol agar bulat dan seragam */
+.landing-hero-actions button {
+  width: 38px !important;            /* Lebar tombol */
+  height: 38px !important;           /* Tinggi tombol */
+  border-radius: 50% !important;     /* Bikin jadi bulat sempurna */
+  display: inline-flex !important;
+  align-items: center !important;    /* Ikon persis di tengah */
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Memastikan ukuran ikon SVG di dalam tombol pas */
+.landing-hero-actions button svg {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+        
         /* STYLES UNTUK MODAL NOTIFIKASI & PESAN */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
