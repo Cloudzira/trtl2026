@@ -441,6 +441,16 @@
   flex-shrink: 0 !important;
 }
 
+        .btn-back-admin {
+  background-color: #374151 !important;
+  color: #ffffff !important;
+  border: 1px solid #4b5563 !important;
+  padding: 10px 24px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
         
         /* STYLES UNTUK MODAL NOTIFIKASI & PESAN */
         .modal-overlay {
@@ -867,8 +877,10 @@
             <div id="pendingMasterUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
                 <!-- Diisi dinamis via JS -->
             </div>
-
-            <button class="auth-mode-btn" onclick="handleLogout()" style="width: 100%; padding: 10px; background: rgba(239, 68, 68, 0.12); border-radius: 12px; color: #ef4444; font-weight: 700; margin-top: 8px;">Keluar Akun Admin</button>
+<!-- Tombol Kembali untuk menggantikan tombol Keluar Akun Admin -->
+<button type="button" class="btn-back-admin" onclick="openMasterAdminScreen(false)">
+  ← Kembali
+</button>
         </div>
     </div>
 
