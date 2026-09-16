@@ -412,31 +412,31 @@
             border: 1px solid var(--border-color);
         }
 
-            /* Merapikan wadah tombol agar berbaris miring/ke samping */
+       /* 1. Atur kartu putih utama agar membagi ruang kiri & kanan */
+.landing-hero-card,
+.header-card {
+  display: flex !important;
+  justify-content: space-between !important; /* Teks di kiri, tombol di kanan */
+  align-items: center !important;            /* Sejajar secara vertikal */
+  padding: 16px !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+/* 2. Kunci area tombol agar muat di dalam kartu */
 .landing-hero-actions {
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;              /* Jarak seragam antar tombol */
-  flex-shrink: 0 !important;
+  gap: 6px !important;             /* Jarak antar tombol sedikit dirapatkan */
+  flex-wrap: wrap !important;      /* Mencegah tombol keluar/terpotong dari kartu */
+  justify-content: flex-end !important;
+  max-width: 55% !important;       /* Membatasi lebar tombol agar tidak menabrak teks */
 }
 
-/* Merapikan bentuk setiap tombol agar bulat dan seragam */
+/* 3. Pertahankan desain asli tombol, hanya pastikan ukurannya pas */
 .landing-hero-actions button {
-  width: 38px !important;            /* Lebar tombol */
-  height: 38px !important;           /* Tinggi tombol */
-  border-radius: 50% !important;     /* Bikin jadi bulat sempurna */
-  display: inline-flex !important;
-  align-items: center !important;    /* Ikon persis di tengah */
-  justify-content: center !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  box-sizing: border-box !important;
-}
-
-/* Memastikan ukuran ikon SVG di dalam tombol pas */
-.landing-hero-actions button svg {
-  width: 20px !important;
-  height: 20px !important;
+  margin: 0 !important;            /* Menghilangkan margin bawaan yang bikin offside */
+  flex-shrink: 0 !important;       /* Mencegah tombol mengkerut */
 }
 
         
