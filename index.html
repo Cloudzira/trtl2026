@@ -412,46 +412,6 @@
             border: 1px solid var(--border-color);
         }
 
-    /* 1. Pembungkus Utama Kartu */
-.landing-hero-card,
-.header-card {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  padding: 16px !important;
-  box-sizing: border-box !important;
-  width: 100% !important;
-}
-
-/* 2. Pembungkus Tombol */
-.landing-hero-actions {
-  display: flex !important;
-  align-items: center !important;
-  gap: 4px !important;              /* Jarak dirapatkan agar 6 tombol muat */
-  flex-wrap: wrap !important;
-  justify-content: flex-end !important;
-  max-width: 60% !important;
-}
-
-/* 3. Paksa SEMUA Tombol (termasuk tombol Admin/Dolar) Muncul & Rapi */
-.landing-hero-actions button,
-#btnMasterAdminPanel {
-  display: inline-flex !important;  /* Memastikan tombol tidak tersembunyi */
-  margin: 0 !important;
-  flex-shrink: 0 !important;
-}
-
-        .btn-back-admin {
-  background-color: #374151 !important;
-  color: #ffffff !important;
-  border: 1px solid #4b5563 !important;
-  padding: 10px 24px !important;
-  border-radius: 8px !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  cursor: pointer !important;
-}
-        
         /* STYLES UNTUK MODAL NOTIFIKASI & PESAN */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -877,9 +837,8 @@
             <div id="pendingMasterUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
                 <!-- Diisi dinamis via JS -->
             </div>
-<!-- Tombol Kembali untuk menggantikan tombol Keluar Akun Admin -->
-<button type="button" class="btn-back-admin" onclick="toggleMasterAdminModal(false)">Kembali
-</button>
+
+            <button class="auth-mode-btn" onclick="handleLogout()" style="width: 100%; padding: 10px; background: rgba(239, 68, 68, 0.12); border-radius: 12px; color: #ef4444; font-weight: 700; margin-top: 8px;">Keluar Akun Admin</button>
         </div>
     </div>
 
