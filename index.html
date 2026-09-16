@@ -102,8 +102,8 @@
                             verifyScreen.classList.add('active');
                             const verifyTitle = document.getElementById('verifyTitle');
                             const verifyDesc = document.getElementById('verifyEmailTarget');
-                            if (verifyTitle) verifyTitle.innerText = "Menunggu Persetujuan Master Admin";
-                            if (verifyDesc) verifyDesc.innerText = `Akun ${user.email} sedang menunggu verifikasi awal dari Master Admin.`;
+                            if (verifyTitle) verifyTitle.innerText = "Menunggu Persetujuan Admin";
+                            if (verifyDesc) verifyDesc.innerText = `Akun ${user.email} sedang menunggu verifikasi awal dari Admin.`;
                             window.appState = 'verify';
                             return;
                         }
@@ -850,7 +850,7 @@
             <div id="loginError" class="login-error">Terjadi kesalahan pada data yang dimasukkan.</div>
 
             <!-- Tombol Pengarah ke Halaman Masuk Admin -->
-            <button onclick="showAdminLoginScreen()" style="background: transparent; border: none; color: #0ea5e9; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 8px;">🔐 Master Admin</button>
+            <button onclick="showAdminLoginScreen()" style="background: transparent; border: none; color: #0ea5e9; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 8px;">🔐 Masuk Master Admin</button>
 
             <!-- Footer Aplikasi -->
             <div class="app-footer">Kurniapedia | 2026</div>
@@ -882,7 +882,7 @@
                 Akun Anda sedang menunggu verifikasi.
             </p>
             <p style="font-size: 12px; color: var(--text-muted);">
-                Silakan hubungi Master Admin atau Guru pengampu kelas Anda agar akun segera disetujui.
+                Silakan hubungi Admin atau Guru pengampu kelas Anda agar akun segera disetujui.
             </p>
 
             <button class="btn-login" onclick="window.location.reload()" style="margin-top: 10px;">Cek Status Akun</button>
@@ -894,7 +894,7 @@
     <div id="admin-screen" class="screen">
         <div class="login-card" style="max-width: 650px; height: 88vh; display: flex; flex-direction: column;">
             <h2>Panel Master Admin</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Daftar akun baru (Siswa & Guru) yang menunggu verifikasi awal:</p>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Daftar akun baru yang menunggu verifikasi awal:</p>
             
             <div id="pendingMasterUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
                 <!-- Diisi dinamis via JS -->
@@ -1391,7 +1391,7 @@
                     });
 
                     errorDiv.style.display = 'none';
-                    showToast('Pendaftaran berhasil! Akun menunggu persetujuan Master Admin.');
+                    showToast('Pendaftaran berhasil! Akun menunggu persetujuan Admin.');
                 } else {
                     await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
                     errorDiv.style.display = 'none';
@@ -1483,7 +1483,7 @@
                 
                 container.innerHTML = "";
                 if (querySnapshot.empty) {
-                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada akun yang menunggu persetujuan Master.</div>`;
+                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada akun yang menunggu persetujuan.</div>`;
                     return;
                 }
 
@@ -1520,12 +1520,12 @@
                 await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
                     targetUserId: userId,
                     title: "Akun Disetujui!",
-                    message: "Akun Anda telah disetujui oleh Master Admin. Selamat belajar!",
+                    message: "Akun Anda telah disetujui. Selamat belajar!",
                     readBy: [],
                     createdAt: window.serverTimestamp()
                 });
 
-                showToast('Akun berhasil disetujui Master Admin!');
+                showToast('Akun berhasil disetujui Admin!');
                 loadMasterPendingUsers();
             } catch (e) {
                 console.error(e);
