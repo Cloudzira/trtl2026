@@ -222,9 +222,15 @@
                         await updateDoc(notifRef, { readBy: readBy });
                     }
                 }
-                if (data.actionUrl === 'chat') {
+                if (data.action === 'chat') {
                     toggleNotifModal(false);
                     openMessagingModal(data.senderId, data.senderName);
+                } else if (data.actionUrl === 'setoran') {
+                    toggleNotifModal(false);
+                    openSetoranScreen();
+                } else if (data.actionUrl === 'setoran_hasil') {
+                    toggleNotifModal(false);
+                    lihatHasilSetoran(data.setoranId);
                 }
             } catch (e) {
                 console.error("Gagal memperbarui status notifikasi:", e);
@@ -939,6 +945,7 @@
             </div>
             
             <button onclick="openClassMembersScreen()" style="width: 100%; padding: 10px; background: var(--accent-gradient); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-bottom: 8px;">👥 Lihat Daftar Siswa di Kelas</button>
+            <button onclick="openSetoranScreen()" style="width: 100%; padding: 10px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-bottom: 8px;">🎙️ Setoran Bacaan Siswa</button>
 
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-align: left;">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
             <div id="pendingStudentContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
@@ -965,6 +972,32 @@
             <button class="btn-back-compact" onclick="goBackFromClassMembers()">Kembali</button>
         </div>
     </div>
+
+    <!-- Halaman Setoran Bacaan Siswa (Guru menilai rekaman siswa) -->
+    <div id="setoran-screen" class="screen">
+        <div class="login-card" style="max-width: 650px; height: 88vh; display: flex; flex-direction: column;">
+            <h2>🎙️ Setoran Bacaan Siswa</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Dengarkan rekaman, beri nilai dan catatan untuk siswa Anda:</p>
+
+            <div id="setoranListContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; text-align: left; padding: 4px;">
+                <div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat data setoran...</div>
+            </div>
+
+            <button class="btn-back-compact" onclick="goBackFromSetoran()">Kembali</button>
+        </div>
+    </div>
+
+    <!-- Modal Hasil Penilaian untuk Siswa -->
+    <div id="hasilSetoranModal" class="modal-overlay">
+        <div class="modal-box" style="height: auto; max-height: 80vh;">
+            <div class="modal-header">
+                <h3>📋 Hasil Penilaian</h3>
+                <button class="modal-close-btn" onclick="document.getElementById('hasilSetoranModal').classList.remove('active')">✕</button>
+            </div>
+            <div id="hasilSetoranContent" style="padding: 20px; overflow-y: auto; text-align: left;"></div>
+        </div>
+    </div>
+
 
     <!-- Halaman Menu Utama -->
     <div id="menu-screen" class="screen">
@@ -1127,11 +1160,12 @@
                 <div class="record-buttons">
                     <button class="universal-btn btn-record" id="btnRec" onclick="startRecording()">Rekam</button>
                     <button class="universal-btn btn-stop" id="btnStop" onclick="stopRecording()" disabled>Stop</button>
-                    <button class="universal-btn btn-ok" id="btnOk" onclick="uploadRecordingToDrive()" disabled>Simpan</button>
-                    <button class="universal-btn btn-send" id="btnSend" onclick="sendToWhatsApp()" disabled>Kirim WA</button>
+                    <button class="universal-btn btn-ok" id="btnPlay" onclick="playRecording()" disabled>▶ Play</button>
+                    <button class="universal-btn btn-send" id="btnSend" onclick="kirimSetoran()" disabled>Kirim</button>
                 </div>
             </div>
         </div>
+        <audio id="playbackAudioEl" style="display:none;"></audio>
     </div>
 
     <!-- ==========================================
@@ -1754,6 +1788,144 @@
             }
         }
 
+        // --- SETORAN BACAAN SISWA (GURU) ---
+        async function openSetoranScreen() {
+            document.getElementById('teacher-admin-screen').classList.remove('active');
+            document.getElementById('menu-screen').classList.remove('active');
+            appState = 'setoran';
+            document.getElementById('setoran-screen').classList.add('active');
+            history.pushState({ screen: 'setoran' }, '', '');
+            await renderSetoranList();
+        }
+        window.openSetoranScreen = openSetoranScreen;
+
+        function goBackFromSetoran() {
+            document.getElementById('setoran-screen').classList.remove('active');
+            document.getElementById('teacher-admin-screen').classList.add('active');
+            appState = 'teacher-admin';
+        }
+        window.goBackFromSetoran = goBackFromSetoran;
+
+        async function renderSetoranList() {
+            const container = document.getElementById('setoranListContainer');
+            const profile = window.currentUserProfile;
+            if (!container || !profile) return;
+            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat data setoran...</div>`;
+
+            try {
+                const q = window.query(
+                    window.collection(window.firebaseDb, "setoran"),
+                    window.where("classCode", "==", profile.classCode),
+                    window.orderBy("createdAt", "desc")
+                );
+                const snap = await window.getDocs(q);
+                container.innerHTML = "";
+
+                if (snap.empty) {
+                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Belum ada setoran bacaan dari siswa.</div>`;
+                    return;
+                }
+
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    const id = docSnap.id;
+                    const sudahDinilai = d.status === 'dinilai';
+                    const tanggal = d.createdAt ? new Date(d.createdAt.toDate()).toLocaleString('id-ID', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '-';
+
+                    const item = document.createElement('div');
+                    item.style.cssText = "background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 12px;";
+                    item.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px;">
+                            <div>
+                                <div style="font-weight:800; font-size:13px; color:var(--text-main);">👤 ${d.studentName}</div>
+                                <div style="font-size:11px; color:var(--text-muted);">Jilid ${d.jilid} • Hal. ${d.halaman} • ${tanggal}</div>
+                            </div>
+                            <span style="font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; white-space:nowrap; ${sudahDinilai ? 'color:#10b981; background:rgba(16,185,129,0.12);' : 'color:#f59e0b; background:rgba(245,158,11,0.12);'}">${sudahDinilai ? 'Sudah Dinilai' : 'Menunggu Penilaian'}</span>
+                        </div>
+                        <audio controls style="width:100%; height:32px; margin-bottom:8px;" src="${d.audioUrl}"></audio>
+                        <div style="display:flex; gap:6px; margin-bottom:6px;">
+                            <input type="number" min="0" max="100" id="nilai-${id}" placeholder="Nilai (0-100)" value="${d.nilai != null ? d.nilai : ''}" style="width:110px; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-panel); color:var(--text-main); font-size:12px;" />
+                        </div>
+                        <textarea id="feedback-${id}" placeholder="Tulis catatan/feedback untuk siswa..." style="width:100%; min-height:50px; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-panel); color:var(--text-main); font-size:12px; resize:vertical; margin-bottom:6px;">${d.feedback || ''}</textarea>
+                        <button onclick="kirimPenilaian('${id}')" style="width:100%; padding:8px; background: var(--accent-gradient); color:white; border:none; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">${sudahDinilai ? 'Perbarui Penilaian' : 'Kirim Penilaian'}</button>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px; font-size:12px;">Gagal memuat data setoran.</div>`;
+            }
+        }
+
+        async function kirimPenilaian(setoranId) {
+            const nilaiInput = document.getElementById('nilai-' + setoranId);
+            const feedbackInput = document.getElementById('feedback-' + setoranId);
+            const nilai = nilaiInput.value.trim();
+            const feedback = feedbackInput.value.trim();
+
+            if (nilai === '' && feedback === '') { showToast('Isi nilai atau feedback terlebih dahulu.'); return; }
+
+            try {
+                const setoranRef = window.doc(window.firebaseDb, "setoran", setoranId);
+                const setoranSnap = await window.getDoc(setoranRef);
+                if (!setoranSnap.exists()) { showToast('Data setoran tidak ditemukan.'); return; }
+                const d = setoranSnap.data();
+                const profile = window.currentUserProfile;
+
+                await window.updateDoc(setoranRef, {
+                    nilai: nilai === '' ? null : Number(nilai),
+                    feedback: feedback || null,
+                    status: 'dinilai',
+                    gradedAt: window.serverTimestamp()
+                });
+
+                await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                    targetUserId: d.studentUid,
+                    title: "📋 Rekaman Anda Telah Dinilai",
+                    message: `Guru telah menilai setoran Jilid ${d.jilid} Hal. ${d.halaman} Anda.`,
+                    senderId: profile.uid,
+                    senderName: profile.name || 'Guru',
+                    actionUrl: 'setoran_hasil',
+                    setoranId: setoranId,
+                    createdAt: window.serverTimestamp(),
+                    readBy: []
+                });
+
+                showToast('Penilaian berhasil dikirim ke siswa!');
+                renderSetoranList();
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal mengirim penilaian.');
+            }
+        }
+        window.kirimPenilaian = kirimPenilaian;
+
+        // --- LIHAT HASIL PENILAIAN (SISWA) ---
+        async function lihatHasilSetoran(setoranId) {
+            try {
+                const setoranSnap = await window.getDoc(window.doc(window.firebaseDb, "setoran", setoranId));
+                const contentEl = document.getElementById('hasilSetoranContent');
+                if (!setoranSnap.exists()) {
+                    contentEl.innerHTML = `<div style="color:var(--text-muted); font-size:13px;">Data setoran tidak ditemukan.</div>`;
+                } else {
+                    const d = setoranSnap.data();
+                    contentEl.innerHTML = `
+                        <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Jilid ${d.jilid} • Halaman ${d.halaman}</div>
+                        <audio controls style="width:100%; margin-bottom:12px;" src="${d.audioUrl}"></audio>
+                        <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Nilai</div>
+                        <div style="font-size:22px; font-weight:800; color:#0ea5e9; margin-bottom:12px;">${d.nilai != null ? d.nilai : '-'}</div>
+                        <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Catatan Guru</div>
+                        <div style="font-size:13px; color:var(--text-main); background:var(--input-bg); padding:10px; border-radius:10px;">${d.feedback || 'Tidak ada catatan.'}</div>
+                    `;
+                }
+                document.getElementById('hasilSetoranModal').classList.add('active');
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal memuat hasil penilaian.');
+            }
+        }
+        window.lihatHasilSetoran = lihatHasilSetoran;
+
         function handleLogout() {
             window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
         }
@@ -1762,7 +1934,8 @@
         let savedBookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks')) || [];
         
         let currentJilid = savedLastRead.jilid, currentPage = savedLastRead.page, appState = 'menu', selectedMenuCoverIndex = 0, currentAudio = null;
-        let mediaRecorder, audioChunks = [], recordedAudioBlob = null, generatedWhatsAppUrl = ""; 
+        let mediaRecorder, audioChunks = [], recordedAudioBlob = null; 
+        let isPlayingRecording = false;
         
         const baseUrl = "https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/";
         let scale = 1, initialDistance = null;
@@ -1785,7 +1958,7 @@
                 if (currentAudio) { currentAudio.pause(); currentAudio = null; }
                 resetRecording();
                 goToMenu();
-            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin' || appState === 'class-members') {
+            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin' || appState === 'class-members' || appState === 'setoran') {
                 goToMenu();
             } else {
                 history.back();
@@ -1869,6 +2042,7 @@
             document.getElementById('admin-screen').classList.remove('active');
             document.getElementById('teacher-admin-screen').classList.remove('active');
             document.getElementById('class-members-screen').classList.remove('active');
+            document.getElementById('setoran-screen').classList.remove('active');
             document.getElementById('menu-screen').classList.add('active');
             updateMenuCoverFocus();
             history.replaceState({ screen: 'menu' }, '', '');
@@ -2048,15 +2222,17 @@
 
         function resetRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') { mediaRecorder.stop(); }
-            audioChunks = []; recordedAudioBlob = null; generatedWhatsAppUrl = "";
+            audioChunks = []; recordedAudioBlob = null;
+            const playbackEl = document.getElementById('playbackAudioEl');
+            if (playbackEl) { playbackEl.pause(); playbackEl.removeAttribute('src'); }
             const btnRec = document.getElementById('btnRec');
             const btnStop = document.getElementById('btnStop');
-            const btnOk = document.getElementById('btnOk');
+            const btnPlay = document.getElementById('btnPlay');
             const btnSend = document.getElementById('btnSend');
             if (btnRec) { btnRec.disabled = false; btnRec.classList.remove('is-recording'); }
             if (btnStop) btnStop.disabled = true;
-            if (btnOk) btnOk.disabled = true;
-            if (btnSend) btnSend.disabled = true;
+            if (btnPlay) { btnPlay.disabled = true; btnPlay.innerText = '▶ Play'; }
+            if (btnSend) { btnSend.disabled = true; btnSend.innerText = 'Kirim'; }
         }
 
         function startRecording() {
@@ -2065,13 +2241,17 @@
                 audioChunks = [];
                 mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
                 mediaRecorder.onstop = () => {
-                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-                    document.getElementById('btnOk').disabled = false;
+                    recordedAudioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                    stream.getTracks().forEach(t => t.stop());
+                    document.getElementById('btnPlay').disabled = false;
+                    document.getElementById('btnSend').disabled = false;
                 };
                 mediaRecorder.start();
                 document.getElementById('btnRec').disabled = true;
                 document.getElementById('btnRec').classList.add('is-recording');
                 document.getElementById('btnStop').disabled = false;
+                document.getElementById('btnPlay').disabled = true;
+                document.getElementById('btnSend').disabled = true;
                 showToast('Merekam suara...');
             }).catch(e => { console.error(e); showToast('Akses mikrofon ditolak/tidak didukung.'); });
         }
@@ -2081,23 +2261,130 @@
                 mediaRecorder.stop();
                 document.getElementById('btnRec').classList.remove('is-recording');
                 document.getElementById('btnStop').disabled = true;
-                showToast('Rekaman selesai. Silakan simpan.');
+                showToast('Rekaman selesai. Dengarkan dulu sebelum mengirim.');
             }
         }
 
-        function uploadRecordingToDrive() {
-            showToast('Menyiapkan tautan setoran...');
-            setTimeout(() => {
-                document.getElementById('btnSend').disabled = false;
-                showToast('Rekaman siap dikirim via WhatsApp!');
-            }, 1000);
+        // Tombol Play: dengarkan ulang hasil rekaman sebelum dikirim
+        function playRecording() {
+            if (!recordedAudioBlob) { showToast('Belum ada rekaman.'); return; }
+            const playbackEl = document.getElementById('playbackAudioEl');
+            const btnPlay = document.getElementById('btnPlay');
+
+            if (isPlayingRecording) {
+                playbackEl.pause();
+                playbackEl.currentTime = 0;
+                isPlayingRecording = false;
+                btnPlay.innerText = '▶ Play';
+                return;
+            }
+
+            playbackEl.src = URL.createObjectURL(recordedAudioBlob);
+            playbackEl.play();
+            isPlayingRecording = true;
+            btnPlay.innerText = '⏸ Pause';
+
+            playbackEl.onended = () => { isPlayingRecording = false; btnPlay.innerText = '▶ Play'; };
+        }
+        window.playRecording = playRecording;
+
+        // ==========================================
+        // KONFIGURASI GOOGLE DRIVE (VIA APPS SCRIPT)
+        // ==========================================
+        // 1. Isi URL Web App Apps Script Anda di bawah ini (lihat panduan deploy).
+        // 2. SECRET_KEY harus SAMA PERSIS dengan SECRET_KEY di kode Apps Script.
+        const DRIVE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxvsURMrykJIutVfhJePF0lnE0MrbT9Zqcr8xbaREHvhS1BGZrbHNCdl_Q1YNJLnsrt/exec";
+        const DRIVE_SECRET_KEY = "@awanawan";
+
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
         }
 
-        function sendToWhatsApp() {
+        // Tombol Kirim: upload rekaman ke Google Drive pribadi (via Apps Script),
+        // simpan data setoran di Firestore, lalu kirim notifikasi ke guru pemilik kelas.
+        async function kirimSetoran() {
+            if (!recordedAudioBlob) { showToast('Belum ada rekaman untuk dikirim.'); return; }
             const profile = window.currentUserProfile || {};
-            const msg = `Assalamu'alaikum, saya ${profile.name || 'Siswa'} ingin menyetorkan rekaman Tartili Jilid ${currentJilid} Halaman ${currentPage}.`;
-            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+            if (!profile.uid) { showToast('Sesi tidak valid, silakan masuk ulang.'); return; }
+            if (!profile.classCode) { showToast('Kelas Anda belum terdaftar, hubungi guru.'); return; }
+            if (!DRIVE_UPLOAD_URL || DRIVE_UPLOAD_URL.includes('PASTE_URL')) {
+                showToast('Penyimpanan Google Drive belum dikonfigurasi. Hubungi admin.');
+                return;
+            }
+
+            const btnSend = document.getElementById('btnSend');
+            btnSend.disabled = true;
+            btnSend.innerText = 'Mengirim...';
+            showToast('Mengunggah rekaman ke Google Drive...');
+
+            try {
+                const base64Audio = await blobToBase64(recordedAudioBlob);
+                const fileName = `setoran_${profile.uid}_${Date.now()}.webm`;
+
+                const uploadRes = await fetch(DRIVE_UPLOAD_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari preflight CORS di Apps Script
+                    body: JSON.stringify({
+                        secret: DRIVE_SECRET_KEY,
+                        audioBase64: base64Audio,
+                        fileName: fileName
+                    })
+                });
+                const uploadData = await uploadRes.json();
+                if (!uploadData.success) throw new Error(uploadData.error || 'Upload gagal');
+
+                const audioUrl = uploadData.url;
+
+                const setoranRef = await window.addDoc(window.collection(window.firebaseDb, "setoran"), {
+                    studentUid: profile.uid,
+                    studentName: profile.name || 'Siswa',
+                    classCode: profile.classCode,
+                    jilid: currentJilid,
+                    halaman: currentPage,
+                    audioUrl: audioUrl,
+                    driveFileId: uploadData.fileId || null,
+                    status: 'pending',
+                    nilai: null,
+                    feedback: null,
+                    createdAt: window.serverTimestamp()
+                });
+
+                // Cari guru pemilik kelas ini untuk dikirimi notifikasi
+                const qTeacher = window.query(
+                    window.collection(window.firebaseDb, "users"),
+                    window.where("role", "==", "Guru"),
+                    window.where("classCode", "==", profile.classCode)
+                );
+                const teacherSnap = await window.getDocs(qTeacher);
+                for (const tDoc of teacherSnap.docs) {
+                    await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                        targetUserId: tDoc.id,
+                        title: "🎙️ Setoran Bacaan Baru",
+                        message: `${profile.name || 'Siswa'} (Kelas ${profile.classCode}) mengirim rekaman Jilid ${currentJilid} - Hal. ${currentPage}.`,
+                        senderId: profile.uid,
+                        senderName: profile.name || 'Siswa',
+                        actionUrl: 'setoran',
+                        setoranId: setoranRef.id,
+                        createdAt: window.serverTimestamp(),
+                        readBy: []
+                    });
+                }
+
+                showToast('Rekaman berhasil dikirim ke guru!');
+                resetRecording();
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal mengirim rekaman. Coba lagi.');
+                btnSend.disabled = false;
+                btnSend.innerText = 'Kirim';
+            }
         }
+        window.kirimSetoran = kirimSetoran;
 
         const scrollArea = document.getElementById('scrollArea');
         if (scrollArea) {
