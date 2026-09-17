@@ -1842,7 +1842,7 @@
                             </div>
                             <span style="font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; white-space:nowrap; ${sudahDinilai ? 'color:#10b981; background:rgba(16,185,129,0.12);' : 'color:#f59e0b; background:rgba(245,158,11,0.12);'}">${sudahDinilai ? 'Sudah Dinilai' : 'Menunggu Penilaian'}</span>
                         </div>
-                        <audio controls style="width:100%; height:32px; margin-bottom:8px;" src="${d.audioUrl}"></audio>
+                        <audio controls preload="none" style="width:100%; height:32px; margin-bottom:8px;" src="${d.audioUrl}"></audio>
                         <div style="display:flex; gap:6px; margin-bottom:6px;">
                             <input type="number" min="0" max="100" id="nilai-${id}" placeholder="Nilai (0-100)" value="${d.nilai != null ? d.nilai : ''}" style="width:110px; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-panel); color:var(--text-main); font-size:12px;" />
                         </div>
@@ -1917,7 +1917,7 @@
                     const d = setoranSnap.data();
                     contentEl.innerHTML = `
                         <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Jilid ${d.jilid} • Halaman ${d.halaman}</div>
-                        <audio controls style="width:100%; margin-bottom:12px;" src="${d.audioUrl}"></audio>
+                        <audio controls preload="none" style="width:100%; margin-bottom:12px;" src="${d.audioUrl}"></audio>
                         <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Nilai</div>
                         <div style="font-size:22px; font-weight:800; color:#0ea5e9; margin-bottom:12px;">${d.nilai != null ? d.nilai : '-'}</div>
                         <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Catatan Guru</div>
@@ -2303,7 +2303,7 @@
         // Isi URL Web App Apps Script Anda di bawah ini setelah proses deploy
         // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini,
         // supaya aman - kunci itu hanya ada di dalam Apps Script.
-        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxaQCSwXHeOA04QuakkLOAHHM1lGp70iOxfDbmKif3w_mx-T_CSNK2MYQVNncjaIxmq/exec";
+        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbyYfNsoVpbUHi8T8mzNNPK_uXFslsi97ZGs58Wasf0DODMSDvjUvpYduSLXGRzvxBZT/exec";
         const FILEBASE_SECRET_KEY = "@awanawan"; // harus sama persis dengan SHARED_SECRET di Code.gs
         const SETORAN_RETENTION_DAYS = 7; // Rekaman otomatis dihapus setelah 7 hari (dicek tiap guru buka halaman Setoran)
 
@@ -2352,7 +2352,10 @@
                 const uploadData = await uploadRes.json();
                 if (!uploadData.success) throw new Error(uploadData.error || 'Upload gagal');
 
-                const audioUrl = uploadData.url;
+                // Filebase bucket bersifat privat, jadi pemutaran audio TIDAK
+                // memakai URL Filebase langsung, melainkan lewat Apps Script
+                // (doGet) yang mengambilkan filenya secara aman.
+                const audioUrl = `${FILEBASE_UPLOAD_URL}?key=${encodeURIComponent(uploadData.key)}&secret=${encodeURIComponent(FILEBASE_SECRET_KEY)}`;
 
                 const setoranRef = await window.addDoc(window.collection(window.firebaseDb, "setoran"), {
                     studentUid: profile.uid,
