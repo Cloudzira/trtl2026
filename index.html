@@ -162,10 +162,12 @@
         function initRealtimeNotifications(userId, profile) {
             if (window.unsubNotifications) window.unsubNotifications();
             
+            // Catatan: query TIDAK memakai orderBy() supaya tidak perlu
+            // composite index tambahan di Firestore. Urutan terbaru->terlama
+            // dilakukan di JavaScript (lihat sort di bawah).
             const q = query(
                 collection(window.firebaseDb, "notifications"),
-                where("targetUserId", "in", [userId, "ALL_ADMINS", "ROLE_" + profile.role]),
-                orderBy("createdAt", "desc")
+                where("targetUserId", "in", [userId, "ALL_ADMINS", "ROLE_" + profile.role])
             );
 
             window.unsubNotifications = onSnapshot(q, (snapshot) => {
@@ -177,7 +179,13 @@
                     if (container) container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Tidak ada notifikasi.</div>`;
                 }
 
-                snapshot.docs.forEach(docSnap => {
+                const sortedDocs = snapshot.docs.slice().sort((a, b) => {
+                    const ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
+                    const tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
+                    return tb - ta; // terbaru di atas
+                });
+
+                sortedDocs.forEach(docSnap => {
                     const data = docSnap.data();
                     const notifId = docSnap.id;
                     const isRead = data.readBy && data.readBy.includes(userId);
@@ -2311,7 +2319,7 @@
         // Isi URL Web App Apps Script Anda di bawah ini setelah proses deploy
         // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini,
         // supaya aman - kunci itu hanya ada di dalam Apps Script.
-        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbyOOaiFEn5yMy7m8en78VSWOPlmYqg45QN0J-B4InfnqcNsmHPcdbwiDzfX8MkGopIT/exec";
+        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbyYlXozVtzeXqlNmx5hEwsIeUu_ylZxjaEeBWdCgbbBtjCZLKpbfT_dm3qpPaElJMJX/exec";
         const FILEBASE_SECRET_KEY = "@awanawan"; // harus sama persis dengan SHARED_SECRET di Code.gs
         const SETORAN_RETENTION_DAYS = 7; // Rekaman otomatis dihapus setelah 7 hari (dicek tiap guru buka halaman Setoran)
 
