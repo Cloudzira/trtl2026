@@ -1850,7 +1850,7 @@
                             </div>
                             <span style="font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; white-space:nowrap; ${sudahDinilai ? 'color:#10b981; background:rgba(16,185,129,0.12);' : 'color:#f59e0b; background:rgba(245,158,11,0.12);'}">${sudahDinilai ? 'Sudah Dinilai' : 'Menunggu Penilaian'}</span>
                         </div>
-                        ${d.driveFileId ? `<iframe src="https://drive.google.com/file/d/${d.driveFileId}/preview" style="width:100%; height:80px; border:none; border-radius:8px; margin-bottom:8px;" allow="autoplay"></iframe>` : `<audio controls style="width:100%; height:32px; margin-bottom:8px;" src="${d.audioUrl}"></audio>`}
+                        <audio controls style="width:100%; height:32px; margin-bottom:8px;" src="${d.audioUrl}"></audio>
                         <div style="display:flex; gap:6px; margin-bottom:6px;">
                             <input type="number" min="0" max="100" id="nilai-${id}" placeholder="Nilai (0-100)" value="${d.nilai != null ? d.nilai : ''}" style="width:110px; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-panel); color:var(--text-main); font-size:12px;" />
                         </div>
@@ -1925,7 +1925,7 @@
                     const d = setoranSnap.data();
                     contentEl.innerHTML = `
                         <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Jilid ${d.jilid} • Halaman ${d.halaman}</div>
-                        ${d.driveFileId ? `<iframe src="https://drive.google.com/file/d/${d.driveFileId}/preview" style="width:100%; height:80px; border:none; border-radius:8px; margin-bottom:12px;" allow="autoplay"></iframe>` : `<audio controls style="width:100%; margin-bottom:12px;" src="${d.audioUrl}"></audio>`}
+                        <audio controls style="width:100%; margin-bottom:12px;" src="${d.audioUrl}"></audio>
                         <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Nilai</div>
                         <div style="font-size:22px; font-weight:800; color:#0ea5e9; margin-bottom:12px;">${d.nilai != null ? d.nilai : '-'}</div>
                         <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Catatan Guru</div>
@@ -2305,12 +2305,15 @@
         window.playRecording = playRecording;
 
         // ==========================================
-        // KONFIGURASI GOOGLE DRIVE (VIA APPS SCRIPT)
         // ==========================================
-        // 1. Isi URL Web App Apps Script Anda di bawah ini (lihat panduan deploy).
-        // 2. SECRET_KEY harus SAMA PERSIS dengan SECRET_KEY di kode Apps Script.
-        const DRIVE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbyx2aqNo9XSXGm_3Bj5mcs6Dn8FqFdpTd3LH47mCFWIyRSABZ_fVjoWd8EUGEl_pJ1t/exec";
-        const DRIVE_SECRET_KEY = "@awanawan";
+        // KONFIGURASI PENYIMPANAN AUDIO (FILEBASE VIA APPS SCRIPT)
+        // ==========================================
+        // Isi URL Web App Apps Script Anda di bawah ini setelah proses deploy
+        // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini,
+        // supaya aman - kunci itu hanya ada di dalam Apps Script.
+        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbyOOaiFEn5yMy7m8en78VSWOPlmYqg45QN0J-B4InfnqcNsmHPcdbwiDzfX8MkGopIT/exec";
+        const FILEBASE_SECRET_KEY = "@awanawan"; // harus sama persis dengan SHARED_SECRET di Code.gs
+        const SETORAN_RETENTION_DAYS = 7; // Rekaman otomatis dihapus setelah 7 hari (dicek tiap guru buka halaman Setoran)
 
         function blobToBase64(blob) {
             return new Promise((resolve, reject) => {
@@ -2321,33 +2324,34 @@
             });
         }
 
-        // Tombol Kirim: upload rekaman ke Google Drive pribadi (via Apps Script),
-        // simpan data setoran di Firestore, lalu kirim notifikasi ke guru pemilik kelas.
+        // Tombol Kirim: kirim rekaman ke Apps Script -> Apps Script yang upload
+        // ke Filebase (kunci rahasia aman di server), lalu simpan data setoran
+        // di Firestore, lalu kirim notifikasi ke guru pemilik kelas.
         async function kirimSetoran() {
             if (!recordedAudioBlob) { showToast('Belum ada rekaman untuk dikirim.'); return; }
             const profile = window.currentUserProfile || {};
             if (!profile.uid) { showToast('Sesi tidak valid, silakan masuk ulang.'); return; }
             if (!profile.classCode) { showToast('Kelas Anda belum terdaftar, hubungi guru.'); return; }
-            if (!DRIVE_UPLOAD_URL || DRIVE_UPLOAD_URL.includes('PASTE_URL')) {
-                showToast('Penyimpanan Google Drive belum dikonfigurasi. Hubungi admin.');
+            if (!FILEBASE_UPLOAD_URL || FILEBASE_UPLOAD_URL.includes('PASTE_URL')) {
+                showToast('Penyimpanan audio belum dikonfigurasi. Hubungi admin.');
                 return;
             }
 
             const btnSend = document.getElementById('btnSend');
             btnSend.disabled = true;
             btnSend.innerText = 'Mengirim...';
-            showToast('Mengunggah rekaman ke Google Drive...');
+            showToast('Mengunggah rekaman...');
 
             try {
-                const base64Audio = await blobToBase64(recordedAudioBlob);
                 const fileExt = recordedAudioMimeType.includes('mp4') ? 'm4a' : recordedAudioMimeType.includes('ogg') ? 'ogg' : 'webm';
-                const fileName = `setoran_${profile.uid}_${Date.now()}.${fileExt}`;
+                const fileName = `${profile.uid}_${Date.now()}.${fileExt}`;
+                const base64Audio = await blobToBase64(recordedAudioBlob);
 
-                const uploadRes = await fetch(DRIVE_UPLOAD_URL, {
+                const uploadRes = await fetch(FILEBASE_UPLOAD_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari preflight CORS di Apps Script
                     body: JSON.stringify({
-                        secret: DRIVE_SECRET_KEY,
+                        secret: FILEBASE_SECRET_KEY,
                         audioBase64: base64Audio,
                         fileName: fileName,
                         mimeType: recordedAudioMimeType
@@ -2365,7 +2369,7 @@
                     jilid: currentJilid,
                     halaman: currentPage,
                     audioUrl: audioUrl,
-                    driveFileId: uploadData.fileId || null,
+                    storagePath: fileName,
                     status: 'pending',
                     nilai: null,
                     feedback: null,
