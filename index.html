@@ -1182,27 +1182,11 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                const swCode = `
-                    const CACHE_NAME = 'tartili-cache-v9';
-                    self.addEventListener('install', (e) => { self.skipWaiting(); });
-                    self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
-                    self.addEventListener('fetch', (e) => {
-                        e.respondWith(
-                            caches.match(e.request).then((cachedResponse) => {
-                                if (cachedResponse) return cachedResponse;
-                                return fetch(e.request).then((response) => {
-                                    if(!response || response.status !== 200 || response.type !== 'basic') return response;
-                                    let responseToCache = response.clone();
-                                    caches.open(CACHE_NAME).then((cache) => { cache.put(e.request, responseToCache); });
-                                    return response;
-                                }).catch(() => {});
-                            })
-                        );
-                    });
-                `;
-                const blob = new Blob([swCode], { type: 'text/javascript' });
-                const swUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed', err));
+                // Catatan: Service Worker WAJIB didaftarkan dari file .js asli
+                // (bukan blob: URL) - browser tidak mendukung registrasi lewat
+                // blob URL sama sekali. File aslinya ada di sw.js, harus
+                // diunggah sejajar (satu folder) dengan index.html ini.
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed', err));
             });
         }
 
@@ -2319,7 +2303,7 @@
         // Isi URL Web App Apps Script Anda di bawah ini setelah proses deploy
         // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini,
         // supaya aman - kunci itu hanya ada di dalam Apps Script.
-        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbyYlXozVtzeXqlNmx5hEwsIeUu_ylZxjaEeBWdCgbbBtjCZLKpbfT_dm3qpPaElJMJX/exec";
+        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxaQCSwXHeOA04QuakkLOAHHM1lGp70iOxfDbmKif3w_mx-T_CSNK2MYQVNncjaIxmq/exec";
         const FILEBASE_SECRET_KEY = "@awanawan"; // harus sama persis dengan SHARED_SECRET di Code.gs
         const SETORAN_RETENTION_DAYS = 7; // Rekaman otomatis dihapus setelah 7 hari (dicek tiap guru buka halaman Setoran)
 
