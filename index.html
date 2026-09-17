@@ -1802,66 +1802,6 @@
         }
         window.goBackFromSetoran = goBackFromSetoran;
 
-        // Menyimpan Object URL audio yang sudah pernah diambil, supaya
-        // kalau tombol Play ditekan berkali-kali TIDAK perlu mengambil
-        // ulang dari server (langsung main dari cache di memori browser).
-        const setoranAudioCache = {};
-
-        // Dipanggil saat tombol "Putar Rekaman" ditekan (baik di daftar
-        // setoran guru, maupun di modal hasil penilaian siswa).
-        // audioUrl di sini adalah URL doGet Apps Script (bukan file audio
-        // langsung), makanya perlu di-fetch lalu diubah dulu jadi Blob
-        // audio sebelum bisa diputar.
-        async function playSetoranAudio(cacheId, audioUrl, btnEl) {
-            const audioEl = document.getElementById('audioEl-' + cacheId);
-            if (!audioEl) return;
-
-            // Kalau sedang diputar -> tombol berfungsi sebagai Pause
-            if (!audioEl.paused) {
-                audioEl.pause();
-                btnEl.innerText = '▶ Putar Rekaman';
-                return;
-            }
-
-            // Kalau audio sudah pernah diambil sebelumnya -> putar lagi tanpa fetch ulang
-            if (setoranAudioCache[cacheId]) {
-                audioEl.currentTime = 0;
-                audioEl.play();
-                btnEl.innerText = '⏸ Pause';
-                return;
-            }
-
-            btnEl.disabled = true;
-            btnEl.innerText = 'Memuat...';
-
-            try {
-                const res = await fetch(audioUrl);
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Gagal memuat audio');
-
-                // Ubah teks base64 dari server menjadi file audio asli (Blob)
-                const byteChars = atob(data.audioBase64);
-                const byteNumbers = new Array(byteChars.length);
-                for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-                const byteArray = new Uint8Array(byteNumbers);
-                const blob = new Blob([byteArray], { type: data.mimeType || 'audio/webm' });
-                const objectUrl = URL.createObjectURL(blob);
-
-                setoranAudioCache[cacheId] = objectUrl;
-                audioEl.src = objectUrl;
-                audioEl.onended = () => { btnEl.innerText = '▶ Putar Rekaman'; };
-                await audioEl.play();
-                btnEl.innerText = '⏸ Pause';
-            } catch (e) {
-                console.error(e);
-                showToast('Gagal memuat rekaman audio.');
-                btnEl.innerText = '▶ Putar Rekaman';
-            } finally {
-                btnEl.disabled = false;
-            }
-        }
-        window.playSetoranAudio = playSetoranAudio;
-
         async function renderSetoranList() {
             const container = document.getElementById('setoranListContainer');
             const profile = window.currentUserProfile;
@@ -1906,10 +1846,7 @@
                             </div>
                             <span style="font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; white-space:nowrap; ${sudahDinilai ? 'color:#10b981; background:rgba(16,185,129,0.12);' : 'color:#f59e0b; background:rgba(245,158,11,0.12);'}">${sudahDinilai ? 'Sudah Dinilai' : 'Menunggu Penilaian'}</span>
                         </div>
-                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                            <button id="playBtn-${id}" onclick="playSetoranAudio('${id}', '${d.audioUrl}', this)" style="flex:1; padding:8px; background: var(--input-bg); border:1px solid var(--border-color); color:var(--text-main); border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">▶ Putar Rekaman</button>
-                        </div>
-                        <audio id="audioEl-${id}" style="display:none;"></audio>
+                        <audio controls preload="none" style="width:100%; height:32px; margin-bottom:8px;" src="${d.audioUrl}"></audio>
                         <div style="display:flex; gap:6px; margin-bottom:6px;">
                             <input type="number" min="0" max="100" id="nilai-${id}" placeholder="Nilai (0-100)" value="${d.nilai != null ? d.nilai : ''}" style="width:110px; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-panel); color:var(--text-main); font-size:12px;" />
                         </div>
@@ -1984,10 +1921,7 @@
                     const d = setoranSnap.data();
                     contentEl.innerHTML = `
                         <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Jilid ${d.jilid} • Halaman ${d.halaman}</div>
-                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-                            <button id="playBtn-hasil-${setoranId}" onclick="playSetoranAudio('hasil-${setoranId}', '${d.audioUrl}', this)" style="flex:1; padding:10px; background: var(--input-bg); border:1px solid var(--border-color); color:var(--text-main); border-radius:8px; font-weight:700; font-size:13px; cursor:pointer;">▶ Putar Rekaman Saya</button>
-                        </div>
-                        <audio id="audioEl-hasil-${setoranId}" style="display:none;"></audio>
+                        <audio controls preload="none" style="width:100%; margin-bottom:12px;" src="${d.audioUrl}"></audio>
                         <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Nilai</div>
                         <div style="font-size:22px; font-weight:800; color:#0ea5e9; margin-bottom:12px;">${d.nilai != null ? d.nilai : '-'}</div>
                         <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Catatan Guru</div>
