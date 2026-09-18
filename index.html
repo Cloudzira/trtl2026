@@ -235,7 +235,7 @@
                     openMessagingModal(data.senderId, data.senderName);
                 } else if (data.actionUrl === 'setoran') {
                     toggleNotifModal(false);
-                    openSetoranScreen();
+                    openSetoranReview(data.setoranId);
                 } else if (data.actionUrl === 'setoran_hasil') {
                     toggleNotifModal(false);
                     lihatHasilSetoran(data.setoranId);
@@ -1221,13 +1221,39 @@
                 </div>
             </div>
 
-            <div class="record-panel">
+            <div class="record-panel" id="studentRecordPanel">
                 <div class="section-title" id="recordTitle">Setoran membaca</div>
                 <div class="record-buttons">
                     <button class="universal-btn btn-record" id="btnRec" onclick="startRecording()">Rekam</button>
                     <button class="universal-btn btn-stop" id="btnStop" onclick="stopRecording()" disabled>Stop</button>
                     <button class="universal-btn btn-ok" id="btnPlay" onclick="playRecording()" disabled>▶ Play</button>
                     <button class="universal-btn btn-send" id="btnSend" onclick="kirimSetoran()" disabled>Kirim</button>
+                </div>
+            </div>
+
+            <!-- Panel Penilaian Guru: menggantikan panel rekam siswa + panel
+                 Pintasan & Halaman (disembunyikan lewat JS) saat guru
+                 membuka halaman ini lewat notifikasi setoran. 3 kolom via
+                 CSS Grid dengan proporsi sesuai fungsi masing-masing:
+                 kiri (nama/nilai/audio) lebih ramping, tengah (kotak pesan)
+                 paling lebar, kanan (2 tombol) secukupnya saja - dengan
+                 tinggi TETAP (bukan stretch otomatis) supaya tidak melebar
+                 tak terkendali. Disembunyikan default (openSetoranReview()). -->
+            <div class="record-panel" id="teacherReviewPanel" style="display:none; padding: 10px 14px;">
+                <div style="width:100%; max-width:640px; margin:0 auto; display:grid; grid-template-columns: 1fr 1.4fr 0.85fr; gap:10px;">
+                    <!-- Kolom kiri: nama, nilai, audio -->
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        <div class="section-title" style="margin:0; font-size:11px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Nilai — <span id="reviewStudentName"></span></div>
+                        <input type="number" min="0" max="100" id="reviewNilaiInput" placeholder="Nilai (0-100)" style="width:100%; box-sizing:border-box; padding:6px 8px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-size:13px; font-weight:700; text-align:center;" />
+                        <div id="reviewAudioContainer"></div>
+                    </div>
+                    <!-- Kolom tengah: kotak pesan/catatan -->
+                    <textarea id="reviewFeedbackInput" placeholder="Tulis catatan/feedback untuk siswa..." style="width:100%; box-sizing:border-box; height:84px; padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-size:12px; font-family:inherit; resize:vertical;"></textarea>
+                    <!-- Kolom kanan: Kembali (atas) + Kirim Penilaian (bawah), lebar penuh & tinggi tetap -->
+                    <div style="display:flex; flex-direction:column; gap:6px; height:84px;">
+                        <button onclick="backToNotifFromReview()" style="width:100%; box-sizing:border-box; flex:1 1 0; height:auto; display:flex; align-items:center; justify-content:center; background: var(--input-bg); color: var(--text-main); font-size: 11px; font-weight:700; border-radius:8px; border:1px solid var(--border-color); cursor:pointer; padding:0; margin:0; font-family:inherit; line-height:1;">← Kembali</button>
+                        <button id="btnKirimPenilaianReview" onclick="kirimPenilaianReview()" style="width:100%; box-sizing:border-box; flex:1 1 0; height:auto; display:flex; align-items:center; justify-content:center; background: var(--accent-gradient); color:white; border:none; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer; padding:0; margin:0; font-family:inherit; line-height:1;">Kirim Penilaian</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1925,18 +1951,16 @@
             }
         }
 
-        async function kirimPenilaian(setoranId) {
-            const nilaiInput = document.getElementById('nilai-' + setoranId);
-            const feedbackInput = document.getElementById('feedback-' + setoranId);
-            const nilai = nilaiInput.value.trim();
-            const feedback = feedbackInput.value.trim();
-
-            if (nilai === '' && feedback === '') { showToast('Isi nilai atau feedback terlebih dahulu.'); return; }
-
+        // Fungsi INTI: simpan nilai & feedback ke Firestore + kirim notifikasi
+        // ke siswa. Dipakai bersama oleh tampilan daftar (kirimPenilaian) dan
+        // tampilan halaman baca saat guru meninjau 1 setoran lewat notifikasi
+        // (kirimPenilaianReview). Mengembalikan true/false untuk tahu berhasil
+        // atau tidak, supaya pemanggilnya bisa update tampilan masing-masing.
+        async function submitPenilaian(setoranId, nilai, feedback) {
             try {
                 const setoranRef = window.doc(window.firebaseDb, "setoran", setoranId);
                 const setoranSnap = await window.getDoc(setoranRef);
-                if (!setoranSnap.exists()) { showToast('Data setoran tidak ditemukan.'); return; }
+                if (!setoranSnap.exists()) { showToast('Data setoran tidak ditemukan.'); return false; }
                 const d = setoranSnap.data();
                 const profile = window.currentUserProfile;
 
@@ -1959,14 +1983,107 @@
                     readBy: []
                 });
 
-                showToast('Penilaian berhasil dikirim ke siswa!');
-                renderSetoranList();
+                return true;
             } catch (e) {
                 console.error(e);
                 showToast('Gagal mengirim penilaian.');
+                return false;
+            }
+        }
+
+        // Dipakai dari tampilan DAFTAR setoran (setoran-screen)
+        async function kirimPenilaian(setoranId) {
+            const nilaiInput = document.getElementById('nilai-' + setoranId);
+            const feedbackInput = document.getElementById('feedback-' + setoranId);
+            const nilai = nilaiInput.value.trim();
+            const feedback = feedbackInput.value.trim();
+
+            if (nilai === '' && feedback === '') { showToast('Isi nilai atau feedback terlebih dahulu.'); return; }
+
+            const ok = await submitPenilaian(setoranId, nilai, feedback);
+            if (ok) {
+                showToast('Penilaian berhasil dikirim ke siswa!');
+                renderSetoranList();
             }
         }
         window.kirimPenilaian = kirimPenilaian;
+
+        // --- TINJAU 1 SETORAN LEWAT HALAMAN BACA (dibuka dari notifikasi) ---
+        // Membuka halaman baca persis di Jilid & Halaman yang disetorkan
+        // siswa, dengan panel bawah diganti jadi panel penilaian guru
+        // (bukan panel rekam siswa).
+        async function openSetoranReview(setoranId) {
+            try {
+                const snap = await window.getDoc(window.doc(window.firebaseDb, "setoran", setoranId));
+                if (!snap.exists()) { showToast('Data setoran tidak ditemukan.'); return; }
+                const d = snap.data();
+
+                openJilid(d.jilid, d.halaman);
+                currentReviewSetoranId = setoranId;
+
+                // Sembunyikan panel Halaman & Pintasan -- guru cukup lihat
+                // panel penilaian saja, tidak perlu navigasi/pindah kelas.
+                // Pakai setProperty(...,'important') karena mode landscape
+                // punya aturan CSS "display: flex !important" untuk kedua
+                // panel ini -- inline style biasa tidak akan menang melawannya.
+                document.querySelector('#read-screen .page-nav-panel').style.setProperty('display', 'none', 'important');
+                document.querySelector('#read-screen .shortcut-panel').style.setProperty('display', 'none', 'important');
+
+                document.getElementById('studentRecordPanel').style.display = 'none';
+                const reviewPanel = document.getElementById('teacherReviewPanel');
+                reviewPanel.style.display = 'flex';
+                document.getElementById('reviewStudentName').innerText = d.studentName || 'Siswa';
+                document.getElementById('reviewAudioContainer').innerHTML =
+                    `<iframe src="${d.audioUrl}" style="width:100%; height:44px; border:none;" allow="autoplay"></iframe>`;
+                document.getElementById('reviewNilaiInput').value = d.nilai != null ? d.nilai : '';
+                document.getElementById('reviewFeedbackInput').value = d.feedback || '';
+                document.getElementById('btnKirimPenilaianReview').innerText = d.status === 'dinilai' ? 'Perbarui Penilaian' : 'Kirim Penilaian';
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal membuka setoran.');
+            }
+        }
+        window.openSetoranReview = openSetoranReview;
+
+        // Mengembalikan halaman baca ke kondisi normal (panel rekam siswa,
+        // Pintasan & Halaman muncul lagi), dipanggil otomatis oleh
+        // goToMenu() saat guru menekan tombol kembali dari mode tinjauan.
+        function exitSetoranReview() {
+            currentReviewSetoranId = null;
+            document.getElementById('teacherReviewPanel').style.display = 'none';
+            document.getElementById('studentRecordPanel').style.display = 'flex';
+            // removeProperty (bukan set ke '') supaya override paksa tadi
+            // benar-benar hilang dan CSS kembali menentukan tampilannya sendiri.
+            document.querySelector('#read-screen .page-nav-panel').style.removeProperty('display');
+            document.querySelector('#read-screen .shortcut-panel').style.removeProperty('display');
+        }
+
+        // Tombol "← Kembali" di panel penilaian: keluar dari halaman baca,
+        // balik ke Panel Guru, lalu langsung buka lagi popup notifikasi
+        // supaya guru bisa pilih setoran lain untuk dinilai.
+        function backToNotifFromReview() {
+            exitSetoranReview();
+            document.getElementById('read-screen').classList.remove('active');
+            document.getElementById('teacher-admin-screen').classList.add('active');
+            appState = 'teacher-admin';
+            toggleNotifModal(true);
+        }
+        window.backToNotifFromReview = backToNotifFromReview;
+
+        async function kirimPenilaianReview() {
+            if (!currentReviewSetoranId) return;
+            const nilai = document.getElementById('reviewNilaiInput').value.trim();
+            const feedback = document.getElementById('reviewFeedbackInput').value.trim();
+
+            if (nilai === '' && feedback === '') { showToast('Isi nilai atau feedback terlebih dahulu.'); return; }
+
+            const ok = await submitPenilaian(currentReviewSetoranId, nilai, feedback);
+            if (ok) {
+                showToast('Penilaian berhasil dikirim ke siswa!');
+                document.getElementById('btnKirimPenilaianReview').innerText = 'Perbarui Penilaian';
+            }
+        }
+        window.kirimPenilaianReview = kirimPenilaianReview;
 
         // --- LIHAT HASIL PENILAIAN (SISWA) ---
         async function lihatHasilSetoran(setoranId) {
@@ -2005,6 +2122,7 @@
         let mediaRecorder, audioChunks = [], recordedAudioBlob = null; 
         let recordedAudioMimeType = 'audio/webm';
         let isPlayingRecording = false;
+        let currentReviewSetoranId = null; // diisi saat guru meninjau 1 setoran lewat notifikasi
         
         const baseUrl = "https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/";
         let scale = 1, initialDistance = null;
@@ -2105,6 +2223,17 @@
         function goToMenu() {
             if (currentAudio) { currentAudio.pause(); currentAudio = null; }
             resetRecording();
+
+            // Kalau sebelumnya guru sedang meninjau 1 setoran (dibuka lewat
+            // notifikasi), tombol "Menu"/kembali harus membawanya ke daftar
+            // Setoran lagi -- bukan ke Menu Utama siswa.
+            if (currentReviewSetoranId) {
+                exitSetoranReview();
+                document.getElementById('read-screen').classList.remove('active');
+                openSetoranScreen();
+                return;
+            }
+
             appState = 'menu';
             document.getElementById('read-screen').classList.remove('active');
             document.getElementById('bookmarks-screen').classList.remove('active');
@@ -2185,6 +2314,7 @@
             document.getElementById('admin-screen').classList.remove('active');
             document.getElementById('teacher-admin-screen').classList.remove('active');
             document.getElementById('class-members-screen').classList.remove('active');
+            document.getElementById('setoran-screen').classList.remove('active');
             updatePageOptions('Read');
             
             let numList = getNumericPageList(currentJilid);
