@@ -229,10 +229,7 @@
                 console.error("Gagal menghapus notifikasi:", e);
             }
 
-            if (data.actionUrl === 'chat') {
-                toggleNotifModal(false);
-                openMessagingModal(data.senderId, data.senderName);
-            } else if (data.actionUrl === 'setoran') {
+            if (data.actionUrl === 'setoran') {
                 toggleNotifModal(false);
                 openSetoranReview(data.setoranId);
             } else if (data.actionUrl === 'setoran_hasil') {
@@ -367,9 +364,9 @@
             color: var(--text-muted); opacity: 0.7; margin-top: 12px; letter-spacing: 0.2px;
         }
 
-        #menu-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; justify-content: flex-start; align-items: center; }
+        #menu-screen { background: var(--bg-gradient); overflow-y: auto; overflow-x: hidden; padding: 20px; justify-content: flex-start; align-items: center; }
         .menu-content-wrapper {
-            display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 880px; position: relative; margin: auto;
+            display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 880px; position: relative; margin: auto; overflow-x: hidden;
         }
         
         .landing-hero-card {
@@ -388,7 +385,7 @@
         .landing-hero-actions { display: flex; gap: 10px; align-items: center; }
 
         .menu-section-title { width: 100%; text-align: left; font-size: 14px; font-weight: 800; color: var(--text-main); letter-spacing: 0.5px; margin-top: 4px; }
-        .grid-jilid { display: grid; gap: 16px; width: 100%; margin: 0; grid-template-columns: repeat(6, 1fr); }
+        .grid-jilid { display: grid; gap: 16px; width: 100%; margin: 0; grid-template-columns: repeat(6, minmax(0, 1fr)); }
 
         /* ==========================================================
            HALAMAN UTAMA (MENU) - TEMA GLASSMORPHISM FUTURISTIK
@@ -594,7 +591,7 @@
 
         @media (orientation: portrait) {
             .menu-content-wrapper { max-width: 420px; }
-            .grid-jilid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, auto); }
+            .grid-jilid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, auto); }
             .btn-cover { aspect-ratio: 3/4; }
             
             .landing-hero-card { flex-direction: row; align-items: center; gap: 12px; padding: 16px; }
@@ -639,7 +636,7 @@
             .menu-content-wrapper { max-width: 880px !important; gap: 12px !important; }
 
             .landing-hero-card { padding: 14px 20px; }
-            .grid-jilid { grid-template-columns: repeat(6, 1fr); grid-template-rows: 1fr; gap: 12px; }
+            .grid-jilid { grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: 1fr; gap: 12px; }
             .btn-cover { aspect-ratio: 3/4; max-height: 150px !important; }
             
             #menu-screen .shortcut-panel { 
@@ -739,12 +736,12 @@
         .btn-cover:hover img { transform: scale(1.03); }
         .btn-cover:active { transform: scale(1.0); }
 
-        .btn-theme-toggle, .btn-bookmark, .btn-logout, .btn-admin, .btn-teacher-panel, .btn-notif-trigger, .btn-chat-trigger {
+        .btn-theme-toggle, .btn-bookmark, .btn-logout, .btn-admin, .btn-teacher-panel, .btn-notif-trigger {
             background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
             width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: var(--transition); flex-shrink: 0;
         }
-        .btn-theme-toggle:hover, .btn-bookmark:hover, .btn-admin:hover, .btn-teacher-panel:hover, .btn-notif-trigger:hover, .btn-chat-trigger:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; }
+        .btn-theme-toggle:hover, .btn-bookmark:hover, .btn-admin:hover, .btn-teacher-panel:hover, .btn-notif-trigger:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; }
         
         .btn-logout {
             background: rgba(239, 68, 68, 0.12);
@@ -753,7 +750,7 @@
         .btn-logout:hover { transform: scale(1.08); background: #ef4444; border-color: #ef4444; }
         .btn-logout:hover svg { stroke: white; }
 
-        .btn-theme-toggle svg, .btn-bookmark svg, .btn-logout svg, .btn-admin svg, .btn-teacher-panel svg, .btn-notif-trigger svg, .btn-chat-trigger svg {
+        .btn-theme-toggle svg, .btn-bookmark svg, .btn-logout svg, .btn-admin svg, .btn-teacher-panel svg, .btn-notif-trigger svg {
             width: 18px; height: 18px; fill: none; stroke: var(--text-muted);
             stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: var(--transition);
         }
@@ -1037,20 +1034,6 @@
         </div>
     </div>
 
-    <!-- Modal Pesan (Guru <-> Siswa) -->
-    <div id="chatModal" class="modal-overlay">
-        <div class="modal-box" style="height: 70vh; display: flex; flex-direction: column;">
-            <div class="modal-header">
-                <h3 id="chatModalTitle">💬 Pesan</h3>
-                <button class="modal-close-btn" onclick="toggleChatModal(false)">✕</button>
-            </div>
-            <div id="chatMessagesContainer" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px;"></div>
-            <div style="display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border-color);">
-                <input type="text" id="chatInputText" placeholder="Tulis pesan..." style="flex: 1; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); font-size: 13px;" onkeydown="if(event.key==='Enter'){ event.preventDefault(); sendChatMessage(); }" />
-                <button onclick="sendChatMessage()" style="padding: 0 18px; background: var(--accent-gradient); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 13px;">Kirim</button>
-            </div>
-        </div>
-    </div>
 
 
     <!-- Halaman Menu Utama -->
@@ -1072,9 +1055,6 @@
                     <button class="btn-notif-trigger" onclick="toggleNotifModal(true)" title="Notifikasi">
                         <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                         <span class="notif-badge" id="notifBadgeCount">0</span>
-                    </button>
-                    <button class="btn-chat-trigger" id="btnChatWithTeacher" onclick="openChatWithMyTeacher()" title="Pesan ke Guru">
-                        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                     </button>
                     <button class="btn-admin" id="btnMasterAdminPanel" onclick="openMasterAdminScreen()" title="Panel Master Admin">
                         <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
@@ -1468,7 +1448,7 @@
                 if (classEl) classEl.innerText = `Kelas: ${profile.teacherClassName}`;
                 if (teacherNameEl) teacherNameEl.style.display = 'none';
             } else {
-                if (classEl) classEl.innerText = `Kode Kelas: ${profile.classCode || '-'}`;
+                if (classEl) classEl.innerText = `Kelas: Memuat...`;
                 if (teacherNameEl) {
                     teacherNameEl.style.display = 'inline';
                     teacherNameEl.innerText = "Guru: Memuat...";
@@ -1478,11 +1458,14 @@
                         if (!snap.empty) {
                             const teacherData = snap.docs[0].data();
                             teacherNameEl.innerText = `Guru: ${teacherData.name}`;
+                            if (classEl) classEl.innerText = `Kelas: ${teacherData.teacherClassName || profile.classCode || '-'}`;
                         } else {
                             teacherNameEl.innerText = `Guru: -`;
+                            if (classEl) classEl.innerText = `Kelas: ${profile.classCode || '-'}`;
                         }
                     } catch (e) {
                         teacherNameEl.innerText = `Guru: -`;
+                        if (classEl) classEl.innerText = `Kelas: ${profile.classCode || '-'}`;
                     }
                 }
             }
@@ -1491,7 +1474,6 @@
         function setupDashboardAccess() {
             const btnMaster = document.getElementById('btnMasterAdminPanel');
             const btnTeacher = document.getElementById('btnTeacherPanel');
-            const btnChat = document.getElementById('btnChatWithTeacher');
             if (!btnMaster || !btnTeacher) return;
 
             const profile = window.currentUserProfile;
@@ -1510,16 +1492,6 @@
                 btnTeacher.style.setProperty('display', 'flex', 'important');
             } else {
                 btnTeacher.style.setProperty('display', 'none', 'important');
-            }
-
-            // Tombol "Pesan ke Guru" hanya relevan untuk siswa. Guru
-            // mengirim pesan lewat daftar anggota kelasnya masing-masing.
-            if (btnChat) {
-                if (profile.role === 'Siswa') {
-                    btnChat.style.setProperty('display', 'flex', 'important');
-                } else {
-                    btnChat.style.setProperty('display', 'none', 'important');
-                }
             }
         }
 
@@ -1761,7 +1733,6 @@
                         </div>
                         <div style="display:flex; gap:6px; align-items:center;">
                             <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 6px;">Aktif</span>
-                            ${profile.role === 'Guru' ? `<button onclick="openMessagingModal('${sId}', '${sData.name.replace(/'/g, "\\'")}')" title="Kirim Pesan" style="width:30px; height:30px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); cursor:pointer; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></button>` : ''}
                         </div>
                     `;
                     container.appendChild(item);
@@ -2029,119 +2000,6 @@
             document.getElementById('hasilSetoranModal').classList.add('active');
         }
         window.lihatHasilSetoran = lihatHasilSetoran;
-
-        // --- PESAN (CHAT 1:1 GURU <-> SISWA) ---
-        let currentChatPartnerId = null;
-        let unsubChatMessages = null;
-
-        // ID percakapan dibuat dari gabungan 2 UID yang diurutkan, supaya
-        // guru & siswa manapun selalu bertemu di thread yang sama persis
-        // tanpa perlu tabel penghubung terpisah.
-        function getChatId(uid1, uid2) {
-            return [uid1, uid2].sort().join('_');
-        }
-
-        function toggleChatModal(show) {
-            const el = document.getElementById('chatModal');
-            if (show) {
-                el.classList.add('active');
-            } else {
-                el.classList.remove('active');
-                if (unsubChatMessages) { unsubChatMessages(); unsubChatMessages = null; }
-                currentChatPartnerId = null;
-            }
-        }
-        window.toggleChatModal = toggleChatModal;
-
-        function openMessagingModal(partnerId, partnerName) {
-            const profile = window.currentUserProfile;
-            if (!profile || !partnerId) return;
-
-            currentChatPartnerId = partnerId;
-            document.getElementById('chatModalTitle').innerText = '💬 Pesan — ' + (partnerName || 'Pengguna');
-            document.getElementById('chatInputText').value = '';
-            toggleChatModal(true);
-
-            const chatId = getChatId(profile.uid, partnerId);
-            if (unsubChatMessages) unsubChatMessages();
-
-            const q = window.query(
-                window.collection(window.firebaseDb, "chats", chatId, "messages"),
-                window.orderBy("createdAt", "asc")
-            );
-            unsubChatMessages = window.onSnapshot(q, (snap) => {
-                const container = document.getElementById('chatMessagesContainer');
-                container.innerHTML = '';
-                if (snap.empty) {
-                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; margin-top:20px;">Belum ada pesan. Mulai percakapan...</div>`;
-                }
-                snap.forEach(docSnap => {
-                    const m = docSnap.data();
-                    const isMine = m.senderId === profile.uid;
-                    const bubble = document.createElement('div');
-                    bubble.style.cssText = `max-width:75%; padding:8px 12px; border-radius:14px; font-size:13px; line-height:1.4; align-self:${isMine ? 'flex-end' : 'flex-start'}; background:${isMine ? 'var(--accent-gradient)' : 'var(--input-bg)'}; color:${isMine ? 'white' : 'var(--text-main)'};`;
-                    bubble.innerText = m.text;
-                    container.appendChild(bubble);
-                });
-                container.scrollTop = container.scrollHeight;
-            }, (err) => console.log('Chat snapshot info:', err));
-        }
-        window.openMessagingModal = openMessagingModal;
-
-        async function sendChatMessage() {
-            const input = document.getElementById('chatInputText');
-            const text = input.value.trim();
-            if (!text || !currentChatPartnerId) return;
-            const profile = window.currentUserProfile;
-            input.value = '';
-
-            try {
-                const chatId = getChatId(profile.uid, currentChatPartnerId);
-                await window.addDoc(window.collection(window.firebaseDb, "chats", chatId, "messages"), {
-                    senderId: profile.uid,
-                    senderName: profile.name || 'Pengguna',
-                    text: text,
-                    createdAt: window.serverTimestamp()
-                });
-
-                await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
-                    targetUserId: currentChatPartnerId,
-                    title: "💬 Pesan Baru",
-                    message: `${profile.name || 'Pengguna'}: ${text}`,
-                    senderId: profile.uid,
-                    senderName: profile.name || 'Pengguna',
-                    actionUrl: 'chat',
-                    createdAt: window.serverTimestamp(),
-                    readBy: []
-                });
-            } catch (e) {
-                console.error(e);
-                showToast('Gagal mengirim pesan.');
-            }
-        }
-        window.sendChatMessage = sendChatMessage;
-
-        // Dipanggil dari tombol 💬 di Menu Utama siswa -- otomatis mencari
-        // guru pemilik kelas siswa tersebut, lalu membuka pesan dengannya.
-        async function openChatWithMyTeacher() {
-            const profile = window.currentUserProfile;
-            if (!profile || !profile.classCode) { showToast('Kelas Anda belum terdaftar, hubungi admin.'); return; }
-            try {
-                const qTeacher = window.query(
-                    window.collection(window.firebaseDb, "users"),
-                    window.where("role", "==", "Guru"),
-                    window.where("classCode", "==", profile.classCode)
-                );
-                const snap = await window.getDocs(qTeacher);
-                if (snap.empty) { showToast('Guru kelas Anda belum ditemukan.'); return; }
-                const tDoc = snap.docs[0];
-                openMessagingModal(tDoc.id, tDoc.data().name || 'Guru');
-            } catch (e) {
-                console.error(e);
-                showToast('Gagal membuka pesan.');
-            }
-        }
-        window.openChatWithMyTeacher = openChatWithMyTeacher;
 
         function handleLogout() {
             window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
@@ -2572,8 +2430,8 @@
         // Isi URL Web App Apps Script Anda di bawah ini setelah proses deploy
         // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini,
         // supaya aman - kunci itu hanya ada di dalam Apps Script.
-      const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbwKj91_XK1XKKblERh6YA2R55fyj1CDNGLDFA15ghKn6319zHXtM-RSWiigVLEWUHs2/exec";
-        const FILEBASE_SECRET_KEY = "@awanawan"; // harus sama persis dengan SHARED_SECRET di Code.gs
+        const FILEBASE_UPLOAD_URL = "PASTE_URL_WEB_APP_APPS_SCRIPT_ANDA_DI_SINI";
+        const FILEBASE_SECRET_KEY = "GANTI_DENGAN_KODE_RAHASIA_ANDA"; // harus sama persis dengan SHARED_SECRET di Code.gs
         const SETORAN_RETENTION_DAYS = 7; // Rekaman otomatis dihapus setelah 7 hari (dicek tiap guru buka halaman Setoran)
 
         function blobToBase64(blob) {
@@ -2706,6 +2564,30 @@
                     }
                 }
             }, {passive: true});
+
+            // Navigasi panah kiri/kanan keyboard (laptop/desktop) untuk
+            // pindah halaman -- hanya aktif saat halaman baca terbuka, dan
+            // TIDAK aktif kalau pengguna sedang mengetik di kotak input
+            // (misal kolom Nilai/Catatan di panel penilaian guru).
+            window.addEventListener('keydown', (e) => {
+                if (appState !== 'read') return;
+                const activeTag = document.activeElement ? document.activeElement.tagName : '';
+                if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
+
+                if (e.key === 'ArrowRight') { e.preventDefault(); changePage(1); }
+                else if (e.key === 'ArrowLeft') { e.preventDefault(); changePage(-1); }
+            });
+
+            // Zoom dengan scroll mouse (laptop/desktop, mode landscape) --
+            // scroll ke atas memperbesar, scroll ke bawah memperkecil,
+            // memakai batas & rumus yang sama dengan pinch-zoom di HP.
+            scrollArea.addEventListener('wheel', (e) => {
+                if (appState !== 'read' || isPortrait()) return;
+                e.preventDefault();
+                let delta = -e.deltaY * 0.0015;
+                scale = Math.min(Math.max(1, scale + delta), 2.5);
+                updateImageTransform();
+            }, { passive: false });
         }
     </script>
 <!-- KODE MEMATIKAN ZOOM (Cukup tempel di satu tempat ini saja) -->
