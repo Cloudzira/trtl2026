@@ -786,7 +786,7 @@
         .btn-page-nav-custom:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(14, 165, 233, 0.35); }
         .btn-page-nav-custom:active { transform: scale(0.97); }
 
-        #read-screen { position: relative; background: var(--bg-gradient); display: none; width: 100%; height: 100%; overflow: hidden; }
+        #read-screen { position: relative; background: var(--bg-gradient); display: none; width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; }
         #read-screen.active { display: flex; flex-direction: column; }
 
         .image-scroll-area {
@@ -2572,7 +2572,7 @@
         // Isi URL Web App Apps Script Anda di bawah ini setelah proses deploy
         // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini,
         // supaya aman - kunci itu hanya ada di dalam Apps Script.
-        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbwKj91_XK1XKKblERh6YA2R55fyj1CDNGLDFA15ghKn6319zHXtM-RSWiigVLEWUHs2/exec";
+      const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbwKj91_XK1XKKblERh6YA2R55fyj1CDNGLDFA15ghKn6319zHXtM-RSWiigVLEWUHs2/exec";
         const FILEBASE_SECRET_KEY = "@awanawan"; // harus sama persis dengan SHARED_SECRET di Code.gs
         const SETORAN_RETENTION_DAYS = 7; // Rekaman otomatis dihapus setelah 7 hari (dicek tiap guru buka halaman Setoran)
 
