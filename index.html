@@ -221,27 +221,23 @@
 
         async function markNotificationRead(notifId, userId, data) {
             try {
+                // Notifikasi yang sudah dibuka langsung DIHAPUS (bukan cuma
+                // ditandai terbaca), supaya daftar notifikasi selalu bersih.
                 const notifRef = doc(window.firebaseDb, "notifications", notifId);
-                const notifSnap = await getDoc(notifRef);
-                if (notifSnap.exists()) {
-                    let readBy = notifSnap.data().readBy || [];
-                    if (!readBy.includes(userId)) {
-                        readBy.push(userId);
-                        await updateDoc(notifRef, { readBy: readBy });
-                    }
-                }
-                if (data.actionUrl === 'chat') {
-                    toggleNotifModal(false);
-                    openMessagingModal(data.senderId, data.senderName);
-                } else if (data.actionUrl === 'setoran') {
-                    toggleNotifModal(false);
-                    openSetoranReview(data.setoranId);
-                } else if (data.actionUrl === 'setoran_hasil') {
-                    toggleNotifModal(false);
-                    lihatHasilSetoran(data.setoranId);
-                }
+                await deleteDoc(notifRef);
             } catch (e) {
-                console.error("Gagal memperbarui status notifikasi:", e);
+                console.error("Gagal menghapus notifikasi:", e);
+            }
+
+            if (data.actionUrl === 'chat') {
+                toggleNotifModal(false);
+                openMessagingModal(data.senderId, data.senderName);
+            } else if (data.actionUrl === 'setoran') {
+                toggleNotifModal(false);
+                openSetoranReview(data.setoranId);
+            } else if (data.actionUrl === 'setoran_hasil') {
+                toggleNotifModal(false);
+                lihatHasilSetoran(data);
             }
         }
         window.markNotificationRead = markNotificationRead;
@@ -589,12 +585,6 @@
         }
         .notif-item.unread { background: rgba(14, 165, 233, 0.08); border-left: 3px solid #0ea5e9; }
         .notif-item:hover { background: var(--input-bg); }
-        .chat-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-        .chat-bubble { max-width: 75%; padding: 10px 14px; border-radius: 16px; font-size: 13px; line-height: 1.4; word-break: break-word; }
-        .chat-bubble.mine { align-self: flex-end; background: var(--accent-gradient); color: white; border-bottom-right-radius: 2px; }
-        .chat-bubble.other { align-self: flex-start; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); border-bottom-left-radius: 2px; }
-        .chat-input-area { padding: 12px 16px; border-top: 1px solid var(--border-color); display: flex; gap: 8px; background: var(--bg-card); }
-        .chat-input-area input { flex: 1; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 12px; outline: none; background: var(--input-bg); color: var(--text-main); font-size: 13px; }
 
         .btn-notif-trigger { position: relative; }
         .notif-badge {
@@ -749,12 +739,12 @@
         .btn-cover:hover img { transform: scale(1.03); }
         .btn-cover:active { transform: scale(1.0); }
 
-        .btn-theme-toggle, .btn-bookmark, .btn-logout, .btn-admin, .btn-teacher-panel, .btn-notif-trigger {
+        .btn-theme-toggle, .btn-bookmark, .btn-logout, .btn-admin, .btn-teacher-panel, .btn-notif-trigger, .btn-chat-trigger {
             background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
             width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: var(--transition); flex-shrink: 0;
         }
-        .btn-theme-toggle:hover, .btn-bookmark:hover, .btn-admin:hover, .btn-teacher-panel:hover, .btn-notif-trigger:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; }
+        .btn-theme-toggle:hover, .btn-bookmark:hover, .btn-admin:hover, .btn-teacher-panel:hover, .btn-notif-trigger:hover, .btn-chat-trigger:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; }
         
         .btn-logout {
             background: rgba(239, 68, 68, 0.12);
@@ -763,7 +753,7 @@
         .btn-logout:hover { transform: scale(1.08); background: #ef4444; border-color: #ef4444; }
         .btn-logout:hover svg { stroke: white; }
 
-        .btn-theme-toggle svg, .btn-bookmark svg, .btn-logout svg, .btn-admin svg, .btn-teacher-panel svg, .btn-notif-trigger svg {
+        .btn-theme-toggle svg, .btn-bookmark svg, .btn-logout svg, .btn-admin svg, .btn-teacher-panel svg, .btn-notif-trigger svg, .btn-chat-trigger svg {
             width: 18px; height: 18px; fill: none; stroke: var(--text-muted);
             stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: var(--transition);
         }
@@ -893,23 +883,6 @@
             </div>
             <div id="notificationListContainer" style="flex:1; overflow-y:auto;">
                 <div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat notifikasi...</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL CHAT / PESAN -->
-    <div id="chatModal" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3 id="chatTargetName">💬 Pesan</h3>
-                <button class="modal-close-btn" onclick="toggleChatModal(false)">✕</button>
-            </div>
-            <div class="chat-body" id="chatMessageContainer">
-                <!-- Chat messages will render here -->
-            </div>
-            <div class="chat-input-area">
-                <input type="text" id="chatInputText" placeholder="Tulis pesan..." onkeypress="if(event.key==='Enter') sendChatMessage()" />
-                <button onclick="sendChatMessage()" style="background:var(--accent-gradient); color:white; border:none; padding:8px 16px; border-radius:12px; font-weight:700; cursor:pointer;">Kirim</button>
             </div>
         </div>
     </div>
@@ -1064,6 +1037,21 @@
         </div>
     </div>
 
+    <!-- Modal Pesan (Guru <-> Siswa) -->
+    <div id="chatModal" class="modal-overlay">
+        <div class="modal-box" style="height: 70vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h3 id="chatModalTitle">💬 Pesan</h3>
+                <button class="modal-close-btn" onclick="toggleChatModal(false)">✕</button>
+            </div>
+            <div id="chatMessagesContainer" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px;"></div>
+            <div style="display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border-color);">
+                <input type="text" id="chatInputText" placeholder="Tulis pesan..." style="flex: 1; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); font-size: 13px;" onkeydown="if(event.key==='Enter'){ event.preventDefault(); sendChatMessage(); }" />
+                <button onclick="sendChatMessage()" style="padding: 0 18px; background: var(--accent-gradient); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 13px;">Kirim</button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Halaman Menu Utama -->
     <div id="menu-screen" class="screen">
@@ -1084,6 +1072,9 @@
                     <button class="btn-notif-trigger" onclick="toggleNotifModal(true)" title="Notifikasi">
                         <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                         <span class="notif-badge" id="notifBadgeCount">0</span>
+                    </button>
+                    <button class="btn-chat-trigger" id="btnChatWithTeacher" onclick="openChatWithMyTeacher()" title="Pesan ke Guru">
+                        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                     </button>
                     <button class="btn-admin" id="btnMasterAdminPanel" onclick="openMasterAdminScreen()" title="Panel Master Admin">
                         <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
@@ -1233,24 +1224,27 @@
 
             <!-- Panel Penilaian Guru: menggantikan panel rekam siswa + panel
                  Pintasan & Halaman (disembunyikan lewat JS) saat guru
-                 membuka halaman ini lewat notifikasi setoran. 3 kolom via
-                 CSS Grid dengan proporsi sesuai fungsi masing-masing:
-                 kiri (nama/nilai/audio) lebih ramping, tengah (kotak pesan)
-                 paling lebar, kanan (2 tombol) secukupnya saja - dengan
-                 tinggi TETAP (bukan stretch otomatis) supaya tidak melebar
-                 tak terkendali. Disembunyikan default (openSetoranReview()). -->
+                 membuka halaman ini lewat notifikasi setoran. Satu baris
+                 flex penuh lebar (tidak dibatasi max-width lagi supaya
+                 tidak ada sisa kosong kiri-kanan di mode landscape):
+                 [Nilai-Nama + kotak nilai] -> [bar audio] ->
+                 [kotak pesan/catatan, ambil sisa ruang paling banyak] ->
+                 [tombol Kembali & Kirim, di kanan]. flex-wrap aktif supaya
+                 tetap aman kalau dibuka di layar sangat sempit (potret HP).
+                 Disembunyikan default (openSetoranReview()). -->
             <div class="record-panel" id="teacherReviewPanel" style="display:none; padding: 10px 14px;">
-                <div style="width:100%; max-width:640px; margin:0 auto; display:grid; grid-template-columns: 1fr 1.4fr 0.85fr; gap:10px;">
-                    <!-- Kolom kiri: nama, nilai, audio -->
-                    <div style="display:flex; flex-direction:column; gap:5px;">
+                <div style="width:100%; display:flex; flex-wrap:wrap; align-items:stretch; gap:10px;">
+                    <!-- Nilai-Nama + kotak nilai (sejajar, ramping) -->
+                    <div style="flex: 1 1 150px; display:flex; align-items:center; gap:6px;">
                         <div class="section-title" style="margin:0; font-size:11px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Nilai — <span id="reviewStudentName"></span></div>
-                        <input type="number" min="0" max="100" id="reviewNilaiInput" placeholder="Nilai (0-100)" style="width:100%; box-sizing:border-box; padding:6px 8px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-size:13px; font-weight:700; text-align:center;" />
-                        <div id="reviewAudioContainer"></div>
+                        <input type="number" min="0" max="100" id="reviewNilaiInput" placeholder="Nilai" style="width:56px; flex-shrink:0; box-sizing:border-box; padding:6px 4px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-size:13px; font-weight:700; text-align:center;" />
                     </div>
-                    <!-- Kolom tengah: kotak pesan/catatan -->
-                    <textarea id="reviewFeedbackInput" placeholder="Tulis catatan/feedback untuk siswa..." style="width:100%; box-sizing:border-box; height:84px; padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-size:12px; font-family:inherit; resize:vertical;"></textarea>
-                    <!-- Kolom kanan: Kembali (atas) + Kirim Penilaian (bawah), lebar penuh & tinggi tetap -->
-                    <div style="display:flex; flex-direction:column; gap:6px; height:84px;">
+                    <!-- Bar pemutar audio -->
+                    <div id="reviewAudioContainer" style="flex: 1.3 1 180px; min-width:150px;"></div>
+                    <!-- Kotak pesan/catatan, ambil sisa ruang paling banyak -->
+                    <textarea id="reviewFeedbackInput" placeholder="Tulis catatan/feedback untuk siswa..." style="flex: 2.2 1 200px; box-sizing:border-box; height:64px; padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-size:12px; font-family:inherit; resize:vertical;"></textarea>
+                    <!-- Tombol Kembali & Kirim Penilaian, di paling kanan -->
+                    <div style="flex: 0 1 130px; min-width:120px; display:flex; flex-direction:column; gap:6px; height:64px;">
                         <button onclick="backToNotifFromReview()" style="width:100%; box-sizing:border-box; flex:1 1 0; height:auto; display:flex; align-items:center; justify-content:center; background: var(--input-bg); color: var(--text-main); font-size: 11px; font-weight:700; border-radius:8px; border:1px solid var(--border-color); cursor:pointer; padding:0; margin:0; font-family:inherit; line-height:1;">← Kembali</button>
                         <button id="btnKirimPenilaianReview" onclick="kirimPenilaianReview()" style="width:100%; box-sizing:border-box; flex:1 1 0; height:auto; display:flex; align-items:center; justify-content:center; background: var(--accent-gradient); color:white; border:none; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer; padding:0; margin:0; font-family:inherit; line-height:1;">Kirim Penilaian</button>
                     </div>
@@ -1320,94 +1314,6 @@
             if (show) el.classList.add('active');
             else el.classList.remove('active');
         }
-
-        let currentActiveChatUserId = null;
-        let unsubChat = null;
-
-        function toggleChatModal(show) {
-            const el = document.getElementById('chatModal');
-            if (show) el.classList.add('active');
-            else {
-                el.classList.remove('active');
-                if (unsubChat) unsubChat();
-            }
-        }
-
-        function openMessagingModal(targetUserId, targetName) {
-            currentActiveChatUserId = targetUserId;
-            document.getElementById('chatTargetName').innerText = `💬 Pesan dengan ${targetName}`;
-            toggleChatModal(true);
-            loadChatMessages(targetUserId);
-        }
-        window.openMessagingModal = openMessagingModal;
-
-        function loadChatMessages(targetUserId) {
-            const currentUserId = window.currentUserProfile.uid;
-            const chatContainer = document.getElementById('chatMessageContainer');
-            chatContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:10px; font-size:12px;">Memuat pesan...</div>`;
-
-            if (unsubChat) unsubChat();
-
-            const chatId = [currentUserId, targetUserId].sort().join("_");
-            const q = window.query(
-                window.collection(window.firebaseDb, "chats", chatId, "messages"),
-                window.orderBy("createdAt", "asc")
-            );
-
-            unsubChat = window.onSnapshot(q, (snapshot) => {
-                chatContainer.innerHTML = "";
-                if (snapshot.empty) {
-                    chatContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Belum ada percakapan. Mulai kirim pesan!</div>`;
-                    return;
-                }
-                snapshot.docs.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const isMine = data.senderId === currentUserId;
-                    const bubble = document.createElement('div');
-                    bubble.className = `chat-bubble ${isMine ? 'mine' : 'other'}`;
-                    bubble.innerText = data.text;
-                    chatContainer.appendChild(bubble);
-                });
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            });
-        }
-
-        async function sendChatMessage() {
-            const input = document.getElementById('chatInputText');
-            const text = input.value.trim();
-            if (!text || !currentActiveChatUserId) return;
-
-            const currentUser = window.currentUserProfile;
-            const chatId = [currentUser.uid, currentActiveChatUserId].sort().join("_");
-
-            try {
-                input.value = "";
-                await window.addDoc(window.collection(window.firebaseDb, "chats", chatId, "messages"), {
-                    senderId: currentUser.uid,
-                    senderName: currentUser.name,
-                    receiverId: currentActiveChatUserId,
-                    text: text,
-                    createdAt: window.serverTimestamp()
-                });
-
-                // Kirim notifikasi ke penerima
-                await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
-                    targetUserId: currentActiveChatUserId,
-                    title: `Pesan baru dari ${currentUser.name}`,
-                    message: text,
-                    senderId: currentUser.uid,
-                    senderName: currentUser.name,
-                    actionUrl: 'chat',
-                    readBy: [],
-                    createdAt: window.serverTimestamp()
-                });
-
-            } catch (e) {
-                console.error("Gagal mengirim pesan:", e);
-                showToast("Gagal mengirim pesan.");
-            }
-        }
-        window.sendChatMessage = sendChatMessage;
 
         let isRegisterMode = false;
         function switchAuthMode(mode) {
@@ -1585,6 +1491,7 @@
         function setupDashboardAccess() {
             const btnMaster = document.getElementById('btnMasterAdminPanel');
             const btnTeacher = document.getElementById('btnTeacherPanel');
+            const btnChat = document.getElementById('btnChatWithTeacher');
             if (!btnMaster || !btnTeacher) return;
 
             const profile = window.currentUserProfile;
@@ -1603,6 +1510,16 @@
                 btnTeacher.style.setProperty('display', 'flex', 'important');
             } else {
                 btnTeacher.style.setProperty('display', 'none', 'important');
+            }
+
+            // Tombol "Pesan ke Guru" hanya relevan untuk siswa. Guru
+            // mengirim pesan lewat daftar anggota kelasnya masing-masing.
+            if (btnChat) {
+                if (profile.role === 'Siswa') {
+                    btnChat.style.setProperty('display', 'flex', 'important');
+                } else {
+                    btnChat.style.setProperty('display', 'none', 'important');
+                }
             }
         }
 
@@ -1819,7 +1736,6 @@
                                 <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👨‍🏫 ${tData.name} <span class="badge-role" style="margin-left: 6px;">Guru Pengampu</span></div>
                                 <div style="font-size: 11px; color: var(--text-muted);">Email: ${tData.email}</div>
                             </div>
-                            ${tId !== profile.uid ? `<button onclick="openMessagingModal('${tId}', '${tData.name}')" style="background:var(--accent-gradient); color:white; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">💬 Chat</button>` : ''}
                         `;
                         container.appendChild(item);
                     });
@@ -1845,7 +1761,7 @@
                         </div>
                         <div style="display:flex; gap:6px; align-items:center;">
                             <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 6px;">Aktif</span>
-                            ${sId !== profile.uid ? `<button onclick="openMessagingModal('${sId}', '${sData.name}')" style="background:var(--accent-gradient); color:white; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">💬 Chat</button>` : ''}
+                            ${profile.role === 'Guru' ? `<button onclick="openMessagingModal('${sId}', '${sData.name.replace(/'/g, "\\'")}')" title="Kirim Pesan" style="width:30px; height:30px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); cursor:pointer; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></button>` : ''}
                         </div>
                     `;
                     container.appendChild(item);
@@ -1963,14 +1879,12 @@
                 if (!setoranSnap.exists()) { showToast('Data setoran tidak ditemukan.'); return false; }
                 const d = setoranSnap.data();
                 const profile = window.currentUserProfile;
+                const nilaiFinal = nilai === '' ? null : Number(nilai);
+                const feedbackFinal = feedback || null;
 
-                await window.updateDoc(setoranRef, {
-                    nilai: nilai === '' ? null : Number(nilai),
-                    feedback: feedback || null,
-                    status: 'dinilai',
-                    gradedAt: window.serverTimestamp()
-                });
-
+                // Data lengkap (nilai, catatan, audio, jilid, halaman) disisipkan
+                // LANGSUNG ke notifikasinya -- supaya siswa tetap bisa melihat
+                // hasil penilaiannya walau dokumen setoran aslinya nanti dihapus.
                 await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
                     targetUserId: d.studentUid,
                     title: "📋 Rekaman Anda Telah Dinilai",
@@ -1978,10 +1892,18 @@
                     senderId: profile.uid,
                     senderName: profile.name || 'Guru',
                     actionUrl: 'setoran_hasil',
-                    setoranId: setoranId,
+                    jilid: d.jilid,
+                    halaman: d.halaman,
+                    audioUrl: d.audioUrl,
+                    nilai: nilaiFinal,
+                    feedback: feedbackFinal,
                     createdAt: window.serverTimestamp(),
                     readBy: []
                 });
+
+                // Setoran yang sudah dikoreksi & dinilai langsung dihapus dari
+                // database (tidak disimpan lagi sebagai dokumen terpisah).
+                await window.deleteDoc(setoranRef);
 
                 return true;
             } catch (e) {
@@ -2080,36 +2002,146 @@
             const ok = await submitPenilaian(currentReviewSetoranId, nilai, feedback);
             if (ok) {
                 showToast('Penilaian berhasil dikirim ke siswa!');
-                document.getElementById('btnKirimPenilaianReview').innerText = 'Perbarui Penilaian';
+                // Setoran yang sudah dinilai langsung dihapus (lihat
+                // submitPenilaian), jadi tidak ada lagi yang bisa ditinjau
+                // di halaman ini -- otomatis kembali ke popup notifikasi.
+                backToNotifFromReview();
             }
         }
         window.kirimPenilaianReview = kirimPenilaianReview;
 
         // --- LIHAT HASIL PENILAIAN (SISWA) ---
-        async function lihatHasilSetoran(setoranId) {
-            try {
-                const setoranSnap = await window.getDoc(window.doc(window.firebaseDb, "setoran", setoranId));
-                const contentEl = document.getElementById('hasilSetoranContent');
-                if (!setoranSnap.exists()) {
-                    contentEl.innerHTML = `<div style="color:var(--text-muted); font-size:13px;">Data setoran tidak ditemukan.</div>`;
-                } else {
-                    const d = setoranSnap.data();
-                    contentEl.innerHTML = `
-                        <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Jilid ${d.jilid} • Halaman ${d.halaman}</div>
-                        <iframe src="${d.audioUrl}" style="width:100%; height:44px; border:none; margin-bottom:12px;" allow="autoplay"></iframe>
-                        <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Nilai</div>
-                        <div style="font-size:22px; font-weight:800; color:#0ea5e9; margin-bottom:12px;">${d.nilai != null ? d.nilai : '-'}</div>
-                        <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Catatan Guru</div>
-                        <div style="font-size:13px; color:var(--text-main); background:var(--input-bg); padding:10px; border-radius:10px;">${d.feedback || 'Tidak ada catatan.'}</div>
-                    `;
-                }
-                document.getElementById('hasilSetoranModal').classList.add('active');
-            } catch (e) {
-                console.error(e);
-                showToast('Gagal memuat hasil penilaian.');
-            }
+        // Menerima data notifikasi LANGSUNG (bukan mengambil ulang dokumen
+        // "setoran" dari Firestore), karena dokumen setoran yang sudah
+        // dinilai langsung dihapus oleh submitPenilaian(). Semua data yang
+        // dibutuhkan (nilai, catatan, audio, jilid, halaman) sudah disisipkan
+        // ke dalam notifikasinya sendiri.
+        function lihatHasilSetoran(data) {
+            const contentEl = document.getElementById('hasilSetoranContent');
+            contentEl.innerHTML = `
+                <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Jilid ${data.jilid} • Halaman ${data.halaman}</div>
+                <iframe src="${data.audioUrl}" style="width:100%; height:44px; border:none; margin-bottom:12px;" allow="autoplay"></iframe>
+                <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Nilai</div>
+                <div style="font-size:22px; font-weight:800; color:#0ea5e9; margin-bottom:12px;">${data.nilai != null ? data.nilai : '-'}</div>
+                <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Catatan Guru</div>
+                <div style="font-size:13px; color:var(--text-main); background:var(--input-bg); padding:10px; border-radius:10px;">${data.feedback || 'Tidak ada catatan.'}</div>
+            `;
+            document.getElementById('hasilSetoranModal').classList.add('active');
         }
         window.lihatHasilSetoran = lihatHasilSetoran;
+
+        // --- PESAN (CHAT 1:1 GURU <-> SISWA) ---
+        let currentChatPartnerId = null;
+        let unsubChatMessages = null;
+
+        // ID percakapan dibuat dari gabungan 2 UID yang diurutkan, supaya
+        // guru & siswa manapun selalu bertemu di thread yang sama persis
+        // tanpa perlu tabel penghubung terpisah.
+        function getChatId(uid1, uid2) {
+            return [uid1, uid2].sort().join('_');
+        }
+
+        function toggleChatModal(show) {
+            const el = document.getElementById('chatModal');
+            if (show) {
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+                if (unsubChatMessages) { unsubChatMessages(); unsubChatMessages = null; }
+                currentChatPartnerId = null;
+            }
+        }
+        window.toggleChatModal = toggleChatModal;
+
+        function openMessagingModal(partnerId, partnerName) {
+            const profile = window.currentUserProfile;
+            if (!profile || !partnerId) return;
+
+            currentChatPartnerId = partnerId;
+            document.getElementById('chatModalTitle').innerText = '💬 Pesan — ' + (partnerName || 'Pengguna');
+            document.getElementById('chatInputText').value = '';
+            toggleChatModal(true);
+
+            const chatId = getChatId(profile.uid, partnerId);
+            if (unsubChatMessages) unsubChatMessages();
+
+            const q = window.query(
+                window.collection(window.firebaseDb, "chats", chatId, "messages"),
+                window.orderBy("createdAt", "asc")
+            );
+            unsubChatMessages = window.onSnapshot(q, (snap) => {
+                const container = document.getElementById('chatMessagesContainer');
+                container.innerHTML = '';
+                if (snap.empty) {
+                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; margin-top:20px;">Belum ada pesan. Mulai percakapan...</div>`;
+                }
+                snap.forEach(docSnap => {
+                    const m = docSnap.data();
+                    const isMine = m.senderId === profile.uid;
+                    const bubble = document.createElement('div');
+                    bubble.style.cssText = `max-width:75%; padding:8px 12px; border-radius:14px; font-size:13px; line-height:1.4; align-self:${isMine ? 'flex-end' : 'flex-start'}; background:${isMine ? 'var(--accent-gradient)' : 'var(--input-bg)'}; color:${isMine ? 'white' : 'var(--text-main)'};`;
+                    bubble.innerText = m.text;
+                    container.appendChild(bubble);
+                });
+                container.scrollTop = container.scrollHeight;
+            }, (err) => console.log('Chat snapshot info:', err));
+        }
+        window.openMessagingModal = openMessagingModal;
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInputText');
+            const text = input.value.trim();
+            if (!text || !currentChatPartnerId) return;
+            const profile = window.currentUserProfile;
+            input.value = '';
+
+            try {
+                const chatId = getChatId(profile.uid, currentChatPartnerId);
+                await window.addDoc(window.collection(window.firebaseDb, "chats", chatId, "messages"), {
+                    senderId: profile.uid,
+                    senderName: profile.name || 'Pengguna',
+                    text: text,
+                    createdAt: window.serverTimestamp()
+                });
+
+                await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                    targetUserId: currentChatPartnerId,
+                    title: "💬 Pesan Baru",
+                    message: `${profile.name || 'Pengguna'}: ${text}`,
+                    senderId: profile.uid,
+                    senderName: profile.name || 'Pengguna',
+                    actionUrl: 'chat',
+                    createdAt: window.serverTimestamp(),
+                    readBy: []
+                });
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal mengirim pesan.');
+            }
+        }
+        window.sendChatMessage = sendChatMessage;
+
+        // Dipanggil dari tombol 💬 di Menu Utama siswa -- otomatis mencari
+        // guru pemilik kelas siswa tersebut, lalu membuka pesan dengannya.
+        async function openChatWithMyTeacher() {
+            const profile = window.currentUserProfile;
+            if (!profile || !profile.classCode) { showToast('Kelas Anda belum terdaftar, hubungi admin.'); return; }
+            try {
+                const qTeacher = window.query(
+                    window.collection(window.firebaseDb, "users"),
+                    window.where("role", "==", "Guru"),
+                    window.where("classCode", "==", profile.classCode)
+                );
+                const snap = await window.getDocs(qTeacher);
+                if (snap.empty) { showToast('Guru kelas Anda belum ditemukan.'); return; }
+                const tDoc = snap.docs[0];
+                openMessagingModal(tDoc.id, tDoc.data().name || 'Guru');
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal membuka pesan.');
+            }
+        }
+        window.openChatWithMyTeacher = openChatWithMyTeacher;
 
         function handleLogout() {
             window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
@@ -2434,9 +2466,53 @@
             if (btnSend) { btnSend.disabled = true; btnSend.innerText = 'Kirim'; }
         }
 
+        // Daftar format audio dari kualitas terbaik ke yang paling umum
+        // didukung -- dipilih otomatis sesuai kemampuan browser pengguna.
+        const PREFERRED_AUDIO_MIME_TYPES = [
+            'audio/webm;codecs=opus',
+            'audio/ogg;codecs=opus',
+            'audio/webm',
+            'audio/mp4'
+        ];
+
         function startRecording() {
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                mediaRecorder = new MediaRecorder(stream);
+            // Kalau sebelumnya sedang memutar ulang rekaman lama, hentikan dulu
+            const playbackEl = document.getElementById('playbackAudioEl');
+            if (playbackEl && !playbackEl.paused) {
+                playbackEl.pause();
+                playbackEl.currentTime = 0;
+                isPlayingRecording = false;
+                const btnPlayEl = document.getElementById('btnPlay');
+                if (btnPlayEl) btnPlayEl.innerText = '▶ Play';
+            }
+
+            // Minta mikrofon dengan pengaturan kualitas suara terbaik:
+            // - echoCancellation & noiseSuppression: mengurangi dengung/bising latar
+            // - autoGainControl: menyamakan volume, biar suara pelan tetap terdengar jelas
+            // - sampleRate 48000 & channelCount 1: kualitas suara jernih, cukup untuk suara manusia (mono)
+            const constraints = {
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                    sampleRate: 48000,
+                    channelCount: 1
+                }
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+                // Pilih format audio terbaik yang didukung browser ini
+                let chosenMimeType = '';
+                for (const type of PREFERRED_AUDIO_MIME_TYPES) {
+                    if (window.MediaRecorder && MediaRecorder.isTypeSupported(type)) { chosenMimeType = type; break; }
+                }
+
+                // Bitrate dinaikkan ke 128 kbps (jauh lebih jernih dari bawaan
+                // browser yang biasanya sekitar 32-64 kbps untuk rekaman suara).
+                const recorderOptions = { audioBitsPerSecond: 128000 };
+                if (chosenMimeType) recorderOptions.mimeType = chosenMimeType;
+
+                mediaRecorder = new MediaRecorder(stream, recorderOptions);
                 audioChunks = [];
                 mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
                 mediaRecorder.onstop = () => {
@@ -2460,8 +2536,9 @@
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
                 document.getElementById('btnRec').classList.remove('is-recording');
+                document.getElementById('btnRec').disabled = false; // boleh rekam ulang sebelum dikirim
                 document.getElementById('btnStop').disabled = true;
-                showToast('Rekaman selesai. Dengarkan dulu sebelum mengirim.');
+                showToast('Rekaman selesai. Dengarkan dulu, atau rekam ulang kalau ada yang salah.');
             }
         }
 
