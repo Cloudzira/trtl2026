@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TARTILI - Kurniapedia</title>
+    <title>TARTILI DIGITAL - Kurniapedia</title>
     
     <link rel="icon" href="favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -195,6 +195,12 @@
                     if (data.actionUrl === 'setoran') {
                         cleanupExpiredSetoranNotif(notifId, data.setoranId);
                     }
+                    // Notifikasi hasil penilaian untuk siswa juga disimpan
+                    // 24 jam (dihitung sejak notifikasinya dibuat, karena
+                    // itu persis waktu penilaian selesai dikirim guru).
+                    if (data.actionUrl === 'setoran_hasil') {
+                        cleanupExpiredHasilNotif(notifId, data.createdAt);
+                    }
 
                     const isRead = data.readBy && data.readBy.includes(userId);
                     if (!isRead) unreadCount++;
@@ -253,14 +259,31 @@
             }
         }
 
+        // Membersihkan otomatis notifikasi HASIL PENILAIAN untuk siswa
+        // setelah 24 jam sejak dibuat (tidak perlu cek dokumen lain, karena
+        // seluruh data hasil sudah tersisip langsung di notifikasinya).
+        async function cleanupExpiredHasilNotif(notifId, createdAt) {
+            try {
+                if (!createdAt) return;
+                const jamSejakDibuat = (Date.now() - createdAt.toMillis()) / (1000 * 60 * 60);
+                if (jamSejakDibuat >= RETENSI_SETORAN_JAM) {
+                    await deleteDoc(doc(window.firebaseDb, "notifications", notifId));
+                }
+            } catch (e) {
+                console.log("Cleanup hasil info:", e);
+            }
+        }
+
         async function markNotificationRead(notifId, userId, data) {
-            // Notifikasi setoran (rekaman siswa) SENGAJA TIDAK dihapus saat
-            // dibuka -- ini jadi "pintu masuk" bagi guru untuk mendengarkan
-            // ulang, sampai akhirnya dibersihkan otomatis 24 jam setelah
-            // dinilai (lihat cleanupExpiredSetoranNotif()). Supaya tidak
-            // terus dihitung di badge notifikasi merah, ditandai "sudah
-            // dibaca" saja (bukan dihapus).
-            if (data.actionUrl === 'setoran') {
+            // Notifikasi setoran (rekaman siswa) MAUPUN hasil penilaian
+            // (untuk siswa) SENGAJA TIDAK dihapus saat dibuka -- supaya
+            // guru/siswa masih bisa membukanya lagi (dengar ulang / baca
+            // ulang nilai & catatan) sampai akhirnya dibersihkan otomatis
+            // 24 jam kemudian (lihat cleanupExpiredSetoranNotif() dan
+            // cleanupExpiredHasilNotif()). Supaya tidak terus dihitung di
+            // badge notifikasi merah, ditandai "sudah dibaca" saja (bukan
+            // dihapus).
+            if (data.actionUrl === 'setoran' || data.actionUrl === 'setoran_hasil') {
                 try {
                     const notifRef = doc(window.firebaseDb, "notifications", notifId);
                     const readBy = data.readBy || [];
@@ -317,6 +340,7 @@
             overflow: hidden; 
             height: 100vh; 
             height: 100dvh; 
+            height: calc(var(--app-vh, 1vh) * 100);
             transition: background 0.5s ease, color 0.5s ease; 
         }
         
@@ -843,7 +867,7 @@
         .btn-page-nav-custom:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(var(--accent-rgb), 0.35); }
         .btn-page-nav-custom:active { transform: scale(0.97); }
 
-        #read-screen { position: relative; background: var(--bg-gradient); display: none; width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; }
+        #read-screen { position: relative; background: var(--bg-gradient); display: none; width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
         #read-screen.active { display: flex; flex-direction: column; }
 
         .image-scroll-area {
@@ -952,7 +976,7 @@
     <!-- Halaman Login Siswa / Guru -->
     <div id="login-screen" class="screen">
         <div class="login-card">
-            <h2>TARTILI</h2>
+            <h2>TARTILI DIGITAL</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 2px;">Metode Cepat Tartil Membaca Al-Qur'an</p>
             
             <div class="auth-mode-toggle">
@@ -1094,7 +1118,7 @@
     <!-- Halaman Menu Utama -->
     <div id="menu-screen" class="screen">
         <div class="menu-content-wrapper">
-            <div class="app-brand-title">TARTILI</div>
+            <div class="app-brand-title">TARTILI DIGITAL</div>
             <div class="landing-hero-card">
                 <div class="landing-hero-info">
                     <div class="landing-hero-greeting" id="userGreetingText">Assalaamu'alaikum</div>
@@ -1271,16 +1295,16 @@
                 <div style="width:100%; display:flex; flex-wrap:wrap; align-items:stretch; gap:10px;">
                     <!-- Nilai-Nama + kotak nilai (sejajar, ramping) -->
                     <div style="flex: 1 1 150px; display:flex; align-items:center; gap:6px;">
-                        <div class="section-title" style="margin:0; font-size:11px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Nilai <span id="reviewStudentName"></span></div>
-                        <input type="number" min="0" max="100" id="reviewNilaiInput" placeholder="0" style="width:56px; flex-shrink:0; box-sizing:border-box; padding:6px 4px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-size:13px; font-weight:700; text-align:center;" />
+                        <div class="section-title" style="margin:0; font-size:11px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Nilai — <span id="reviewStudentName"></span></div>
+                        <input type="number" min="0" max="100" id="reviewNilaiInput" placeholder="Nilai" style="width:56px; flex-shrink:0; box-sizing:border-box; padding:6px 4px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-size:13px; font-weight:700; text-align:center;" />
                     </div>
                     <!-- Bar pemutar audio -->
                     <div id="reviewAudioContainer" style="flex: 1.3 1 180px; min-width:150px;"></div>
                     <!-- Kotak pesan/catatan, ambil sisa ruang paling banyak -->
-                    <textarea id="reviewFeedbackInput" placeholder="Catatan untuk siswa..." style="flex: 2.2 1 200px; box-sizing:border-box; height:64px; padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-size:12px; font-family:inherit; resize:vertical;"></textarea>
+                    <textarea id="reviewFeedbackInput" placeholder="Tulis catatan/feedback untuk siswa..." style="flex: 2.2 1 200px; box-sizing:border-box; height:64px; padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-size:12px; font-family:inherit; resize:vertical;"></textarea>
                     <!-- Tombol Kembali & Kirim Penilaian, di paling kanan -->
                     <div style="flex: 0 1 130px; min-width:120px; display:flex; flex-direction:column; gap:6px; height:64px;">
-                        <button onclick="backToNotifFromReview()" style="width:100%; box-sizing:border-box; flex:1 1 0; height:auto; display:flex; align-items:center; justify-content:center; background: var(--input-bg); color: var(--text-main); font-size: 11px; font-weight:700; border-radius:8px; border:1px solid var(--border-color); cursor:pointer; padding:0; margin:0; font-family:inherit; line-height:1;">Kembali</button>
+                        <button onclick="backToNotifFromReview()" style="width:100%; box-sizing:border-box; flex:1 1 0; height:auto; display:flex; align-items:center; justify-content:center; background: var(--input-bg); color: var(--text-main); font-size: 11px; font-weight:700; border-radius:8px; border:1px solid var(--border-color); cursor:pointer; padding:0; margin:0; font-family:inherit; line-height:1;">← Kembali</button>
                         <button id="btnKirimPenilaianReview" onclick="kirimPenilaianReview()" style="width:100%; box-sizing:border-box; flex:1 1 0; height:auto; display:flex; align-items:center; justify-content:center; background: var(--accent-gradient); color:white; border:none; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer; padding:0; margin:0; font-family:inherit; line-height:1;">Kirim Penilaian</button>
                     </div>
                 </div>
@@ -1919,8 +1943,9 @@
         function backToNotifFromReview() {
             exitSetoranReview();
             document.getElementById('read-screen').classList.remove('active');
-            document.getElementById('teacher-admin-screen').classList.add('active');
-            appState = 'teacher-admin';
+            document.getElementById('menu-screen').classList.add('active');
+            appState = 'menu';
+            updateMenuCoverFocus();
             toggleNotifModal(true);
         }
         window.backToNotifFromReview = backToNotifFromReview;
@@ -2007,7 +2032,20 @@
 
         function isPortrait() { return window.innerHeight > window.innerWidth; }
 
+        // Perbaikan bug umum unit CSS "dvh" di sejumlah browser Android:
+        // saat halaman baru dibuka/berpindah, tinggi layar sebenarnya
+        // kadang belum dihitung ulang oleh browser (baru "sadar" setelah
+        // ada event resize, misalnya rotasi layar). Fungsi ini menghitung
+        // tinggi layar secara manual lewat JavaScript dan menyimpannya ke
+        // variabel CSS --app-vh, dipakai sebagai fallback prioritas
+        // tertinggi pada tinggi elemen body (lihat CSS body { height: ... }).
+        function setAppVH() {
+            document.documentElement.style.setProperty('--app-vh', `${window.innerHeight * 0.01}px`);
+        }
+        setAppVH();
+
         window.addEventListener('resize', () => {
+            setAppVH();
             if (isPortrait()) { resetZoom(); }
             const container = document.getElementById('imageContainer');
             if (appState === 'read' && (!container.innerHTML || container.innerHTML.trim() === '')) {
@@ -2161,6 +2199,7 @@
 
         function openJilid(jilid, page) {
             currentJilid = jilid; currentPage = page; appState = 'read';
+            setAppVH(); // paksa hitung ulang tinggi layar sekarang, jangan tunggu event resize
             document.getElementById('read-screen').classList.add('active');
             document.getElementById('menu-screen').classList.remove('active');
             document.getElementById('bookmarks-screen').classList.remove('active');
