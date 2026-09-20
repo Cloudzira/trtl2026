@@ -597,14 +597,14 @@
             .landing-hero-card { flex-direction: row; align-items: center; gap: 12px; padding: 16px; }
             .landing-hero-actions { width: auto; justify-content: flex-end; }
 
-            .image-scroll-area { flex: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 4px !important; overflow: hidden !important; }
+            .image-scroll-area { flex: 1 !important; min-height: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 4px !important; overflow: hidden !important; }
             .image-container { height: 100% !important; width: auto !important; aspect-ratio: 1 / 1.414 !important; max-width: 100% !important; max-height: 100% !important; margin-bottom: 0 !important; }
             .image-container img { width: 100% !important; height: 100% !important; object-fit: fill !important; }
 
             .controls-wrapper { display: flex; flex-direction: column; width: 94% !important; max-width: 420px !important; gap: 4px !important; padding: 8px !important; }
-            .page-nav-panel { order: 1 !important; padding: 4px 10px !important; }
-            .shortcut-panel { order: 2 !important; }
-            .record-panel { order: 3 !important; }
+            #read-screen .page-nav-panel { order: 1 !important; padding: 4px 10px !important; }
+            #read-screen .shortcut-panel { order: 2 !important; }
+            #read-screen .record-panel { order: 3 !important; }
             
             #read-screen .page-nav-panel .section-title,
             #read-screen .shortcut-panel .section-title,
@@ -655,7 +655,7 @@
             .image-scroll-area {
                 display: flex !important; flex-direction: column !important; align-items: center !important;
                 justify-content: flex-start !important; overflow-y: auto !important; overflow-x: hidden !important;
-                padding-top: 4px !important; padding-bottom: 4px !important;
+                padding-top: 4px !important; padding-bottom: 4px !important; min-height: 0 !important;
             }
             
             .image-container { 
@@ -787,7 +787,7 @@
         #read-screen.active { display: flex; flex-direction: column; }
 
         .image-scroll-area {
-            flex: 1; width: 100%; overflow-y: auto; overflow-x: hidden;
+            flex: 1; min-height: 0; width: 100%; overflow-y: auto; overflow-x: hidden;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
             padding: 6px 0; position: relative;
         }
@@ -981,7 +981,6 @@
             </div>
             
             <button onclick="openClassMembersScreen()" style="width: 100%; padding: 10px; background: var(--accent-gradient); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-bottom: 8px;">👥 Lihat Daftar Siswa di Kelas</button>
-            <button onclick="openSetoranScreen()" style="width: 100%; padding: 10px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-bottom: 8px;">🎙️ Setoran Bacaan Siswa</button>
 
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-align: left;">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
             <div id="pendingStudentContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
@@ -1006,20 +1005,6 @@
         <!-- KODE BARU -->
             <!-- KODE BARU -->
             <button class="btn-back-compact" onclick="goBackFromClassMembers()">Kembali</button>
-        </div>
-    </div>
-
-    <!-- Halaman Setoran Bacaan Siswa (Guru menilai rekaman siswa) -->
-    <div id="setoran-screen" class="screen">
-        <div class="login-card" style="max-width: 650px; height: 88vh; display: flex; flex-direction: column;">
-            <h2>🎙️ Setoran Bacaan Siswa</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Dengarkan rekaman, beri nilai dan catatan untuk siswa Anda:</p>
-
-            <div id="setoranListContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; text-align: left; padding: 4px;">
-                <div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat data setoran...</div>
-            </div>
-
-            <button class="btn-back-compact" onclick="goBackFromSetoran()">Kembali</button>
         </div>
     </div>
 
@@ -1756,93 +1741,10 @@
         }
 
         // --- SETORAN BACAAN SISWA (GURU) ---
-        async function openSetoranScreen() {
-            document.getElementById('teacher-admin-screen').classList.remove('active');
-            document.getElementById('menu-screen').classList.remove('active');
-            appState = 'setoran';
-            document.getElementById('setoran-screen').classList.add('active');
-            history.pushState({ screen: 'setoran' }, '', '');
-            await renderSetoranList();
-        }
-        window.openSetoranScreen = openSetoranScreen;
-
-        function goBackFromSetoran() {
-            document.getElementById('setoran-screen').classList.remove('active');
-            document.getElementById('teacher-admin-screen').classList.add('active');
-            appState = 'teacher-admin';
-        }
-        window.goBackFromSetoran = goBackFromSetoran;
-
-        async function renderSetoranList() {
-            const container = document.getElementById('setoranListContainer');
-            const profile = window.currentUserProfile;
-            if (!container || !profile) return;
-            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat data setoran...</div>`;
-
-            try {
-                // Query hanya dengan 1 filter kesetaraan (classCode) agar TIDAK
-                // memerlukan composite index tambahan di Firestore. Pengurutan
-                // terbaru->terlama dilakukan di sisi browser (lihat sort di bawah).
-                const q = window.query(
-                    window.collection(window.firebaseDb, "setoran"),
-                    window.where("classCode", "==", profile.classCode)
-                );
-                const snap = await window.getDocs(q);
-                container.innerHTML = "";
-
-                if (snap.empty) {
-                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Belum ada setoran bacaan dari siswa.</div>`;
-                    return;
-                }
-
-                const items = snap.docs.slice().sort((a, b) => {
-                    const ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
-                    const tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
-                    return tb - ta; // terbaru di atas
-                });
-
-                items.forEach(docSnap => {
-                    const d = docSnap.data();
-                    const id = docSnap.id;
-                    const sudahDinilai = d.status === 'dinilai';
-                    const tanggal = d.createdAt ? new Date(d.createdAt.toDate()).toLocaleString('id-ID', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '-';
-
-                    const item = document.createElement('div');
-                    item.style.cssText = "background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 12px;";
-                    item.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px;">
-                            <div>
-                                <div style="font-weight:800; font-size:13px; color:var(--text-main);">👤 ${d.studentName}</div>
-                                <div style="font-size:11px; color:var(--text-muted);">Jilid ${d.jilid} • Hal. ${d.halaman} • ${tanggal}</div>
-                            </div>
-                            <span style="font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; white-space:nowrap; ${sudahDinilai ? 'color:#10b981; background:rgba(16,185,129,0.12);' : 'color:#f59e0b; background:rgba(245,158,11,0.12);'}">${sudahDinilai ? 'Sudah Dinilai' : 'Menunggu Penilaian'}</span>
-                        </div>
-                        <iframe src="${d.audioUrl}" style="width:100%; height:44px; border:none; margin-bottom:8px;" allow="autoplay"></iframe>
-                        <div style="display:flex; gap:6px; margin-bottom:6px;">
-                            <input type="number" min="0" max="100" id="nilai-${id}" placeholder="Nilai (0-100)" value="${d.nilai != null ? d.nilai : ''}" style="width:110px; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-panel); color:var(--text-main); font-size:12px;" />
-                        </div>
-                        <textarea id="feedback-${id}" placeholder="Tulis catatan/feedback untuk siswa..." style="width:100%; min-height:50px; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-panel); color:var(--text-main); font-size:12px; resize:vertical; margin-bottom:6px;">${d.feedback || ''}</textarea>
-                        <button onclick="kirimPenilaian('${id}')" style="width:100%; padding:8px; background: var(--accent-gradient); color:white; border:none; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">${sudahDinilai ? 'Perbarui Penilaian' : 'Kirim Penilaian'}</button>
-                    `;
-                    container.appendChild(item);
-                });
-            } catch (e) {
-                console.error(e);
-                let hint = e.message || 'Kesalahan tidak diketahui.';
-                if (e.code === 'permission-denied') {
-                    hint = 'Akses ditolak (permission-denied). Periksa Firestore Security Rules untuk koleksi "setoran".';
-                } else if (e.code === 'failed-precondition') {
-                    hint = 'Firestore meminta index tambahan. Buka Console browser (F12) untuk link pembuatan index otomatis.';
-                }
-                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px; font-size:12px;">Gagal memuat data setoran.<br><span style="font-size:10px; color:var(--text-muted);">${hint}</span></div>`;
-            }
-        }
-
         // Fungsi INTI: simpan nilai & feedback ke Firestore + kirim notifikasi
-        // ke siswa. Dipakai bersama oleh tampilan daftar (kirimPenilaian) dan
-        // tampilan halaman baca saat guru meninjau 1 setoran lewat notifikasi
-        // (kirimPenilaianReview). Mengembalikan true/false untuk tahu berhasil
-        // atau tidak, supaya pemanggilnya bisa update tampilan masing-masing.
+        // ke siswa. Dipakai oleh tampilan halaman baca saat guru meninjau
+        // 1 setoran lewat notifikasi (kirimPenilaianReview). Mengembalikan
+        // true/false untuk tahu berhasil atau tidak.
         async function submitPenilaian(setoranId, nilai, feedback) {
             try {
                 const setoranRef = window.doc(window.firebaseDb, "setoran", setoranId);
@@ -1883,23 +1785,6 @@
                 return false;
             }
         }
-
-        // Dipakai dari tampilan DAFTAR setoran (setoran-screen)
-        async function kirimPenilaian(setoranId) {
-            const nilaiInput = document.getElementById('nilai-' + setoranId);
-            const feedbackInput = document.getElementById('feedback-' + setoranId);
-            const nilai = nilaiInput.value.trim();
-            const feedback = feedbackInput.value.trim();
-
-            if (nilai === '' && feedback === '') { showToast('Isi nilai atau feedback terlebih dahulu.'); return; }
-
-            const ok = await submitPenilaian(setoranId, nilai, feedback);
-            if (ok) {
-                showToast('Penilaian berhasil dikirim ke siswa!');
-                renderSetoranList();
-            }
-        }
-        window.kirimPenilaian = kirimPenilaian;
 
         // --- TINJAU 1 SETORAN LEWAT HALAMAN BACA (dibuka dari notifikasi) ---
         // Membuka halaman baca persis di Jilid & Halaman yang disetorkan
@@ -2035,7 +1920,7 @@
                 if (currentAudio) { currentAudio.pause(); currentAudio = null; }
                 resetRecording();
                 goToMenu();
-            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin' || appState === 'class-members' || appState === 'setoran') {
+            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin' || appState === 'class-members') {
                 goToMenu();
             } else {
                 history.back();
@@ -2115,12 +2000,13 @@
             resetRecording();
 
             // Kalau sebelumnya guru sedang meninjau 1 setoran (dibuka lewat
-            // notifikasi), tombol "Menu"/kembali harus membawanya ke daftar
-            // Setoran lagi -- bukan ke Menu Utama siswa.
+            // notifikasi), tombol "Menu"/kembali harus membawanya ke Panel
+            // Guru lagi -- bukan ke Menu Utama siswa.
             if (currentReviewSetoranId) {
                 exitSetoranReview();
                 document.getElementById('read-screen').classList.remove('active');
-                openSetoranScreen();
+                document.getElementById('teacher-admin-screen').classList.add('active');
+                appState = 'teacher-admin';
                 return;
             }
 
@@ -2130,7 +2016,6 @@
             document.getElementById('admin-screen').classList.remove('active');
             document.getElementById('teacher-admin-screen').classList.remove('active');
             document.getElementById('class-members-screen').classList.remove('active');
-            document.getElementById('setoran-screen').classList.remove('active');
             document.getElementById('menu-screen').classList.add('active');
             updateMenuCoverFocus();
             history.replaceState({ screen: 'menu' }, '', '');
@@ -2204,7 +2089,6 @@
             document.getElementById('admin-screen').classList.remove('active');
             document.getElementById('teacher-admin-screen').classList.remove('active');
             document.getElementById('class-members-screen').classList.remove('active');
-            document.getElementById('setoran-screen').classList.remove('active');
             updatePageOptions('Read');
             
             let numList = getNumericPageList(currentJilid);
