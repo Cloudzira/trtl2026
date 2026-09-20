@@ -798,6 +798,7 @@
             border-radius: 50%; animation: spin 0.8s linear infinite; z-index: 5; display: none;
         }
         @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes spinPlain { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .image-container { 
             position: relative; display: block; border-radius: 18px; background: var(--bg-card);
@@ -1017,6 +1018,15 @@
             </div>
             <div id="hasilSetoranContent" style="padding: 20px; overflow-y: auto; text-align: left;"></div>
         </div>
+    </div>
+
+    <!-- Overlay blocking saat proses kirim rekaman berlangsung -- sengaja
+         TIDAK bisa ditutup manual, supaya siswa tidak berpindah halaman
+         sebelum proses benar-benar selesai (lihat kirimSetoran()). -->
+    <div id="uploadingOverlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:20px;">
+        <div style="width:44px; height:44px; border:4px solid rgba(255,255,255,0.25); border-top-color:#38bdf8; border-radius:50%; animation:spinPlain 0.8s linear infinite;"></div>
+        <div style="color:white; font-weight:700; font-size:15px;" id="uploadingOverlayText">Mengirim rekaman...</div>
+        <div style="color:rgba(255,255,255,0.75); font-size:12px; max-width:280px;">Jangan tutup atau pindah halaman sampai proses ini selesai.</div>
     </div>
 
 
@@ -2314,7 +2324,7 @@
         // Isi URL Web App Apps Script Anda di bawah ini setelah proses deploy
         // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini,
         // supaya aman - kunci itu hanya ada di dalam Apps Script.
-        const FILEBASE_UPLOAD_URL = "https://wltnavoogxvoymhcdfwz.supabase.co";
+        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbyq5eWrNHSbS6pnReJp-mzFU9MwIIqsztEJHZ06goB22iB99IGQbfTmWT6UVm04cbFK/exec";
         const FILEBASE_SECRET_KEY = "@awanawan"; // harus sama persis dengan SHARED_SECRET di Code.gs
         const SETORAN_RETENTION_DAYS = 7; // Rekaman otomatis dihapus setelah 7 hari (dicek tiap guru buka halaman Setoran)
 
@@ -2330,6 +2340,25 @@
         // Tombol Kirim: kirim rekaman ke Apps Script -> Apps Script yang upload
         // ke Filebase (kunci rahasia aman di server), lalu simpan data setoran
         // di Firestore, lalu kirim notifikasi ke guru pemilik kelas.
+        // Mencegah siswa menutup/refresh tab saat proses kirim sedang
+        // berlangsung -- browser akan menampilkan dialog konfirmasi bawaan.
+        let isUploadingSetoran = false;
+        window.addEventListener('beforeunload', (e) => {
+            if (isUploadingSetoran) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        function showUploadingOverlay(text) {
+            const el = document.getElementById('uploadingOverlay');
+            document.getElementById('uploadingOverlayText').innerText = text;
+            el.style.display = 'flex';
+        }
+        function hideUploadingOverlay() {
+            document.getElementById('uploadingOverlay').style.display = 'none';
+        }
+
         async function kirimSetoran() {
             if (!recordedAudioBlob) { showToast('Belum ada rekaman untuk dikirim.'); return; }
             const profile = window.currentUserProfile || {};
@@ -2343,7 +2372,8 @@
             const btnSend = document.getElementById('btnSend');
             btnSend.disabled = true;
             btnSend.innerText = 'Mengirim...';
-            showToast('Mengunggah rekaman...');
+            isUploadingSetoran = true;
+            showUploadingOverlay('Mengunggah rekaman...');
 
             try {
                 const fileExt = recordedAudioMimeType.includes('mp4') ? 'm4a' : recordedAudioMimeType.includes('ogg') ? 'ogg' : 'webm';
@@ -2363,6 +2393,8 @@
                 const uploadData = await uploadRes.json();
                 if (!uploadData.success) throw new Error(uploadData.error || 'Upload gagal');
 
+                showUploadingOverlay('Menyimpan data setoran...');
+
                 // Filebase bucket bersifat privat, jadi pemutaran audio TIDAK
                 // memakai URL Filebase langsung, melainkan lewat Apps Script
                 // (doGet) yang mengambilkan filenya secara aman.
@@ -2381,6 +2413,8 @@
                     feedback: null,
                     createdAt: window.serverTimestamp()
                 });
+
+                showUploadingOverlay('Mengirim notifikasi ke guru...');
 
                 // Cari guru pemilik kelas ini untuk dikirimi notifikasi
                 const qTeacher = window.query(
@@ -2410,6 +2444,9 @@
                 showToast('Gagal mengirim rekaman. Coba lagi.');
                 btnSend.disabled = false;
                 btnSend.innerText = 'Kirim';
+            } finally {
+                isUploadingSetoran = false;
+                hideUploadingOverlay();
             }
         }
         window.kirimSetoran = kirimSetoran;
