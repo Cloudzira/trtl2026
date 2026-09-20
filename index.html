@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TARTILI DIGITAL - Kurniapedia</title>
+    <title>TARTILIKU - Kurniapedia</title>
     
     <link rel="icon" href="favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -257,8 +257,20 @@
             // Notifikasi setoran (rekaman siswa) SENGAJA TIDAK dihapus saat
             // dibuka -- ini jadi "pintu masuk" bagi guru untuk mendengarkan
             // ulang, sampai akhirnya dibersihkan otomatis 24 jam setelah
-            // dinilai (lihat cleanupExpiredSetoranNotif()).
-            if (data.actionUrl !== 'setoran') {
+            // dinilai (lihat cleanupExpiredSetoranNotif()). Supaya tidak
+            // terus dihitung di badge notifikasi merah, ditandai "sudah
+            // dibaca" saja (bukan dihapus).
+            if (data.actionUrl === 'setoran') {
+                try {
+                    const notifRef = doc(window.firebaseDb, "notifications", notifId);
+                    const readBy = data.readBy || [];
+                    if (!readBy.includes(userId)) {
+                        await updateDoc(notifRef, { readBy: [...readBy, userId] });
+                    }
+                } catch (e) {
+                    console.error("Gagal menandai notifikasi terbaca:", e);
+                }
+            } else {
                 try {
                     // Notifikasi lain yang sudah dibuka langsung DIHAPUS (bukan
                     // cuma ditandai terbaca), supaya daftar notifikasi bersih.
@@ -2294,15 +2306,18 @@
                 if (btnPlayEl) btnPlayEl.innerText = '▶ Play';
             }
 
-            // Minta mikrofon dengan pengaturan kualitas suara terbaik:
-            // - echoCancellation & noiseSuppression: mengurangi dengung/bising latar
-            // - autoGainControl: menyamakan volume, biar suara pelan tetap terdengar jelas
-            // - sampleRate 48000 & channelCount 1: kualitas suara jernih, cukup untuk suara manusia (mono)
+            // Minta mikrofon dengan pengaturan kualitas suara TERBAIK untuk
+            // MEREKAM (bukan untuk panggilan video). echoCancellation,
+            // noiseSuppression, dan autoGainControl SENGAJA dimatikan --
+            // ketiganya didesain untuk panggilan real-time, dan kalau
+            // diaktifkan malah sering membuat suara terdengar "teredam"/
+            // robotic di banyak HP & browser. Sample rate tetap dijaga
+            // tinggi untuk kejernihan alami suara.
             const constraints = {
                 audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true,
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false,
                     sampleRate: 48000,
                     channelCount: 1
                 }
