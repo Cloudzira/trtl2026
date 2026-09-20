@@ -188,6 +188,14 @@
                 sortedDocs.forEach(docSnap => {
                     const data = docSnap.data();
                     const notifId = docSnap.id;
+
+                    // Notifikasi setoran yang sudah dinilai lebih dari 24 jam
+                    // dibersihkan otomatis (baik notifikasinya maupun dokumen
+                    // setoran aslinya) -- tidak perlu tampil lagi di daftar.
+                    if (data.actionUrl === 'setoran') {
+                        cleanupExpiredSetoranNotif(notifId, data.setoranId);
+                    }
+
                     const isRead = data.readBy && data.readBy.includes(userId);
                     if (!isRead) unreadCount++;
 
@@ -219,19 +227,51 @@
             }, (err) => console.log("Notif snapshot info:", err));
         }
 
-        async function markNotificationRead(notifId, userId, data) {
+        // Membersihkan otomatis notifikasi + dokumen setoran yang SUDAH
+        // DINILAI dan usianya (sejak dinilai) sudah lewat 24 jam. Dipanggil
+        // tiap kali daftar notifikasi dirender (lihat listenForNotifications).
+        const RETENSI_SETORAN_JAM = 24;
+        async function cleanupExpiredSetoranNotif(notifId, setoranId) {
             try {
-                // Notifikasi yang sudah dibuka langsung DIHAPUS (bukan cuma
-                // ditandai terbaca), supaya daftar notifikasi selalu bersih.
-                const notifRef = doc(window.firebaseDb, "notifications", notifId);
-                await deleteDoc(notifRef);
+                const setoranSnap = await getDoc(doc(window.firebaseDb, "setoran", setoranId));
+                if (!setoranSnap.exists()) {
+                    // Dokumen aslinya sudah tidak ada (mis. dibersihkan dari
+                    // sumber lain) -- notifikasinya ikut dibersihkan saja.
+                    await deleteDoc(doc(window.firebaseDb, "notifications", notifId));
+                    return;
+                }
+                const d = setoranSnap.data();
+                if (d.status !== 'dinilai' || !d.gradedAt) return; // belum dinilai, biarkan
+
+                const jamSejakDinilai = (Date.now() - d.gradedAt.toMillis()) / (1000 * 60 * 60);
+                if (jamSejakDinilai >= RETENSI_SETORAN_JAM) {
+                    await deleteDoc(doc(window.firebaseDb, "setoran", setoranId));
+                    await deleteDoc(doc(window.firebaseDb, "notifications", notifId));
+                }
             } catch (e) {
-                console.error("Gagal menghapus notifikasi:", e);
+                console.log("Cleanup setoran info:", e);
+            }
+        }
+
+        async function markNotificationRead(notifId, userId, data) {
+            // Notifikasi setoran (rekaman siswa) SENGAJA TIDAK dihapus saat
+            // dibuka -- ini jadi "pintu masuk" bagi guru untuk mendengarkan
+            // ulang, sampai akhirnya dibersihkan otomatis 24 jam setelah
+            // dinilai (lihat cleanupExpiredSetoranNotif()).
+            if (data.actionUrl !== 'setoran') {
+                try {
+                    // Notifikasi lain yang sudah dibuka langsung DIHAPUS (bukan
+                    // cuma ditandai terbaca), supaya daftar notifikasi bersih.
+                    const notifRef = doc(window.firebaseDb, "notifications", notifId);
+                    await deleteDoc(notifRef);
+                } catch (e) {
+                    console.error("Gagal menghapus notifikasi:", e);
+                }
             }
 
             if (data.actionUrl === 'setoran') {
                 toggleNotifModal(false);
-                openSetoranReview(data.setoranId);
+                openSetoranReview(data.setoranId, notifId);
             } else if (data.actionUrl === 'setoran_hasil') {
                 toggleNotifModal(false);
                 lihatHasilSetoran(data);
@@ -269,31 +309,39 @@
         }
         
         body.light-theme {
-            --bg-main: #f0f4f8;
-            --bg-gradient: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.08) 0%, rgba(2, 132, 199, 0.03) 90%), #f8fafc;
-            --bg-card: rgba(255, 255, 255, 0.75);
-            --bg-panel: rgba(255, 255, 255, 0.82);
-            --border-color: rgba(226, 232, 240, 0.8);
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --input-bg: rgba(241, 245, 249, 0.8);
-            --accent-gradient: linear-gradient(135deg, #0ea5e9, #0284c7);
-            --shadow: 0 20px 40px -15px rgba(2, 132, 199, 0.1), 0 10px 15px -5px rgba(0, 0, 0, 0.03);
-            --glow: 0 0 20px rgba(14, 165, 233, 0.25);
+            --bg-main: #fdf4ff;
+            --bg-gradient: radial-gradient(circle at 10% 15%, rgba(244, 114, 182, 0.16) 0%, transparent 45%), radial-gradient(circle at 90% 20%, rgba(168, 85, 247, 0.14) 0%, transparent 45%), radial-gradient(circle at 50% 100%, rgba(236, 72, 153, 0.08) 0%, transparent 50%), #fdf5ff;
+            --bg-card: rgba(255, 255, 255, 0.72);
+            --bg-panel: rgba(255, 255, 255, 0.8);
+            --border-color: rgba(217, 70, 239, 0.18);
+            --text-main: #3b0764;
+            --text-muted: #86678f;
+            --input-bg: rgba(250, 245, 255, 0.85);
+            --accent-gradient: linear-gradient(135deg, #f472b6, #d946ef, #a855f7);
+            --accent-solid: #d946ef;
+            --accent-rgb: 217, 70, 239;
+            --orb1-rgb: 244, 114, 182;
+            --orb2-rgb: 168, 85, 247;
+            --shadow: 0 20px 40px -15px rgba(168, 85, 247, 0.15), 0 10px 15px -5px rgba(217, 70, 239, 0.06);
+            --glow: 0 0 20px rgba(217, 70, 239, 0.22), 0 0 35px rgba(244, 114, 182, 0.15);
         }
         
         body.dark-theme {
-            --bg-main: #030712;
-            --bg-gradient: radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.12) 0%, rgba(3, 7, 18, 1) 90%);
-            --bg-card: rgba(17, 24, 39, 0.75);
-            --bg-panel: rgba(15, 23, 42, 0.85);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --text-main: #f8fafc;
+            --bg-main: #020617;
+            --bg-gradient: radial-gradient(circle at 8% 12%, rgba(16, 185, 129, 0.16) 0%, transparent 42%), radial-gradient(circle at 92% 18%, rgba(59, 130, 246, 0.16) 0%, transparent 42%), radial-gradient(circle at 50% 100%, rgba(244, 63, 94, 0.10) 0%, transparent 48%), #020617;
+            --bg-card: rgba(17, 24, 39, 0.7);
+            --bg-panel: rgba(15, 23, 42, 0.8);
+            --border-color: rgba(94, 234, 212, 0.12);
+            --text-main: #f0fdfa;
             --text-muted: #94a3b8;
-            --input-bg: rgba(30, 41, 59, 0.6);
-            --accent-gradient: linear-gradient(135deg, #38bdf8, #0284c7);
+            --input-bg: rgba(30, 41, 59, 0.55);
+            --accent-gradient: linear-gradient(135deg, #34d399, #22d3ee, #3b82f6);
+            --accent-solid: #22d3ee;
+            --accent-rgb: 34, 211, 238;
+            --orb1-rgb: 16, 185, 129;
+            --orb2-rgb: 59, 130, 246;
             --shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), 0 0 1px 1px rgba(255, 255, 255, 0.05) inset;
-            --glow: 0 0 25px rgba(56, 189, 248, 0.2);
+            --glow: 0 0 25px rgba(34, 211, 238, 0.3), 0 0 45px rgba(16, 185, 129, 0.15);
         }
 
         body {
@@ -337,7 +385,7 @@
             border-radius: 14px; font-size: 14px; outline: none; background: var(--input-bg); color: var(--text-main);
             transition: var(--transition); font-weight: 500; font-family: inherit;
         }
-        .login-card input:focus, .login-card select:focus { border-color: #0ea5e9; box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15); }
+        .login-card input:focus, .login-card select:focus { border-color: var(--accent-solid); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.15); }
         .login-card select option { background: var(--bg-panel); color: var(--text-main); }
         
         .register-only-field { display: none; flex-direction: column; gap: 12px; }
@@ -347,9 +395,9 @@
             width: 100%; padding: 13px; border: none; border-radius: 14px;
             background: var(--accent-gradient); color: white;
             font-weight: 700; cursor: pointer; font-size: 15px;
-            box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3); transition: var(--transition); margin-top: 4px;
+            box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.3); transition: var(--transition); margin-top: 4px;
         }
-        .btn-login:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 12px 25px rgba(14, 165, 233, 0.4); }
+        .btn-login:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 12px 25px rgba(var(--accent-rgb), 0.4); }
         .login-error { color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 2px; display: none; }
 
         /* Judul brand kecil di atas Menu Utama */
@@ -379,8 +427,8 @@
         .landing-hero-username { font-size: 20px; font-weight: 800; color: var(--text-main); }
         .landing-hero-motivation { font-size: 12px; font-weight: 600; color: var(--text-muted); font-style: italic; margin-top: 2px; }
         .landing-hero-subtitle { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; gap: 8px; align-items: center; margin-top: 2px; flex-wrap: wrap; }
-        .badge-role { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 3px; }
-        .badge-role:hover { background: rgba(14, 165, 233, 0.25); }
+        .badge-role { background: rgba(var(--accent-rgb), 0.12); color: var(--accent-solid); padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 3px; }
+        .badge-role:hover { background: rgba(var(--accent-rgb), 0.25); }
         
         .landing-hero-actions { display: flex; gap: 10px; align-items: center; }
 
@@ -404,26 +452,26 @@
             content: ""; position: fixed; width: 460px; height: 460px; border-radius: 50%;
             filter: blur(90px); z-index: -1; pointer-events: none; opacity: 0.32;
         }
-        #menu-screen::before { top: -160px; left: -120px; background: radial-gradient(circle, #38bdf8, transparent 70%); }
-        #menu-screen::after  { bottom: -180px; right: -140px; background: radial-gradient(circle, #818cf8, transparent 70%); }
+        #menu-screen::before { top: -160px; left: -120px; background: radial-gradient(circle, rgba(var(--orb1-rgb), 0.9), transparent 70%); }
+        #menu-screen::after  { bottom: -180px; right: -140px; background: radial-gradient(circle, rgba(var(--orb2-rgb), 0.9), transparent 70%); }
 
         /* Judul brand: teks gradient tipis, terasa lebih premium */
         .app-brand-title {
             font-size: 20px; font-weight: 800; letter-spacing: 0.4px;
-            background: linear-gradient(135deg, var(--text-main) 40%, #38bdf8 130%);
+            background: linear-gradient(135deg, var(--text-main) 40%, var(--accent-solid) 130%);
             -webkit-background-clip: text; background-clip: text; color: transparent;
         }
 
         /* Kartu sapaan utama: glass card + garis tepi gradient tipis */
-        .landing-hero-card { position: relative; border-radius: 26px; box-shadow: var(--shadow), 0 20px 45px -22px rgba(14,165,233,0.35); }
+        .landing-hero-card { position: relative; border-radius: 26px; box-shadow: var(--shadow), 0 20px 45px -22px rgba(var(--accent-rgb),0.35); }
         .landing-hero-card::before {
             content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
-            background: linear-gradient(135deg, rgba(56,189,248,0.55), rgba(255,255,255,0) 45%, rgba(129,140,248,0.4));
+            background: linear-gradient(135deg, rgba(var(--orb1-rgb),0.55), rgba(255,255,255,0) 45%, rgba(var(--orb2-rgb),0.4));
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
         }
         .landing-hero-username {
-            background: linear-gradient(135deg, var(--text-main) 25%, #38bdf8);
+            background: linear-gradient(135deg, var(--text-main) 25%, var(--accent-solid));
             -webkit-background-clip: text; background-clip: text; color: transparent;
         }
 
@@ -463,11 +511,11 @@
             background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 14px; cursor: pointer;
             transition: var(--transition);
         }
-        .bookmark-item:hover { border-color: #0ea5e9; background: var(--bg-card); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(14, 165, 233, 0.12); }
+        .bookmark-item:hover { border-color: var(--accent-solid); background: var(--bg-card); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.12); }
         
         .bookmark-item-content { display: flex; align-items: center; gap: 12px; width: 100%; }
         .bookmark-item-icon { 
-            width: 34px; height: 34px; border-radius: 10px; background: rgba(14, 165, 233, 0.12); color: #0ea5e9;
+            width: 34px; height: 34px; border-radius: 10px; background: rgba(var(--accent-rgb), 0.12); color: var(--accent-solid);
             display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;
         }
         .bookmark-item-info { display: flex; flex-direction: column; gap: 2px; width: 100%; }
@@ -580,7 +628,7 @@
         .notif-item {
             padding: 12px 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: var(--transition);
         }
-        .notif-item.unread { background: rgba(14, 165, 233, 0.08); border-left: 3px solid #0ea5e9; }
+        .notif-item.unread { background: rgba(var(--accent-rgb), 0.08); border-left: 3px solid var(--accent-solid); }
         .notif-item:hover { background: var(--input-bg); }
 
         .btn-notif-trigger { position: relative; }
@@ -725,13 +773,13 @@
         .btn-cover { 
             width: 100%; border: 1px solid var(--border-color); padding: 0; cursor: pointer; border-radius: 20px; 
             transition: var(--transition); transform: scale(0.96); background: transparent; 
-            box-shadow: 0 12px 28px -10px rgba(2,132,199,0.25), 0 2px 6px rgba(0,0,0,0.06); position: relative; overflow: hidden;
+            box-shadow: 0 12px 28px -10px rgba(var(--accent-rgb),0.25), 0 2px 6px rgba(0,0,0,0.06); position: relative; overflow: hidden;
         }
         .btn-cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 20px; display: block; transition: var(--transition); }
         .btn-cover:hover, .btn-cover.keyboard-focused { 
             transform: translateY(-6px) scale(1.02); 
-            outline: none; border-color: rgba(56,189,248,0.55);
-            box-shadow: 0 22px 40px -12px rgba(14, 165, 233, 0.45); 
+            outline: none; border-color: rgba(var(--accent-rgb),0.55);
+            box-shadow: 0 22px 40px -12px rgba(var(--accent-rgb), 0.45); 
         }
         .btn-cover:hover img { transform: scale(1.03); }
         .btn-cover:active { transform: scale(1.0); }
@@ -741,7 +789,7 @@
             width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: var(--transition); flex-shrink: 0;
         }
-        .btn-theme-toggle:hover, .btn-bookmark:hover, .btn-admin:hover, .btn-teacher-panel:hover, .btn-notif-trigger:hover { transform: scale(1.08); background: var(--input-bg); border-color: #0ea5e9; }
+        .btn-theme-toggle:hover, .btn-bookmark:hover, .btn-admin:hover, .btn-teacher-panel:hover, .btn-notif-trigger:hover { transform: scale(1.08); background: var(--input-bg); border-color: var(--accent-solid); }
         
         .btn-logout {
             background: rgba(239, 68, 68, 0.12);
@@ -754,33 +802,33 @@
             width: 18px; height: 18px; fill: none; stroke: var(--text-muted);
             stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: var(--transition);
         }
-        body.dark-theme .btn-theme-toggle svg { stroke: #38bdf8; }
+        body.dark-theme .btn-theme-toggle svg { stroke: var(--accent-solid); }
         .btn-logout svg { stroke: #ef4444; }
         .btn-admin, .btn-teacher-panel { display: none; }
 
         .btn-bookmark.saved { background: var(--bg-card); border-color: var(--border-color); }
-        .btn-bookmark.saved svg { fill: #0ea5e9; stroke: #0ea5e9; }
-        body.dark-theme .btn-bookmark.saved svg { fill: #38bdf8; stroke: #38bdf8; }
+        .btn-bookmark.saved svg { fill: var(--accent-solid); stroke: var(--accent-solid); }
+        body.dark-theme .btn-bookmark.saved svg { fill: var(--accent-solid); stroke: var(--accent-solid); }
 
         .btn-page-nav-custom {
             flex: 1; height: 34px; border: none; border-radius: 17px; cursor: pointer;
             display: flex; align-items: center; position: relative; font-weight: 700; font-size: 12px;
-            transition: var(--transition); box-shadow: 0 6px 20px rgba(14, 165, 233, 0.25); color: white;
+            transition: var(--transition); box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.25); color: white;
         }
         .btn-prev-custom { background: var(--accent-gradient); padding-left: 34px; justify-content: flex-start; }
         .btn-prev-custom .nav-icon {
-            position: absolute; left: 3px; width: 28px; height: 28px; background: #ffffff; color: #0284c7;
+            position: absolute; left: 3px; width: 28px; height: 28px; background: #ffffff; color: var(--accent-solid);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: var(--transition);
         }
         .btn-next-custom { background: var(--accent-gradient); padding-right: 34px; justify-content: flex-end; }
         .btn-next-custom .nav-icon {
-            position: absolute; right: 3px; width: 28px; height: 28px; background: #ffffff; color: #0284c7;
+            position: absolute; right: 3px; width: 28px; height: 28px; background: #ffffff; color: var(--accent-solid);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: var(--transition);
         }
         .nav-icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-        .btn-page-nav-custom:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(14, 165, 233, 0.35); }
+        .btn-page-nav-custom:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(var(--accent-rgb), 0.35); }
         .btn-page-nav-custom:active { transform: scale(0.97); }
 
         #read-screen { position: relative; background: var(--bg-gradient); display: none; width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; }
@@ -794,7 +842,7 @@
 
         .loading-spinner {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 48px; height: 48px; border: 4px solid var(--border-color); border-top: 4px solid #0ea5e9;
+            width: 48px; height: 48px; border: 4px solid var(--border-color); border-top: 4px solid var(--accent-solid);
             border-radius: 50%; animation: spin 0.8s linear infinite; z-index: 5; display: none;
         }
         @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
@@ -810,11 +858,11 @@
         .image-container img { width: 100%; height: 100%; display: block; border-radius: 18px; pointer-events: none; object-fit: fill; }
         
         .sound-block { 
-            position: absolute; cursor: pointer; background: rgba(14, 165, 233, 0.08); 
-            border: 1px dashed rgba(14, 165, 233, 0.4); border-radius: 8px; transition: var(--transition); 
+            position: absolute; cursor: pointer; background: rgba(var(--accent-rgb), 0.08); 
+            border: 1px dashed rgba(var(--accent-rgb), 0.4); border-radius: 8px; transition: var(--transition); 
         }
-        .sound-block:hover { background: rgba(14, 165, 233, 0.22); border-color: #0ea5e9; transform: scale(1.02); }
-        .sound-block:active { background: rgba(14, 165, 233, 0.35); }
+        .sound-block:hover { background: rgba(var(--accent-rgb), 0.22); border-color: var(--accent-solid); transform: scale(1.02); }
+        .sound-block:active { background: rgba(var(--accent-rgb), 0.35); }
 
         .controls-wrapper {
             width: calc(440px * 1.8); max-width: 96%; margin: 0 auto 6px auto; display: flex; flex-direction: column; gap: 6px;
@@ -862,7 +910,7 @@
         .shortcut-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
         .shortcut-row span { width: 50px; font-size: 11px; font-weight: 600; color: var(--text-muted); }
         .shortcut-panel select { flex: 1; width: 0; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 11px; background: var(--input-bg); color: var(--text-main); font-weight: 600; outline: none; transition: var(--transition); }
-        .shortcut-panel select:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15); }
+        .shortcut-panel select:focus { border-color: var(--accent-solid); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15); }
         
         .shortcut-container { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
         .shortcut-left { flex: 2; display: flex; flex-direction: column; gap: 4px; }
@@ -917,7 +965,7 @@
             <div id="loginError" class="login-error">Terjadi kesalahan pada data yang dimasukkan.</div>
 
             <!-- Tombol Pengarah ke Halaman Masuk Admin -->
-            <button onclick="showAdminLoginScreen()" style="background: transparent; border: none; color: #0ea5e9; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 8px;">🔐 Masuk Master Admin</button>
+            <button onclick="showAdminLoginScreen()" style="background: transparent; border: none; color: var(--accent-solid); font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 8px;">🔐 Masuk Master Admin</button>
 
             <!-- Footer Aplikasi -->
             <div class="app-footer">Kurniapedia | 2026</div>
@@ -978,7 +1026,7 @@
             <h2>Panel Kelas Guru</h2>
             <div style="background: var(--input-bg); padding: 10px; border-radius: 12px; text-align: left; margin-bottom: 8px;">
                 <div style="font-size: 11px; color: var(--text-muted);">Kode Kelas Anda untuk dibagikan ke Siswa:</div>
-                <div id="teacherClassCodeDisplay" style="font-size: 16px; font-weight: 800; color: #0ea5e9; margin-top: 2px;">-</div>
+                <div id="teacherClassCodeDisplay" style="font-size: 16px; font-weight: 800; color: var(--accent-solid); margin-top: 2px;">-</div>
             </div>
             
             <button onclick="openClassMembersScreen()" style="width: 100%; padding: 10px; background: var(--accent-gradient); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-bottom: 8px;">👥 Lihat Daftar Siswa di Kelas</button>
@@ -1024,7 +1072,7 @@
          TIDAK bisa ditutup manual, supaya siswa tidak berpindah halaman
          sebelum proses benar-benar selesai (lihat kirimSetoran()). -->
     <div id="uploadingOverlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:20px;">
-        <div style="width:44px; height:44px; border:4px solid rgba(255,255,255,0.25); border-top-color:#38bdf8; border-radius:50%; animation:spinPlain 0.8s linear infinite;"></div>
+        <div style="width:44px; height:44px; border:4px solid rgba(255,255,255,0.25); border-top-color:var(--accent-solid); border-radius:50%; animation:spinPlain 0.8s linear infinite;"></div>
         <div style="color:white; font-weight:700; font-size:15px;" id="uploadingOverlayText">Mengirim rekaman...</div>
         <div style="color:rgba(255,255,255,0.75); font-size:12px; max-width:280px;">Jangan tutup atau pindah halaman sampai proses ini selesai.</div>
     </div>
@@ -1697,7 +1745,7 @@
                         const tData = docSnap.data();
                         const tId = docSnap.id;
                         let item = document.createElement('div');
-                        item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(14, 165, 233, 0.1); border: 1px solid #0ea5e9; border-radius: 12px;";
+                        item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(var(--accent-rgb), 0.1); border: 1px solid var(--accent-solid); border-radius: 12px;";
                         item.innerHTML = `
                             <div>
                                 <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👨‍🏫 ${tData.name} <span class="badge-role" style="margin-left: 6px;">Guru Pengampu</span></div>
@@ -1766,8 +1814,9 @@
                 const feedbackFinal = feedback || null;
 
                 // Data lengkap (nilai, catatan, audio, jilid, halaman) disisipkan
-                // LANGSUNG ke notifikasinya -- supaya siswa tetap bisa melihat
-                // hasil penilaiannya walau dokumen setoran aslinya nanti dihapus.
+                // LANGSUNG ke notifikasi hasil untuk siswa -- supaya siswa tetap
+                // bisa melihat hasilnya kapan pun, walau dokumen setoran aslinya
+                // nanti ikut dihapus otomatis (24 jam setelah dinilai).
                 await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
                     targetUserId: d.studentUid,
                     title: "📋 Rekaman Anda Telah Dinilai",
@@ -1784,9 +1833,15 @@
                     readBy: []
                 });
 
-                // Setoran yang sudah dikoreksi & dinilai langsung dihapus dari
-                // database (tidak disimpan lagi sebagai dokumen terpisah).
-                await window.deleteDoc(setoranRef);
+                // Setoran TIDAK langsung dihapus -- disimpan dulu selama 24 jam
+                // supaya guru masih bisa membuka & mendengarkan ulang lewat
+                // notifikasi yang sama (lihat cleanupExpiredSetoranNotif()).
+                await window.updateDoc(setoranRef, {
+                    nilai: nilaiFinal,
+                    feedback: feedbackFinal,
+                    status: 'dinilai',
+                    gradedAt: window.serverTimestamp()
+                });
 
                 return true;
             } catch (e) {
@@ -1868,9 +1923,10 @@
             const ok = await submitPenilaian(currentReviewSetoranId, nilai, feedback);
             if (ok) {
                 showToast('Penilaian berhasil dikirim ke siswa!');
-                // Setoran yang sudah dinilai langsung dihapus (lihat
-                // submitPenilaian), jadi tidak ada lagi yang bisa ditinjau
-                // di halaman ini -- otomatis kembali ke popup notifikasi.
+                // Setelah dinilai, otomatis kembali ke popup notifikasi --
+                // notifikasinya TETAP ADA (tidak dihapus) selama 24 jam,
+                // jadi guru masih bisa membukanya lagi untuk dengar ulang
+                // atau memperbarui penilaian (lihat cleanupExpiredSetoranNotif()).
                 backToNotifFromReview();
             }
         }
@@ -1888,7 +1944,7 @@
                 <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Jilid ${data.jilid} • Halaman ${data.halaman}</div>
                 <iframe src="${data.audioUrl}" style="width:100%; height:44px; border:none; margin-bottom:12px;" allow="autoplay"></iframe>
                 <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Nilai</div>
-                <div style="font-size:22px; font-weight:800; color:#0ea5e9; margin-bottom:12px;">${data.nilai != null ? data.nilai : '-'}</div>
+                <div style="font-size:22px; font-weight:800; color:var(--accent-solid); margin-bottom:12px;">${data.nilai != null ? data.nilai : '-'}</div>
                 <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Catatan Guru</div>
                 <div style="font-size:13px; color:var(--text-main); background:var(--input-bg); padding:10px; border-radius:10px;">${data.feedback || 'Tidak ada catatan.'}</div>
             `;
@@ -1983,7 +2039,7 @@
                 item.innerHTML = `
                     <div class="bookmark-item-content">
                         <div class="bookmark-item-icon">
-                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:#0ea5e9;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:var(--accent-solid);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
                         </div>
                         <div class="bookmark-item-info">
                             <span class="bookmark-item-title">Tartili Jilid ${b.jilid}</span>
