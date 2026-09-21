@@ -1443,23 +1443,7 @@
             }
         }
 
-        // Meminta browser masuk mode Fullscreen sungguhan (menyembunyikan
-        // address bar/UI browser). WAJIB dipicu dari interaksi pengguna
-        // langsung (klik tombol) -- tidak bisa otomatis saat halaman dimuat,
-        // itu batasan keamanan browser. Dibungkus try/catch supaya aman
-        // kalau browser/WebView tidak mendukung atau menolaknya.
-        function requestAppFullscreen() {
-            try {
-                const el = document.documentElement;
-                const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-                if (req && !document.fullscreenElement) {
-                    req.call(el).catch(() => {});
-                }
-            } catch (e) { /* diamkan saja kalau tidak didukung */ }
-        }
-
         async function handleAuthSubmit() {
-            requestAppFullscreen();
             const email = document.getElementById('authEmail').value;
             const password = document.getElementById('authPassword').value;
             const errorDiv = document.getElementById('loginError');
@@ -2690,4 +2674,4 @@
 </script>
     
 </body>
-</html>
+                            </html>
