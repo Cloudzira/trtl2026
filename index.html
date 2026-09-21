@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TARTILI - Kurniapedia</title>
+    <title>TARTILI DIGITAL - Kurniapedia</title>
     
     <link rel="icon" href="favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -339,8 +339,7 @@
             color: var(--text-main); 
             overflow: hidden; 
             height: 100vh; 
-            height: 100dvh; 
-            height: calc(var(--app-vh, 1vh) * 100);
+            height: 100dvh;
             transition: background 0.5s ease, color 0.5s ease; 
         }
         
@@ -2032,20 +2031,7 @@
 
         function isPortrait() { return window.innerHeight > window.innerWidth; }
 
-        // Perbaikan bug umum unit CSS "dvh" di sejumlah browser Android:
-        // saat halaman baru dibuka/berpindah, tinggi layar sebenarnya
-        // kadang belum dihitung ulang oleh browser (baru "sadar" setelah
-        // ada event resize, misalnya rotasi layar). Fungsi ini menghitung
-        // tinggi layar secara manual lewat JavaScript dan menyimpannya ke
-        // variabel CSS --app-vh, dipakai sebagai fallback prioritas
-        // tertinggi pada tinggi elemen body (lihat CSS body { height: ... }).
-        function setAppVH() {
-            document.documentElement.style.setProperty('--app-vh', `${window.innerHeight * 0.01}px`);
-        }
-        setAppVH();
-
         window.addEventListener('resize', () => {
-            setAppVH();
             if (isPortrait()) { resetZoom(); }
             const container = document.getElementById('imageContainer');
             if (appState === 'read' && (!container.innerHTML || container.innerHTML.trim() === '')) {
@@ -2116,14 +2102,11 @@
             resetRecording();
 
             // Kalau sebelumnya guru sedang meninjau 1 setoran (dibuka lewat
-            // notifikasi), tombol "Menu"/kembali harus membawanya ke Panel
-            // Guru lagi -- bukan ke Menu Utama siswa.
+            // notifikasi), tetap kembalikan ke Menu Utama juga (bukan Panel
+            // Guru) supaya konsisten dengan tombol "Kembali" di panel
+            // penilaian (lihat backToNotifFromReview()).
             if (currentReviewSetoranId) {
                 exitSetoranReview();
-                document.getElementById('read-screen').classList.remove('active');
-                document.getElementById('teacher-admin-screen').classList.add('active');
-                appState = 'teacher-admin';
-                return;
             }
 
             appState = 'menu';
@@ -2199,7 +2182,6 @@
 
         function openJilid(jilid, page) {
             currentJilid = jilid; currentPage = page; appState = 'read';
-            setAppVH(); // paksa hitung ulang tinggi layar sekarang, jangan tunggu event resize
             document.getElementById('read-screen').classList.add('active');
             document.getElementById('menu-screen').classList.remove('active');
             document.getElementById('bookmarks-screen').classList.remove('active');
@@ -2662,4 +2644,4 @@
 </script>
     
 </body>
-    </html>
+</html>
