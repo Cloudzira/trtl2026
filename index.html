@@ -131,6 +131,7 @@
                         } else if (classMembersScreen.classList.contains('active')) {
                             window.appState = 'class-members';
                         } else {
+                            if (window.setAppVH) window.setAppVH();
                             menuScreen.classList.add('active');
                             window.appState = 'menu';
                             updateMenuCoverFocus();
@@ -1442,7 +1443,23 @@
             }
         }
 
+        // Meminta browser masuk mode Fullscreen sungguhan (menyembunyikan
+        // address bar/UI browser). WAJIB dipicu dari interaksi pengguna
+        // langsung (klik tombol) -- tidak bisa otomatis saat halaman dimuat,
+        // itu batasan keamanan browser. Dibungkus try/catch supaya aman
+        // kalau browser/WebView tidak mendukung atau menolaknya.
+        function requestAppFullscreen() {
+            try {
+                const el = document.documentElement;
+                const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+                if (req && !document.fullscreenElement) {
+                    req.call(el).catch(() => {});
+                }
+            } catch (e) { /* diamkan saja kalau tidak didukung */ }
+        }
+
         async function handleAuthSubmit() {
+            requestAppFullscreen();
             const email = document.getElementById('authEmail').value;
             const password = document.getElementById('authPassword').value;
             const errorDiv = document.getElementById('loginError');
@@ -2033,14 +2050,19 @@
         function isPortrait() { return window.innerHeight > window.innerWidth; }
 
         // Perbaikan bug umum unit CSS "dvh" di sejumlah browser Android:
-        // saat halaman baru dibuka/berpindah, tinggi layar sebenarnya
-        // kadang belum dihitung ulang oleh browser (baru "sadar" setelah
-        // ada event resize, misalnya rotasi layar). Fungsi ini menghitung
+        // saat halaman baru dibuka/berpindah, ATAU saat address bar Chrome
+        // otomatis muncul/hilang ketika discroll, tinggi layar sebenarnya
+        // sering "telat" diketahui oleh CSS biasa. Fungsi ini menghitung
         // tinggi layar secara manual lewat JavaScript dan menyimpannya ke
         // variabel CSS --app-vh, dipakai sebagai fallback prioritas
         // tertinggi pada tinggi elemen body (lihat CSS body { height: ... }).
+        // Memakai window.visualViewport kalau tersedia -- API ini dibuat
+        // khusus oleh browser untuk melacak tinggi layar yang BENAR-BENAR
+        // terlihat (ikut berubah real-time saat address bar muncul/hilang
+        // atau keyboard dibuka), jauh lebih akurat dibanding window.innerHeight biasa.
         function setAppVH() {
-            document.documentElement.style.setProperty('--app-vh', `${window.innerHeight * 0.01}px`);
+            const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+            document.documentElement.style.setProperty('--app-vh', `${h * 0.01}px`);
         }
         setAppVH();
 
@@ -2052,6 +2074,14 @@
                 loadPageData();
             }
         });
+
+        // visualViewport punya event resize & scroll SENDIRI, terpisah dari
+        // window -- ini yang menangkap perubahan saat address bar Chrome
+        // muncul/hilang mengikuti arah scroll (kasus yang dilaporkan).
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', setAppVH);
+            window.visualViewport.addEventListener('scroll', setAppVH);
+        }
 
         updatePageOptions('Menu');
         updatePageOptions('Read'); 
@@ -2112,18 +2142,16 @@
         }
 
         function goToMenu() {
+            setAppVH(); // paksa hitung ulang tinggi layar setiap pindah ke halaman utama
             if (currentAudio) { currentAudio.pause(); currentAudio = null; }
             resetRecording();
 
             // Kalau sebelumnya guru sedang meninjau 1 setoran (dibuka lewat
-            // notifikasi), tombol "Menu"/kembali harus membawanya ke Panel
-            // Guru lagi -- bukan ke Menu Utama siswa.
+            // notifikasi), tetap kembalikan ke Menu Utama juga (bukan Panel
+            // Guru) supaya konsisten dengan tombol "Kembali" di panel
+            // penilaian (lihat backToNotifFromReview()).
             if (currentReviewSetoranId) {
                 exitSetoranReview();
-                document.getElementById('read-screen').classList.remove('active');
-                document.getElementById('teacher-admin-screen').classList.add('active');
-                appState = 'teacher-admin';
-                return;
             }
 
             appState = 'menu';
