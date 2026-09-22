@@ -975,7 +975,7 @@
     <!-- Halaman Login Siswa / Guru -->
     <div id="login-screen" class="screen">
         <div class="login-card">
-            <h2>TARTILI DIGITAL</h2>
+            <h2>TARTILI</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 2px;">Metode Cepat Tartil Membaca Al-Qur'an</p>
             
             <div class="auth-mode-toggle">
@@ -1124,7 +1124,7 @@
                     <div class="landing-hero-username" id="userUsernameText">Pengguna</div>
                     <div class="landing-hero-motivation">Selamat belajar TARTILI</div>
                     <div class="landing-hero-subtitle">
-                        <span id="userClassText">Kelas: -</span>
+                        <span id="userClassText">Kelas -</span>
                         <span id="userTeacherNameText">Guru: -</span>
                         <span class="badge-role" id="userRoleBadge" onclick="openClassMembersScreen()" title="Lihat Daftar Anggota Kelas">Siswa 👥</span>
                     </div>
@@ -1523,10 +1523,10 @@
             if (roleEl) roleEl.innerHTML = `${profile.role || 'Siswa'} 👥`;
 
             if (profile.role === 'Guru') {
-                if (classEl) classEl.innerText = `Kelas: ${profile.teacherClassName}`;
+                if (classEl) classEl.innerText = `Kelas ${profile.teacherClassName}`;
                 if (teacherNameEl) teacherNameEl.style.display = 'none';
             } else {
-                if (classEl) classEl.innerText = `Kelas: Memuat...`;
+                if (classEl) classEl.innerText = `Kelas Memuat...`;
                 if (teacherNameEl) {
                     teacherNameEl.style.display = 'inline';
                     teacherNameEl.innerText = "Guru: Memuat...";
@@ -1536,14 +1536,14 @@
                         if (!snap.empty) {
                             const teacherData = snap.docs[0].data();
                             teacherNameEl.innerText = `Guru: ${teacherData.name}`;
-                            if (classEl) classEl.innerText = `Kelas: ${teacherData.teacherClassName || profile.classCode || '-'}`;
+                            if (classEl) classEl.innerText = `Kelas ${teacherData.teacherClassName || profile.classCode || '-'}`;
                         } else {
                             teacherNameEl.innerText = `Guru: -`;
-                            if (classEl) classEl.innerText = `Kelas: ${profile.classCode || '-'}`;
+                            if (classEl) classEl.innerText = `Kelas ${profile.classCode || '-'}`;
                         }
                     } catch (e) {
                         teacherNameEl.innerText = `Guru: -`;
-                        if (classEl) classEl.innerText = `Kelas: ${profile.classCode || '-'}`;
+                        if (classEl) classEl.innerText = `Kelas ${profile.classCode || '-'}`;
                     }
                 }
             }
@@ -1606,7 +1606,7 @@
                         <div style="flex: 1; min-width: 0;">
                             <div style="font-weight: 700; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${data.name} <span class="badge-role" style="margin-left: 6px;">${data.role}</span></div>
                             <div style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Email: ${data.email}</div>
-                            <div style="font-size: 10px; color: var(--text-muted);">${data.role === 'Guru' ? 'Kelas: ' + data.teacherClassName : 'Kode Kelas: ' + (data.classCode || '-')}</div>
+                            <div style="font-size: 10px; color: var(--text-muted);">${data.role === 'Guru' ? 'Kelas ' + data.teacherClassName : 'Kode Kelas ' + (data.classCode || '-')}</div>
                         </div>
                         <div style="display: flex; gap: 6px; flex-shrink: 0;">
                             <button onclick="approveMasterUser('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Setujui</button>
