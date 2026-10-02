@@ -6,17 +6,15 @@
     <title>TartiliKu</title>
     
     <link rel="icon" href="favicon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.bunny.net/css?family=Plus+Jakarta+Sans:400,500,600,700,800%7CAmiri:700" rel="stylesheet">
     
     <!-- ==========================================
          1. INISIALISASI FIREBASE & AUTENTIKASI
          ========================================== -->
     <script type="module">
-        import { initializeApp } from "https://cdn.jsdelivr.net/npm/firebase@10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://cdn.jsdelivr.net/npm/firebase@10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc, addDoc, onSnapshot, orderBy, serverTimestamp } from "https://cdn.jsdelivr.net/npm/firebase@10.8.0/firebase-firestore.js";
+        import { initializeApp } from "https://esm.sh/firebase@10.8.0/app";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://esm.sh/firebase@10.8.0/auth?deps=@firebase/app@0.9.27";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc, addDoc, onSnapshot, orderBy, serverTimestamp } from "https://esm.sh/firebase@10.8.0/firestore?deps=@firebase/app@0.9.27";
         
         const firebaseConfig = {
             apiKey: "AIzaSyDCkiYKe-lKkbb0czz9y9ZBGN9SgOhbjmw",
