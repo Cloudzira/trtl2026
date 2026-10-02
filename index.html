@@ -445,10 +445,14 @@
         /* Footer aplikasi (dipakai di Halaman Login & Menu Utama) */
         .app-footer {
             width: 100%; text-align: center; font-size: 12px; font-weight: 600;
-            color: var(--text-muted); opacity: 0.7; margin-top: 12px; letter-spacing: 0.2px;
+            color: var(--text-muted); opacity: 0.7; margin-top: 0; letter-spacing: 0.2px;
         }
 
-        .social-media-row { display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .social-media-row {
+            position: relative; display: flex; align-items: center; justify-content: center;
+            gap: 10px; padding-top: 14px;
+        }
+        .social-media-row::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 40px; height: 1px; background: var(--border-color); }
         .kurnia-icon {
             width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
             border: 1px solid var(--border-color); border-radius: 50%; background: var(--bg-panel);
@@ -544,9 +548,8 @@
             border-radius: 18px; box-shadow: var(--shadow);
         }
 
-        /* Footer: garis pemisah halus di atasnya */
-        .app-footer { position: relative; padding-top: 14px; }
-        .app-footer::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 40px; height: 1px; background: var(--border-color); }
+        /* Footer copyright follows the social links below the divider. */
+        .app-footer { position: relative; }
         
         #bookmarks-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; justify-content: space-between; align-items: center; height: 100vh; height: 100dvh; }
         .bookmarks-content-wrapper {
