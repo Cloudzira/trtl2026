@@ -2243,11 +2243,11 @@
         const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/ycfss0no";
         const LEGACY_MEDIA_BASE_URL = "https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/";
         const getPageImageUrl = (jilid, page) => {
-            const pageId = /^\\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
+            const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
             return `${CLOUDINARY_BASE_URL}/image/upload/t${jilid}_h${pageId}.jpg`;
         };
         const getPageAudioUrl = (jilid, page, soundFile) => {
-            const soundId = String(soundFile).replace(/\\.[^.]+$/, '');
+            const soundId = String(soundFile).replace(/\.[^.]+$/, '');
             return `${CLOUDINARY_BASE_URL}/video/upload/t${jilid}_h${page}_${soundId}.mp3`;
         };
         let scale = 1, initialDistance = null;
