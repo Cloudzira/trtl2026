@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TartiliKu</title>
+    
+    <link rel="icon" href="favicon.png">
+    <link href="https://fonts.bunny.net/css?family=Plus+Jakarta+Sans:400,500,600,700,800%7CAmiri:700" rel="stylesheet">
+    
+    <!-- ==========================================
+         1. INISIALISASI FIREBASE & AUTENTIKASI
+         ========================================== -->
+    <script type="module" src="firebase-auth.js"></script>
+
+    <!-- Berkas Konfigurasi Data Buku Tartili (Jilid 1-6) -->
+    <script src="tartili1.js"></script>
+    <script src="tartili2.js"></script>
+    <script src="tartili3.js"></script>
+    <script src="tartili4.js"></script>
+    <script src="tartili5.js"></script>
+    <script src="tartili6.js"></script>
+
+    <!-- ==========================================
+         2. PENGATURAN TAMPILAN (CSS / GLASS MORPHISM)
+         ========================================== -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="light-theme">
+
+    <div id="toastNotification">Pemberitahuan</div>
+
+    <!-- MODAL NOTIFIKASI -->
+    <div id="notifModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>🔔 Notifikasi</h3>
+                <button class="modal-close-btn" onclick="toggleNotifModal(false)">✕</button>
+            </div>
+            <div id="notificationListContainer" style="flex:1; overflow-y:auto;">
+                <div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat notifikasi...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         3. STRUKTUR HTML (ANTARMUKA / TAMPILAN)
+         ========================================== -->
+
+    <!-- Halaman Login Siswa / Guru -->
+    <div id="login-screen" class="screen">
+        <div class="login-card">
+            <h2>TARTILIKU</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 2px;">Metode Cepat Tartil Membaca Al-Qur'an</p>
+            
+            <div class="auth-mode-toggle">
+                <button class="auth-mode-btn active" id="modeLoginBtn" onclick="switchAuthMode('login')">Masuk</button>
+                <button class="auth-mode-btn" id="modeRegisterBtn" onclick="switchAuthMode('register')">Buat Akun</button>
+            </div>
+
+            <input type="email" id="authEmail" placeholder="Email Anda" />
+            <input type="password" id="authPassword" placeholder="Kata Sandi (Min. 6 Karakter)" />
+            
+            <div id="registerFields" class="register-only-field">
+                <input type="text" id="authName" placeholder="Nama Lengkap" />
+                <select id="authRole" onchange="toggleRoleFields()">
+                    <option value="Siswa">Daftar sebagai Siswa</option>
+                    <option value="Guru">Daftar sebagai Guru</option>
+                </select>
+                <input type="text" id="authClassCode" placeholder="Kode Kelas dari Guru (Contoh: KLS-ABC)" />
+                <input type="text" id="authTeacherClassName" placeholder="Nama Kelas Anda (Contoh: 5A / Al-Qur'an)" style="display:none;" />
+            </div>
+
+            <button class="btn-login" id="authSubmitBtn" onclick="handleAuthSubmit()">Masuk Sekarang</button>
+            <div id="loginError" class="login-error">Terjadi kesalahan pada data yang dimasukkan.</div>
+
+            <!-- Tombol Pengarah ke Halaman Masuk Admin -->
+            <button onclick="showAdminLoginScreen()" style="background: transparent; border: none; color: var(--accent-solid); font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 8px;">🔐 Cloudzone</button>
+
+            <div class="social-media-row" aria-label="Media sosial Kurniapedia">
+                <a class="kurnia-icon ig" href="https://instagram.com/kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="Instagram Kurniapedia" title="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none"/></svg></a>
+                <a class="kurnia-icon tt" href="https://tiktok.com/@kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="TikTok Kurniapedia" title="TikTok"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 7.1a6.5 6.5 0 0 1-4.1-2.2v9.3a6.2 6.2 0 1 1-5.4-6.1v3.3a2.9 2.9 0 1 0 2.1 2.8V2h3.3a3.3 3.3 0 0 0 0 .6 3.9 3.9 0 0 0 3.5 3.9v.6z"/></svg></a>
+                <a class="kurnia-icon yt" href="https://www.youtube.com/@kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="YouTube Kurniapedia" title="YouTube"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.6 3.6 12 3.6 12 3.6s-7.6 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.8.5 9.4.5 9.4.5s7.6 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8z"/><path fill="var(--bg-main)" d="m9.6 15.3 6.2-3.3-6.2-3.3z"/></svg></a>
+                <a class="kurnia-icon wa" href="https://wa.me/6285870906050" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp Kurniapedia" title="WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.4L3 20l1-4.7a8.5 8.5 0 1 1 16.5-3.6z"/><path d="M8.2 8.1c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3.1.5-.1.7l-.6.7c-.2.2-.2.4 0 .7.6 1 1.5 1.8 2.6 2.3.3.1.5.1.7-.1l.8-1c.2-.2.4-.3.7-.2l1.7.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.7-.5.5-1.2.7-2 .6-.8-.1-1.8-.5-3-1.2-1.9-1.1-3.2-3-3.5-3.4-.3-.4-.8-1.2-.8-2.1 0-.8.4-1.3.6-1.7z"/></svg></a>
+            </div>
+
+            <!-- Footer Aplikasi -->
+            <div class="app-footer">Crafted with ♥ by <span style="color: #00f2fe; font-weight: 600;">Kurniapedia </span> 2026</div>
+        </div>
+    </div>
+
+    <!-- Halaman Masuk Khusus Master Admin -->
+    <div id="admin-login-screen" class="screen">
+        <div class="login-card">
+            <h2>CLOUDZONE</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 6px;">Kredensial Master Admin</p>
+            
+            <input type="email" id="adminAuthEmail" placeholder="Email Admin (a********ct70@gmail.com)" value="a********ct70@gmail.com" />
+            <input type="password" id="adminAuthPassword" placeholder="Kata Sandi Admin" />
+
+            <button class="btn-login" onclick="handleAdminLogin()" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Masuk Cloudzone</button>
+            <div id="adminLoginError" class="login-error">Email atau kata sandi admin salah.</div>
+
+            <button class="auth-mode-btn" onclick="backToLoginScreen()" style="width: 100%; padding: 10px; background: var(--input-bg); border-radius: 12px; color: var(--text-main); font-weight: 700; margin-top: 10px;">Kembali ke Masuk Siswa/Guru</button>
+        </div>
+    </div>
+
+    <!-- Halaman Menunggu Persetujuan -->
+    <div id="verify-screen" class="screen">
+        <div class="login-card">
+            <div style="font-size: 42px; margin-bottom: 2px;">⏳</div>
+            <h2 id="verifyTitle">Menunggu Persetujuan</h2>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;" id="verifyEmailTarget">
+                Akun Anda sedang menunggu verifikasi.
+            </p>
+            <p style="font-size: 12px; color: var(--text-muted);">
+                Silakan hubungi Admin atau Guru pengampu kelas Anda agar akun segera disetujui.
+            </p>
+
+            <button class="btn-login" onclick="window.location.reload()" style="margin-top: 10px;">Cek Status Akun</button>
+            <button class="auth-mode-btn" onclick="handleLogout()" style="width: 100%; padding: 8px; margin-top: 4px; color: #ef4444; font-weight: 600;">Keluar / Ganti Akun</button>
+        </div>
+    </div>
+
+    <!-- Halaman Panel Master Admin -->
+    <div id="admin-screen" class="screen">
+        <div class="login-card" style="max-width: 650px; height: 88vh; display: flex; flex-direction: column;">
+            <h2>Panel Master Admin</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Daftar akun baru yang menunggu verifikasi awal:</p>
+            
+            <div id="pendingMasterUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
+                <!-- Diisi dinamis via JS -->
+            </div>
+<!-- Tombol Kembali untuk menggantikan tombol Keluar Akun Admin -->
+       <!-- KODE BARU -->
+<button class="btn-back-compact" onclick="handleLogout()">Keluar Akun Admin</button>
+        </div>
+    </div>
+
+    <!-- Halaman Panel Guru -->
+    <div id="teacher-admin-screen" class="screen">
+        <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
+            <h2>Panel Kelas Guru</h2>
+            <div style="background: var(--input-bg); padding: 10px; border-radius: 12px; text-align: left; margin-bottom: 8px;">
+                <div style="font-size: 11px; color: var(--text-muted);">Kode Kelas Anda untuk dibagikan ke Siswa:</div>
+                <div id="teacherClassCodeDisplay" style="font-size: 16px; font-weight: 800; color: var(--accent-solid); margin-top: 2px;">-</div>
+            </div>
+            
+            <button onclick="openClassMembersScreen()" style="width: 100%; padding: 10px; background: var(--accent-gradient); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-bottom: 8px;">👥 Lihat Daftar Siswa di Kelas</button>
+
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-align: left;">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
+            <div id="pendingStudentContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
+                <!-- Diisi dinamis via JS -->
+            </div>
+
+            <!-- KODE BARU -->
+            <button class="btn-back-compact" onclick="goToMenu()">Kembali</button>
+        </div>
+    </div>
+
+    <!-- Halaman Daftar Anggota Kelas -->
+    <div id="class-members-screen" class="screen">
+        <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
+            <h2 id="classMembersTitle">Daftar Anggota Kelas</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;" id="classMembersSubtitle">Daftar siswa yang tergabung dalam kelas ini:</p>
+            
+            <div id="classMembersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
+                <!-- Diisi dinamis via JS -->
+            </div>
+
+        <!-- KODE BARU -->
+            <!-- KODE BARU -->
+            <button class="btn-back-compact" onclick="goBackFromClassMembers()">Kembali</button>
+        </div>
+    </div>
+
+    <!-- Modal Hasil Penilaian untuk Siswa -->
+    <div id="hasilSetoranModal" class="modal-overlay">
+        <div class="modal-box" style="height: auto; max-height: 80vh;">
+            <div class="modal-header">
+                <h3>📋 Hasil Penilaian</h3>
+                <button class="modal-close-btn" onclick="document.getElementById('hasilSetoranModal').classList.remove('active')">✕</button>
+            </div>
+            <div id="hasilSetoranContent" style="padding: 20px; overflow-y: auto; text-align: left;"></div>
+        </div>
+    </div>
+
+    <!-- Overlay blocking saat proses kirim rekaman berlangsung -- sengaja
+         TIDAK bisa ditutup manual, supaya siswa tidak berpindah halaman
+         sebelum proses benar-benar selesai (lihat kirimSetoran()). -->
+    <div id="uploadingOverlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:20px;">
+        <div style="width:44px; height:44px; border:4px solid rgba(255,255,255,0.25); border-top-color:var(--accent-solid); border-radius:50%; animation:spinPlain 0.8s linear infinite;"></div>
+        <div style="color:white; font-weight:700; font-size:15px;" id="uploadingOverlayText">Mengirim rekaman...</div>
+        <div style="color:rgba(255,255,255,0.75); font-size:12px; max-width:280px;">Jangan tutup atau pindah halaman sampai proses ini selesai.</div>
+    </div>
+
+
+
+    <!-- Halaman Menu Utama -->
+    <div id="menu-screen" class="screen">
+        <div class="menu-content-wrapper">
+            <div class="app-brand-title">TARTILIKU</div>
+            <div class="landing-hero-card">
+                <div class="landing-hero-info">
+                    <div class="landing-hero-greeting" id="userGreetingText">Assalaamu'alaikum</div>
+                    <div class="landing-hero-username" id="userUsernameText">Pengguna</div>
+                    <div class="landing-hero-motivation">Selamat belajar TARTILI</div>
+                    <div class="landing-hero-subtitle">
+                        <span id="userClassText">Kelas -</span>
+                        <span id="userTeacherNameText">Guru: -</span>
+                        <span class="badge-role" id="userRoleBadge" onclick="openClassMembersScreen()" title="Lihat Daftar Anggota Kelas">Siswa 👥</span>
+                    </div>
+                </div>
+                <div class="landing-hero-actions">
+                    <button class="btn-notif-trigger" onclick="toggleNotifModal(true)" title="Notifikasi">
+                        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <span class="notif-badge" id="notifBadgeCount">0</span>
+                    </button>
+                    <button class="btn-admin" id="btnMasterAdminPanel" onclick="openMasterAdminScreen()" title="Panel Master Admin">
+                        <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    </button>
+                    <button class="btn-teacher-panel" id="btnTeacherPanel" onclick="openTeacherAdminScreen()" title="Panel Guru / Kelas">
+                        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                    </button>
+                    <button class="btn-bookmark" onclick="openBookmarksScreen()" title="Halaman Tersimpan">
+                        <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
+                    </button>
+                    <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna">
+                        <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    </button>
+                    <button class="btn-logout" onclick="handleLogout()" title="Keluar Akun">
+                        <svg viewBox="0 0 24 24"><path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="menu-section-title">DALAM PENGEMBANGAN KURNIAPEDIA</div>
+            
+            <div class="grid-jilid">
+                <button class="btn-cover" id="cover-btn-0" onclick="openJilid(1, 'a')" onmouseenter="selectedMenuCoverIndex=0; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover1.jpg"></button>
+                <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover2.jpg"></button>
+                <button class="btn-cover" id="cover-btn-2" onclick="openJilid(3, 'a')" onmouseenter="selectedMenuCoverIndex=2; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover3.jpg"></button>
+                <button class="btn-cover" id="cover-btn-3" onclick="openJilid(4, 'a')" onmouseenter="selectedMenuCoverIndex=3; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover4.jpg"></button>
+                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover5.jpg"></button>
+                <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover6.jpg"></button>
+            </div>
+            
+            <div class="shortcut-panel" style="width: 100%; max-width: 100%;">
+                <div class="section-title">Pintasan</div>
+                <div class="shortcut-container">
+                    <div class="shortcut-left">
+                        <div class="shortcut-row">
+                            <span>Tartili</span>
+                            <select id="jumpJilidMenu" onchange="updatePageOptions('Menu')">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                            </select>
+                        </div>
+                        <div class="shortcut-row">
+                            <span>Halaman</span>
+                            <select id="jumpPageSelectMenu"></select>
+                        </div>
+                    </div>
+                    <button class="btn-open-menu" onclick="directOpen('Menu')" style="background: var(--accent-gradient); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: var(--transition); height: 32px; width: 80px;">Buka</button>
+                </div>
+            </div>
+
+            <div class="social-media-row" aria-label="Media sosial Kurniapedia">
+                <a class="kurnia-icon ig" href="https://instagram.com/kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="Instagram Kurniapedia" title="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none"/></svg></a>
+                <a class="kurnia-icon tt" href="https://tiktok.com/@kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="TikTok Kurniapedia" title="TikTok"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 7.1a6.5 6.5 0 0 1-4.1-2.2v9.3a6.2 6.2 0 1 1-5.4-6.1v3.3a2.9 2.9 0 1 0 2.1 2.8V2h3.3a3.3 3.3 0 0 0 0 .6 3.9 3.9 0 0 0 3.5 3.9v.6z"/></svg></a>
+                <a class="kurnia-icon yt" href="https://www.youtube.com/@kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="YouTube Kurniapedia" title="YouTube"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.6 3.6 12 3.6 12 3.6s-7.6 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.8.5 9.4.5 9.4.5s7.6 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8z"/><path fill="var(--bg-main)" d="m9.6 15.3 6.2-3.3-6.2-3.3z"/></svg></a>
+                <a class="kurnia-icon wa" href="https://wa.me/6285870906050" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp Kurniapedia" title="WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.4L3 20l1-4.7a8.5 8.5 0 1 1 16.5-3.6z"/><path d="M8.2 8.1c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3.1.5-.1.7l-.6.7c-.2.2-.2.4 0 .7.6 1 1.5 1.8 2.6 2.3.3.1.5.1.7-.1l.8-1c.2-.2.4-.3.7-.2l1.7.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.7-.5.5-1.2.7-2 .6-.8-.1-1.8-.5-3-1.2-1.9-1.1-3.2-3-3.5-3.4-.3-.4-.8-1.2-.8-2.1 0-.8.4-1.3.6-1.7z"/></svg></a>
+            </div>
+
+            <!-- Footer Aplikasi -->
+            <div class="app-footer">Crafted with ♥ by <span style="color: #00f2fe; font-weight: 600;">Kurniapedia </span> 2026</div>
+        </div>
+    </div>
+
+    <!-- Halaman Daftar Bookmark -->
+    <div id="bookmarks-screen" class="screen">
+        <div class="bookmarks-content-wrapper">
+            <div class="bookmarks-header">
+                <h2>Halaman Tersimpan</h2>
+            </div>
+            
+            <div class="bookmarks-list" id="bookmarksListContainer"></div>
+            
+            <div class="shortcut-panel bookmarks-menu-panel">
+                <div class="shortcut-container bookmarks-menu-only">
+                    <button class="universal-btn btn-menu-back" onclick="goToMenu()">Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Halaman Membaca Buku -->
+    <div id="read-screen" class="screen">
+        <div class="image-scroll-area" id="scrollArea">
+            <div class="loading-spinner" id="loadingSpinner"></div>
+            <div class="image-container" id="imageContainer"></div>
+        </div>
+        
+        <div class="controls-wrapper">
+            <div class="page-nav-panel">
+                <div class="section-title">Halaman</div>
+                <div class="page-nav-buttons">
+                    <button class="btn-page-nav-custom btn-prev-custom" onclick="changePage(-1)" title="Sebelumnya">
+                        <span class="nav-icon">
+                            <svg viewBox="0 0 24 24"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
+                        </span>
+                    </button>
+                    
+                    <button class="btn-bookmark" id="btnBookmark" onclick="toggleBookmark()" title="Simpan Halaman">
+                        <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
+                    </button>
+                    
+                    <button class="btn-page-nav-custom btn-next-custom" onclick="changePage(1)" title="Berikutnya">
+                        <span class="nav-icon">
+                            <svg viewBox="0 0 24 24"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="shortcut-panel">
+                <div class="section-title">Pintasan</div>
+                <div class="shortcut-container">
+                    <button class="universal-btn btn-menu-back" onclick="goToMenu()">Menu</button>
+                    <div class="shortcut-left">
+                        <div class="shortcut-row row-tartili">
+                            <span>Tartili</span>
+                            <select id="jumpJilidRead" onchange="updatePageOptions('Read')">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                            </select>
+                        </div>
+                        <div class="shortcut-row row-halaman">
+                            <span>Halaman</span>
+                            <select id="jumpPageSelectRead"></select>
+                        </div>
+                    </div>
+                    <button class="universal-btn btn-open-target" onclick="directOpen('Read')">Buka</button>
+                </div>
+            </div>
+
+            <div class="record-panel" id="studentRecordPanel">
+                <div class="section-title" id="recordTitle">Setoran membaca</div>
+                <div class="record-buttons">
+                    <button class="universal-btn btn-record" id="btnRec" onclick="startRecording()">Rekam</button>
+                    <button class="universal-btn btn-stop" id="btnStop" onclick="stopRecording()" disabled>Stop</button>
+                    <button class="universal-btn btn-ok" id="btnPlay" onclick="playRecording()" disabled>▶ Play</button>
+                    <button class="universal-btn btn-send" id="btnSend" onclick="kirimSetoran()" disabled>Kirim</button>
+                </div>
+            </div>
+
+            <!-- Panel Penilaian Guru: menggantikan panel rekam siswa + panel
+                 Pintasan & Halaman (disembunyikan lewat JS) saat guru
+                 membuka halaman ini lewat notifikasi setoran. Satu baris
+                 flex penuh lebar (tidak dibatasi max-width lagi supaya
+                 tidak ada sisa kosong kiri-kanan di mode landscape):
+                 [Nilai-Nama + kotak nilai] -> [bar audio] ->
+                 [kotak pesan/catatan, ambil sisa ruang paling banyak] ->
+                 [tombol Kembali & Kirim, di kanan]. flex-wrap aktif supaya
+                 tetap aman kalau dibuka di layar sangat sempit (potret HP).
+                 Disembunyikan default (openSetoranReview()). -->
+            <div class="record-panel teacher-review-panel" id="teacherReviewPanel" style="display:none;">
+                <div class="teacher-review-layout">
+                    <!-- Nilai-Nama + kotak nilai (sejajar, ramping) -->
+                    <div class="teacher-review-score">
+                        <div class="section-title">Nilai <span id="reviewStudentName"></span></div>
+                        <input type="number" min="0" max="100" id="reviewNilaiInput" placeholder="0" />
+                    </div>
+                    <!-- Bar pemutar audio -->
+                    <div class="teacher-review-audio" id="reviewAudioContainer"></div>
+                    <!-- Kotak pesan/catatan, ambil sisa ruang paling banyak -->
+                    <textarea class="teacher-review-feedback" id="reviewFeedbackInput" placeholder="Catatan untuk siswa"></textarea>
+                    <!-- Tombol Kembali & Kirim Penilaian, di paling kanan -->
+                    <div class="teacher-review-actions">
+                        <button class="review-back" onclick="backToNotifFromReview()">Kembali</button>
+                        <button class="review-submit" id="btnKirimPenilaianReview" onclick="kirimPenilaianReview()">Kirim Penilaian</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <audio id="playbackAudioEl" style="display:none;"></audio>
+    </div>
+
+    <!-- ==========================================
+         4. LOGIKA APLIKASI UTAMA (JAVASCRIPT)
+         ========================================== -->
+    <script src="app.js"></script>
+<!-- KODE MEMATIKAN ZOOM (Cukup tempel di satu tempat ini saja) -->
+
+
+
+    
+</body>
+</html>
