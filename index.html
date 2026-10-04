@@ -276,6 +276,14 @@
         }
 
         async function markNotificationRead(notifId, userId, data) {
+            // Notifikasi setoran (rekaman siswa) MAUPUN hasil penilaian
+            // (untuk siswa) SENGAJA TIDAK dihapus saat dibuka -- supaya
+            // guru/siswa masih bisa membukanya lagi (dengar ulang / baca
+            // ulang nilai & catatan) sampai akhirnya dibersihkan otomatis
+            // 24 jam kemudian (lihat cleanupExpiredSetoranNotif() dan
+            // cleanupExpiredHasilNotif()). Supaya tidak terus dihitung di
+            // badge notifikasi merah, ditandai "sudah dibaca" saja (bukan
+            // dihapus).
             if (data.actionUrl === 'setoran' || data.actionUrl === 'setoran_hasil') {
                 try {
                     const notifRef = doc(window.firebaseDb, "notifications", notifId);
@@ -288,6 +296,8 @@
                 }
             } else {
                 try {
+                    // Notifikasi lain yang sudah dibuka langsung DIHAPUS (bukan
+                    // cuma ditandai terbaca), supaya daftar notifikasi bersih.
                     const notifRef = doc(window.firebaseDb, "notifications", notifId);
                     await deleteDoc(notifRef);
                 } catch (e) {
@@ -426,11 +436,13 @@
         .btn-login:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 12px 25px rgba(var(--accent-rgb), 0.4); }
         .login-error { color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 2px; display: none; }
 
+        /* Judul brand kecil di atas Menu Utama */
         .app-brand-title {
             width: 100%; text-align: center; font-size: 18px; font-weight: 800;
             color: var(--text-main); letter-spacing: -0.3px; margin-bottom: -4px;
         }
 
+        /* Footer aplikasi (dipakai di Halaman Login & Menu Utama) */
         .app-footer {
             width: 100%; text-align: center; font-size: 12px; font-weight: 600;
             color: var(--text-muted); opacity: 0.7; margin-top: 0; letter-spacing: 0.2px;
@@ -482,6 +494,17 @@
         .menu-section-title { width: 100%; text-align: left; font-size: 14px; font-weight: 800; color: var(--text-main); letter-spacing: 0.5px; margin-top: 4px; }
         .grid-jilid { display: grid; gap: 16px; width: 100%; margin: 0; grid-template-columns: repeat(6, minmax(0, 1fr)); }
 
+        /* ==========================================================
+           HALAMAN UTAMA (MENU) - TEMA GLASSMORPHISM FUTURISTIK
+           Semua gaya visual KHUSUS Halaman Utama dikumpulkan di sini
+           (terpisah dari style dasar di atas) supaya mudah ditemukan
+           dan diubah tanpa memengaruhi tampilan halaman lain.
+           ========================================================== */
+
+        /* Latar: beberapa "orb" cahaya blur lembut di belakang konten,
+           memberi kesan modern/futuristik tanpa mengganggu keterbacaan.
+           isolation:isolate saja (bukan position) agar tidak merusak
+           position:absolute bawaan dari class .screen. */
         #menu-screen { isolation: isolate; }
         #menu-screen::before,
         #menu-screen::after {
@@ -491,12 +514,14 @@
         #menu-screen::before { top: -160px; left: -120px; background: radial-gradient(circle, rgba(var(--orb1-rgb), 0.9), transparent 70%); }
         #menu-screen::after  { bottom: -180px; right: -140px; background: radial-gradient(circle, rgba(var(--orb2-rgb), 0.9), transparent 70%); }
 
+        /* Judul brand: teks gradient tipis, terasa lebih premium */
         .app-brand-title {
             font-size: 20px; font-weight: 800; letter-spacing: 0.4px;
             background: linear-gradient(135deg, var(--text-main) 40%, var(--accent-solid) 130%);
             -webkit-background-clip: text; background-clip: text; color: transparent;
         }
 
+        /* Kartu sapaan utama: glass card + garis tepi gradient tipis */
         .landing-hero-card { position: relative; border-radius: 26px; box-shadow: var(--shadow), 0 20px 45px -22px rgba(var(--accent-rgb),0.35); }
         .landing-hero-card::before {
             content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
@@ -509,14 +534,21 @@
             -webkit-background-clip: text; background-clip: text; color: transparent;
         }
 
+        /* Judul seksi (mis. "TARTILI 1-6"): tanda strip aksen + tracking rapi */
         .menu-section-title { display: flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 1.6px; color: var(--text-muted); text-transform: uppercase; }
         .menu-section-title::before { content: ""; width: 18px; height: 3px; border-radius: 3px; background: var(--accent-gradient); flex-shrink: 0; }
 
+        /* Cover Jilid: lihat penyesuaian border & shadow langsung di
+           deklarasi asli .btn-cover / .btn-cover:hover di bawah, supaya
+           urutan cascade CSS tetap benar (tidak tertimpa aturan lain). */
+
+        /* Panel Pintasan khusus Menu Utama: selaraskan dengan gaya glass */
         #menu-screen .shortcut-panel {
             background: var(--bg-panel); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
             border-radius: 18px; box-shadow: var(--shadow);
         }
 
+        /* Footer copyright follows the social links below the divider. */
         .app-footer { position: relative; }
         
         #bookmarks-screen { background: var(--bg-gradient); overflow-y: auto; padding: 20px; justify-content: space-between; align-items: center; height: 100vh; height: 100dvh; }
@@ -563,6 +595,7 @@
             border: 1px solid var(--border-color);
         }
 
+    /* 1. Pembungkus Utama Kartu */
 .landing-hero-card,
 .header-card {
   display: flex !important;
@@ -573,17 +606,22 @@
   width: 100% !important;
 }
 
+/* 2. Pembungkus Tombol */
 .landing-hero-actions {
   display: flex !important;
   align-items: center !important;
-  gap: 4px !important;
+  gap: 4px !important;              /* Jarak dirapatkan agar 6 tombol muat */
   flex-wrap: wrap !important;
   justify-content: flex-end !important;
   max-width: 60% !important;
 }
 
+/* 3. Rapikan tombol di landing-hero-actions, TAPI JANGAN paksa tombol
+      Admin (.btn-admin) & Guru (.btn-teacher-panel) untuk tampil.
+      Visibilitas keduanya wajib dikendalikan oleh setupDashboardAccess()
+      di JavaScript, bukan oleh CSS ini. */
 .landing-hero-actions button:not(.btn-admin):not(.btn-teacher-panel) {
-  display: inline-flex !important;
+  display: inline-flex !important;  /* Memastikan tombol lain tidak tersembunyi */
   margin: 0 !important;
   flex-shrink: 0 !important;
 }
@@ -604,6 +642,7 @@
   cursor: pointer !important;
 }
 
+        /* Styling tombol kembali agar ramping dan estetik */
 .btn-back-compact {
     width: auto;
     min-width: 140px;
@@ -625,7 +664,9 @@
     opacity: 0.85;
     transform: translateY(-1px);
 }
+
         
+        /* STYLES UNTUK MODAL NOTIFIKASI & PESAN */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
@@ -787,6 +828,7 @@
             #read-screen .btn-menu-back, #bookmarks-screen .btn-menu-back { width: 55px !important; flex: 0 0 55px !important; height: 28px !important; font-size: 11px !important; align-self: center !important; margin-top: 0 !important; border-radius: 8px !important; }
         }
 
+          /* Samakan dropdown hanya pada landscape; portrait memakai susunan awal. */
           @media (orientation: landscape) {
         #read-screen .shortcut-left,
         #bookmarks-screen .shortcut-left {
@@ -817,6 +859,7 @@
         }
         }
 
+        /* Rapikan kotak dropdown pada shortcut portrait tanpa mengubah Menu. */
         @media (orientation: portrait) {
             #read-screen .shortcut-left,
             #bookmarks-screen .shortcut-left {
@@ -850,6 +893,8 @@
             }
         }
 
+        /* Hilangkan batas 75px lama pada baris Tartili agar kedua dropdown
+           memakai track grid yang sama lebar. */
         @media (orientation: landscape), (orientation: portrait) {
             #read-screen .shortcut-row.row-tartili,
             #read-screen .shortcut-row.row-halaman,
@@ -861,6 +906,7 @@
             }
         }
 
+        /* Panel pintasan baca portrait: tombol seimbang dan kontrol rapi. */
         @media (orientation: portrait) {
             #read-screen .shortcut-panel {
                 padding: 8px 10px !important;
@@ -1061,6 +1107,7 @@
         .shortcut-container { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
         .shortcut-left { flex: 2; display: flex; flex-direction: column; gap: 4px; }
 
+        /* Dua kontrol pintasan selalu berbagi lebar yang sama di semua layar. */
         #menu-screen .shortcut-left {
             display: grid !important;
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -1106,6 +1153,7 @@
             box-shadow: none !important;
             padding: 0 !important;
         }
+        /* Bar penilaian guru: satu grid stabil di landscape, dua baris di portrait. */
         #read-screen .teacher-review-panel {
             width: 100%; padding: 8px 10px !important; display: flex; align-items: stretch;
         }
@@ -1188,6 +1236,7 @@
             <button class="btn-login" id="authSubmitBtn" onclick="handleAuthSubmit()">Masuk Sekarang</button>
             <div id="loginError" class="login-error">Terjadi kesalahan pada data yang dimasukkan.</div>
 
+            <!-- Tombol Pengarah ke Halaman Masuk Admin -->
             <button onclick="showAdminLoginScreen()" style="background: transparent; border: none; color: var(--accent-solid); font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 8px;">🔐 Cloudzone</button>
 
             <div class="social-media-row" aria-label="Media sosial Kurniapedia">
@@ -1197,6 +1246,7 @@
                 <a class="kurnia-icon wa" href="https://wa.me/6285870906050" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp Kurniapedia" title="WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.4L3 20l1-4.7a8.5 8.5 0 1 1 16.5-3.6z"/><path d="M8.2 8.1c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3.1.5-.1.7l-.6.7c-.2.2-.2.4 0 .7.6 1 1.5 1.8 2.6 2.3.3.1.5.1.7-.1l.8-1c.2-.2.4-.3.7-.2l1.7.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.7-.5.5-1.2.7-2 .6-.8-.1-1.8-.5-3-1.2-1.9-1.1-3.2-3-3.5-3.4-.3-.4-.8-1.2-.8-2.1 0-.8.4-1.3.6-1.7z"/></svg></a>
             </div>
 
+            <!-- Footer Aplikasi -->
             <div class="app-footer">Crafted with ♥ by <span style="color: #00f2fe; font-weight: 600;">Kurniapedia </span> 2026</div>
         </div>
     </div>
@@ -1241,8 +1291,11 @@
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Daftar akun baru yang menunggu verifikasi awal:</p>
             
             <div id="pendingMasterUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
+                <!-- Diisi dinamis via JS -->
             </div>
-            <button class="btn-back-compact" onclick="handleLogout()">Keluar Akun Admin</button>
+<!-- Tombol Kembali untuk menggantikan tombol Keluar Akun Admin -->
+       <!-- KODE BARU -->
+<button class="btn-back-compact" onclick="handleLogout()">Keluar Akun Admin</button>
         </div>
     </div>
 
@@ -1259,8 +1312,10 @@
 
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-align: left;">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
             <div id="pendingStudentContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
+                <!-- Diisi dinamis via JS -->
             </div>
 
+            <!-- KODE BARU -->
             <button class="btn-back-compact" onclick="goToMenu()">Kembali</button>
         </div>
     </div>
@@ -1272,8 +1327,11 @@
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;" id="classMembersSubtitle">Daftar siswa yang tergabung dalam kelas ini:</p>
             
             <div id="classMembersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
+                <!-- Diisi dinamis via JS -->
             </div>
 
+        <!-- KODE BARU -->
+            <!-- KODE BARU -->
             <button class="btn-back-compact" onclick="goBackFromClassMembers()">Kembali</button>
         </div>
     </div>
@@ -1289,11 +1347,16 @@
         </div>
     </div>
 
+    <!-- Overlay blocking saat proses kirim rekaman berlangsung -- sengaja
+         TIDAK bisa ditutup manual, supaya siswa tidak berpindah halaman
+         sebelum proses benar-benar selesai (lihat kirimSetoran()). -->
     <div id="uploadingOverlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:20px;">
         <div style="width:44px; height:44px; border:4px solid rgba(255,255,255,0.25); border-top-color:var(--accent-solid); border-radius:50%; animation:spinPlain 0.8s linear infinite;"></div>
         <div style="color:white; font-weight:700; font-size:15px;" id="uploadingOverlayText">Mengirim rekaman...</div>
         <div style="color:rgba(255,255,255,0.75); font-size:12px; max-width:280px;">Jangan tutup atau pindah halaman sampai proses ini selesai.</div>
     </div>
+
+
 
     <!-- Halaman Menu Utama -->
     <div id="menu-screen" class="screen">
@@ -1336,173 +1399,201 @@
             <div class="menu-section-title">DALAM PENGEMBANGAN KURNIAPEDIA</div>
             
             <div class="grid-jilid">
-                <button class="btn-cover" id="cover-btn-0" onclick="openJilid(1, 'a')" onmouseenter="selectedMenuCoverIndex=0; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/dtj1n520e/image/upload/v1/media-tartili/allfiles/cover1.jpg"></button>
-                <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/dtj1n520e/image/upload/v1/media-tartili/allfiles/cover2.jpg"></button>
-                <button class="btn-cover" id="cover-btn-2" onclick="openJilid(3, 'a')" onmouseenter="selectedMenuCoverIndex=2; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/dtj1n520e/image/upload/v1/media-tartili/allfiles/cover3.jpg"></button>
-                <button class="btn-cover" id="cover-btn-3" onclick="openJilid(4, 'a')" onmouseenter="selectedMenuCoverIndex=3; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/dtj1n520e/image/upload/v1/media-tartili/allfiles/cover4.jpg"></button>
-                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=4; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/dtj1n520e/image/upload/v1/media-tartili/allfiles/cover5.jpg"></button>
-                <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/dtj1n520e/image/upload/v1/media-tartili/allfiles/cover6.jpg"></button>
+                <button class="btn-cover" id="cover-btn-0" onclick="openJilid(1, 'a')" onmouseenter="selectedMenuCoverIndex=0; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover1.jpg"></button>
+                <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover2.jpg"></button>
+                <button class="btn-cover" id="cover-btn-2" onclick="openJilid(3, 'a')" onmouseenter="selectedMenuCoverIndex=2; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover3.jpg"></button>
+                <button class="btn-cover" id="cover-btn-3" onclick="openJilid(4, 'a')" onmouseenter="selectedMenuCoverIndex=3; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover4.jpg"></button>
+                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover5.jpg"></button>
+                <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover6.jpg"></button>
             </div>
-
-            <div class="shortcut-panel" style="width: 100%; max-width: 480px; margin-top: 4px;">
-                <div class="section-title">Pintasan Baca Cepat</div>
+            
+            <div class="shortcut-panel" style="width: 100%; max-width: 100%;">
+                <div class="section-title">Pintasan</div>
                 <div class="shortcut-container">
                     <div class="shortcut-left">
-                        <div class="shortcut-row row-tartili">
+                        <div class="shortcut-row">
                             <span>Tartili</span>
-                            <select id="quickJilidSelect" onchange="updateQuickPageOptions()">
-                                <option value="1">Jilid 1</option>
-                                <option value="2">Jilid 2</option>
-                                <option value="3">Jilid 3</option>
-                                <option value="4">Jilid 4</option>
-                                <option value="5">Jilid 5</option>
-                                <option value="6">Jilid 6</option>
+                            <select id="jumpJilidMenu" onchange="updatePageOptions('Menu')">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
                             </select>
                         </div>
-                        <div class="shortcut-row row-halaman">
+                        <div class="shortcut-row">
                             <span>Halaman</span>
-                            <select id="quickPageSelect">
-                            </select>
+                            <select id="jumpPageSelectMenu"></select>
                         </div>
                     </div>
-                    <button class="universal-btn btn-open-target" onclick="jumpToQuickTarget()">Buka</button>
+                    <button class="btn-open-menu" onclick="directOpen('Menu')" style="background: var(--accent-gradient); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: var(--transition); height: 32px; width: 80px;">Buka</button>
                 </div>
             </div>
 
-            <div class="app-footer" style="margin-top: auto;">Crafted with ♥ by <span style="color: #00f2fe; font-weight: 600;">Kurniapedia </span> 2026</div>
+            <div class="social-media-row" aria-label="Media sosial Kurniapedia">
+                <a class="kurnia-icon ig" href="https://instagram.com/kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="Instagram Kurniapedia" title="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none"/></svg></a>
+                <a class="kurnia-icon tt" href="https://tiktok.com/@kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="TikTok Kurniapedia" title="TikTok"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 7.1a6.5 6.5 0 0 1-4.1-2.2v9.3a6.2 6.2 0 1 1-5.4-6.1v3.3a2.9 2.9 0 1 0 2.1 2.8V2h3.3a3.3 3.3 0 0 0 0 .6 3.9 3.9 0 0 0 3.5 3.9v.6z"/></svg></a>
+                <a class="kurnia-icon yt" href="https://www.youtube.com/@kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="YouTube Kurniapedia" title="YouTube"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.6 3.6 12 3.6 12 3.6s-7.6 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.8.5 9.4.5 9.4.5s7.6 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8z"/><path fill="var(--bg-main)" d="m9.6 15.3 6.2-3.3-6.2-3.3z"/></svg></a>
+                <a class="kurnia-icon wa" href="https://wa.me/6285870906050" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp Kurniapedia" title="WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.4L3 20l1-4.7a8.5 8.5 0 1 1 16.5-3.6z"/><path d="M8.2 8.1c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3.1.5-.1.7l-.6.7c-.2.2-.2.4 0 .7.6 1 1.5 1.8 2.6 2.3.3.1.5.1.7-.1l.8-1c.2-.2.4-.3.7-.2l1.7.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.7-.5.5-1.2.7-2 .6-.8-.1-1.8-.5-3-1.2-1.9-1.1-3.2-3-3.5-3.4-.3-.4-.8-1.2-.8-2.1 0-.8.4-1.3.6-1.7z"/></svg></a>
+            </div>
+
+            <!-- Footer Aplikasi -->
+            <div class="app-footer">Crafted with ♥ by <span style="color: #00f2fe; font-weight: 600;">Kurniapedia </span> 2026</div>
         </div>
     </div>
 
-    <!-- Halaman Baca Jilid -->
-    <div id="read-screen" class="screen">
-        <div class="loading-spinner" id="loadingSpinner"></div>
-        <div class="image-scroll-area" id="imageScrollArea">
-            <div class="image-container" id="imageContainer">
-                <img id="jilidImage" src="" alt="Halaman Tartili" />
-                <div id="soundBlocksContainer"></div>
-            </div>
-        </div>
-
-        <div class="controls-wrapper" id="controlsWrapper">
-            <div class="page-nav-panel">
-                <div class="section-title">Navigasi Halaman</div>
-                <div class="page-nav-buttons">
-                    <button class="btn-page-nav-custom btn-prev-custom" onclick="prevPage()">
-                        <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div>
-                        <span>SEBELUMNYA</span>
-                    </button>
-                    <button class="btn-page-nav-custom btn-next-custom" onclick="nextPage()">
-                        <span>SELANJUTNYA</span>
-                        <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
-                    </button>
-                </div>
-            </div>
-
-            <div class="shortcut-panel">
-                <div class="section-title">Pintasan Halaman</div>
-                <div class="shortcut-container">
-                    <div class="shortcut-left">
-                        <div class="shortcut-row row-tartili">
-                            <span>Tartili</span>
-                            <select id="readJilidSelect" onchange="updateReadPageOptions()">
-                                <option value="1">Jilid 1</option>
-                                <option value="2">Jilid 2</option>
-                                <option value="3">Jilid 3</option>
-                                <option value="4">Jilid 4</option>
-                                <option value="5">Jilid 5</option>
-                                <option value="6">Jilid 6</option>
-                            </select>
-                        </div>
-                        <div class="shortcut-row row-halaman">
-                            <span>Halaman</span>
-                            <select id="readPageSelect">
-                            </select>
-                        </div>
-                    </div>
-                    <button class="universal-btn btn-open-target" onclick="jumpToReadTarget()">Buka</button>
-                    <button class="universal-btn btn-menu-back" onclick="goToMenu()">Menu</button>
-                </div>
-            </div>
-
-            <div class="record-panel" id="studentRecordPanel" style="display:flex;">
-                <div class="section-title">Setoran Bacaan (Siswa)</div>
-                <div class="record-buttons">
-                    <button class="universal-btn btn-record" id="btnStartRecord" onclick="startRecording()">Rekam</button>
-                    <button class="universal-btn btn-stop" id="btnStopRecord" onclick="stopRecording()" disabled>Berhenti</button>
-                    <button class="universal-btn btn-ok" id="btnPlayRecord" onclick="playRecording()" disabled>Putar</button>
-                    <button class="universal-btn btn-send" id="btnSendRecord" onclick="kirimSetoran()" disabled>Kirim</button>
-                </div>
-            </div>
-
-            <div class="record-panel teacher-review-panel" id="teacherReviewPanel" style="display:none;">
-            </div>
-        </div>
-    </div>
-
-    <!-- Halaman Bookmark -->
+    <!-- Halaman Daftar Bookmark -->
     <div id="bookmarks-screen" class="screen">
         <div class="bookmarks-content-wrapper">
             <div class="bookmarks-header">
                 <h2>Halaman Tersimpan</h2>
             </div>
             
-            <div class="bookmarks-list" id="bookmarksListContainer">
-                <div style="text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px;">Belum ada halaman yang disimpan.</div>
-            </div>
-
-            <div class="shortcut-panel bookmarks-menu-only">
-                <div class="shortcut-container bookmarks-menu-panel">
-                    <button class="universal-btn btn-menu-back" onclick="goToMenu()">Menu Utama</button>
+            <div class="bookmarks-list" id="bookmarksListContainer"></div>
+            
+            <div class="shortcut-panel bookmarks-menu-panel">
+                <div class="shortcut-container bookmarks-menu-only">
+                    <button class="universal-btn btn-menu-back" onclick="goToMenu()">Menu</button>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Halaman Membaca Buku -->
+    <div id="read-screen" class="screen">
+        <div class="image-scroll-area" id="scrollArea">
+            <div class="loading-spinner" id="loadingSpinner"></div>
+            <div class="image-container" id="imageContainer"></div>
+        </div>
+        
+        <div class="controls-wrapper">
+            <div class="page-nav-panel">
+                <div class="section-title">Halaman</div>
+                <div class="page-nav-buttons">
+                    <button class="btn-page-nav-custom btn-prev-custom" onclick="changePage(-1)" title="Sebelumnya">
+                        <span class="nav-icon">
+                            <svg viewBox="0 0 24 24"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
+                        </span>
+                    </button>
+                    
+                    <button class="btn-bookmark" id="btnBookmark" onclick="toggleBookmark()" title="Simpan Halaman">
+                        <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
+                    </button>
+                    
+                    <button class="btn-page-nav-custom btn-next-custom" onclick="changePage(1)" title="Berikutnya">
+                        <span class="nav-icon">
+                            <svg viewBox="0 0 24 24"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="shortcut-panel">
+                <div class="section-title">Pintasan</div>
+                <div class="shortcut-container">
+                    <button class="universal-btn btn-menu-back" onclick="goToMenu()">Menu</button>
+                    <div class="shortcut-left">
+                        <div class="shortcut-row row-tartili">
+                            <span>Tartili</span>
+                            <select id="jumpJilidRead" onchange="updatePageOptions('Read')">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                            </select>
+                        </div>
+                        <div class="shortcut-row row-halaman">
+                            <span>Halaman</span>
+                            <select id="jumpPageSelectRead"></select>
+                        </div>
+                    </div>
+                    <button class="universal-btn btn-open-target" onclick="directOpen('Read')">Buka</button>
+                </div>
+            </div>
+
+            <div class="record-panel" id="studentRecordPanel">
+                <div class="section-title" id="recordTitle">Setoran membaca</div>
+                <div class="record-buttons">
+                    <button class="universal-btn btn-record" id="btnRec" onclick="startRecording()">Rekam</button>
+                    <button class="universal-btn btn-stop" id="btnStop" onclick="stopRecording()" disabled>Stop</button>
+                    <button class="universal-btn btn-ok" id="btnPlay" onclick="playRecording()" disabled>▶ Play</button>
+                    <button class="universal-btn btn-send" id="btnSend" onclick="kirimSetoran()" disabled>Kirim</button>
+                </div>
+            </div>
+
+            <!-- Panel Penilaian Guru: menggantikan panel rekam siswa + panel
+                 Pintasan & Halaman (disembunyikan lewat JS) saat guru
+                 membuka halaman ini lewat notifikasi setoran. Satu baris
+                 flex penuh lebar (tidak dibatasi max-width lagi supaya
+                 tidak ada sisa kosong kiri-kanan di mode landscape):
+                 [Nilai-Nama + kotak nilai] -> [bar audio] ->
+                 [kotak pesan/catatan, ambil sisa ruang paling banyak] ->
+                 [tombol Kembali & Kirim, di kanan]. flex-wrap aktif supaya
+                 tetap aman kalau dibuka di layar sangat sempit (potret HP).
+                 Disembunyikan default (openSetoranReview()). -->
+            <div class="record-panel teacher-review-panel" id="teacherReviewPanel" style="display:none;">
+                <div class="teacher-review-layout">
+                    <!-- Nilai-Nama + kotak nilai (sejajar, ramping) -->
+                    <div class="teacher-review-score">
+                        <div class="section-title">Nilai <span id="reviewStudentName"></span></div>
+                        <input type="number" min="0" max="100" id="reviewNilaiInput" placeholder="0" />
+                    </div>
+                    <!-- Bar pemutar audio -->
+                    <div class="teacher-review-audio" id="reviewAudioContainer"></div>
+                    <!-- Kotak pesan/catatan, ambil sisa ruang paling banyak -->
+                    <textarea class="teacher-review-feedback" id="reviewFeedbackInput" placeholder="Catatan untuk siswa"></textarea>
+                    <!-- Tombol Kembali & Kirim Penilaian, di paling kanan -->
+                    <div class="teacher-review-actions">
+                        <button class="review-back" onclick="backToNotifFromReview()">Kembali</button>
+                        <button class="review-submit" id="btnKirimPenilaianReview" onclick="kirimPenilaianReview()">Kirim Penilaian</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <audio id="playbackAudioEl" style="display:none;"></audio>
     </div>
 
     <!-- ==========================================
          4. LOGIKA APLIKASI UTAMA (JAVASCRIPT)
          ========================================== -->
     <script>
-        // --- VARIABEL GLOBAL ---
-        let currentJilid = 1;
-        let currentPageIndex = 0;
-        let activeAudio = null;
-        let scale = 1;
-        let panning = false;
-        let pointX = 0;
-        let pointY = 0;
-        let startX = 0;
-        let startY = 0;
-        let bookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks') || '[]');
-        let selectedMenuCoverIndex = 0;
-        let isDarkMode = localStorage.getItem('tartili_dark_mode') === 'true';
-
-        // Rekaman & Penilaian Global
-        let mediaRecorder = null;
-        let audioChunks = [];
-        let audioBlob = null;
-        let audioUrl = null;
-        let recordedAudioPlayer = null;
-        let currentSetoranIdForReview = null;
-        let currentSetoranNotifIdForReview = null;
-
-        // Inisialisasi Tema
-        if (isDarkMode) {
-            document.body.className = 'dark-theme';
-            const toggleSvg = document.querySelector('.btn-theme-toggle svg');
-            if (toggleSvg) toggleSvg.innerHTML = '<path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+        // CATATAN: Fitur cache offline (Service Worker) DIHAPUS karena
+        // menyebabkan gangguan pada permintaan jaringan lain di aplikasi
+        // (Firestore, gambar, audio setoran ikut gagal dimuat). Kode di
+        // bawah ini secara aktif membersihkan Service Worker yang mungkin
+        // sudah terpasang di browser pengguna dari versi sebelumnya.
+        const TARTILI_PAGE_IMAGE_CACHE = 'tartili-page-images-v1';
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+                registrations.forEach((reg) => reg.unregister());
+            });
+            if (window.caches) {
+                caches.keys().then((names) => {
+                    names.filter((name) => name !== TARTILI_PAGE_IMAGE_CACHE).forEach((name) => caches.delete(name));
+                });
+            }
         }
 
+        const savedTheme = localStorage.getItem('tartili_theme') || 'light-theme';
+        document.body.className = savedTheme;
+        updateThemeToggleIcon();
+
         function toggleTheme() {
-            isDarkMode = !isDarkMode;
-            localStorage.setItem('tartili_dark_mode', isDarkMode);
-            if (isDarkMode) {
+            if (document.body.classList.contains('light-theme')) {
                 document.body.className = 'dark-theme';
-                const toggleSvg = document.querySelector('.btn-theme-toggle svg');
-                if (toggleSvg) toggleSvg.innerHTML = '<path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+                localStorage.setItem('tartili_theme', 'dark-theme');
             } else {
                 document.body.className = 'light-theme';
-                const toggleSvg = document.querySelector('.btn-theme-toggle svg');
-                if (toggleSvg) toggleSvg.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+                localStorage.setItem('tartili_theme', 'light-theme');
+            }
+            updateThemeToggleIcon();
+            showToast(document.body.classList.contains('dark-theme') ? 'Mode Gelap diaktifkan' : 'Mode Terang diaktifkan');
+        }
+
+        function updateThemeToggleIcon() {
+            const btn = document.querySelector('.btn-theme-toggle');
+            if (btn) {
+                const isDark = document.body.classList.contains('dark-theme');
+                if (isDark) {
+                    btn.innerHTML = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+                } else {
+                    btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+                }
             }
         }
 
@@ -1512,30 +1603,35 @@
             toast.style.transform = 'translateX(-50%) translateY(0)';
             setTimeout(() => {
                 toast.style.transform = 'translateX(-50%) translateY(100px)';
-            }, 2500);
+            }, 3000);
         }
 
-        // --- AUTENTIKASI UI HELPER ---
+        function toggleNotifModal(show) {
+            const el = document.getElementById('notifModal');
+            if (show) el.classList.add('active');
+            else el.classList.remove('active');
+        }
+
+        let isRegisterMode = false;
         function switchAuthMode(mode) {
-            const modeLoginBtn = document.getElementById('modeLoginBtn');
-            const modeRegisterBtn = document.getElementById('modeRegisterBtn');
-            const registerFields = document.getElementById('registerFields');
-            const authSubmitBtn = document.getElementById('authSubmitBtn');
-            const loginError = document.getElementById('loginError');
+            isRegisterMode = (mode === 'register');
+            const loginBtn = document.getElementById('modeLoginBtn');
+            const regBtn = document.getElementById('modeRegisterBtn');
+            const regFields = document.getElementById('registerFields');
+            const submitBtn = document.getElementById('authSubmitBtn');
 
-            loginError.style.display = 'none';
-
-            if (mode === 'login') {
-                modeLoginBtn.classList.add('active');
-                modeRegisterBtn.classList.remove('active');
-                registerFields.classList.remove('show');
-                authSubmitBtn.innerText = "Masuk Sekarang";
+            if (isRegisterMode) {
+                loginBtn.classList.remove('active');
+                regBtn.classList.add('active');
+                regFields.classList.add('show');
+                submitBtn.innerText = "Daftar Akun";
             } else {
-                modeRegisterBtn.classList.add('active');
-                modeLoginBtn.classList.remove('active');
-                registerFields.classList.add('show');
-                authSubmitBtn.innerText = "Daftar Akun Baru";
+                regBtn.classList.remove('active');
+                loginBtn.classList.add('active');
+                regFields.classList.remove('show');
+                submitBtn.innerText = "Masuk Sekarang";
             }
+            toggleRoleFields();
         }
 
         function toggleRoleFields() {
@@ -1552,930 +1648,1307 @@
             }
         }
 
-        async function handleAuthSubmit() {
-            const email = document.getElementById('authEmail').value.trim();
-            const password = document.getElementById('authPassword').value;
-            const isRegister = document.getElementById('modeRegisterBtn').classList.contains('active');
-            const errorEl = document.getElementById('loginError');
-
-            errorEl.style.display = 'none';
-
-            if (!email || !password) {
-                errorEl.innerText = "Email dan kata sandi harus diisi.";
-                errorEl.style.display = 'block';
-                return;
-            }
-
-            try {
-                if (isRegister) {
-                    const name = document.getElementById('authName').value.trim();
-                    const role = document.getElementById('authRole').value;
-                    const classCode = document.getElementById('authClassCode').value.trim().toUpperCase();
-                    const teacherClassName = document.getElementById('authTeacherClassName').value.trim();
-
-                    if (!name) {
-                        errorEl.innerText = "Nama lengkap harus diisi.";
-                        errorEl.style.display = 'block';
-                        return;
-                    }
-
-                    if (role === 'Siswa' && !classCode) {
-                        errorEl.innerText = "Kode kelas dari guru harus diisi.";
-                        errorEl.style.display = 'block';
-                        return;
-                    }
-
-                    if (role === 'Guru' && !teacherClassName) {
-                        errorEl.innerText = "Nama kelas Anda harus diisi.";
-                        errorEl.style.display = 'block';
-                        return;
-                    }
-
-                    // Buat akun Auth Firebase
-                    const userCredential = await window.createUserWithEmailAndPassword(window.firebaseAuth, email, password);
-                    const user = userCredential.user;
-
-                    // Buat kode kelas acak otomatis jika Guru baru mendaftar
-                    let generatedClassCode = classCode;
-                    if (role === 'Guru') {
-                        generatedClassCode = 'KLS-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-                    }
-
-                    // Simpan profil ke Firestore
-                    await window.setDoc(window.doc(window.firebaseDb, "users", user.uid), {
-                        name: name,
-                        email: email,
-                        role: role,
-                        classCode: role === 'Siswa' ? classCode : generatedClassCode,
-                        teacherClassName: role === 'Guru' ? teacherClassName : '',
-                        isMasterApproved: false, // Menunggu persetujuan Admin Utama
-                        isTeacherApproved: role === 'Guru' ? true : false, // Siswa butuh konfirmasi Guru
-                        createdAt: window.serverTimestamp()
-                    });
-
-                    // Kirim notifikasi ke Admin Utama bahwa ada akun baru mendaftar
-                    await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
-                        targetUserId: "ALL_ADMINS",
-                        title: "Pendaftaran Akun Baru (" + role + ")",
-                        message: name + " (" + email + ") mendaftar dan menunggu verifikasi awal.",
-                        actionUrl: "admin_verify",
-                        createdAt: window.serverTimestamp(),
-                        readBy: []
-                    });
-
-                    showToast("Pendaftaran berhasil! Menunggu persetujuan Admin.");
-                } else {
-                    await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
-                }
-            } catch (err) {
-                console.error("Autentikasi gagal:", err);
-                errorEl.innerText = err.message.includes('auth/invalid-credential') ? "Email atau kata sandi salah." : err.message;
-                errorEl.style.display = 'block';
-            }
-        }
-
         function showAdminLoginScreen() {
-            hideAllScreens();
+            document.getElementById('login-screen').classList.remove('active');
             document.getElementById('admin-login-screen').classList.add('active');
         }
 
         function backToLoginScreen() {
-            hideAllScreens();
+            document.getElementById('admin-login-screen').classList.remove('active');
             document.getElementById('login-screen').classList.add('active');
         }
 
         async function handleAdminLogin() {
-            const email = document.getElementById('adminAuthEmail').value.trim();
+            const email = document.getElementById('adminAuthEmail').value;
             const password = document.getElementById('adminAuthPassword').value;
-            const errorEl = document.getElementById('adminLoginError');
-            errorEl.style.display = 'none';
+            const errorDiv = document.getElementById('adminLoginError');
+
+            if (!email || !password) {
+                errorDiv.innerText = "Email dan kata sandi admin wajib diisi.";
+                errorDiv.style.display = 'block';
+                return;
+            }
 
             try {
                 await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
+                errorDiv.style.display = 'none';
+                showToast('Berhasil masuk sebagai Admin!');
             } catch (err) {
-                errorEl.style.display = 'block';
+                console.error(err);
+                errorDiv.innerText = "Email atau kata sandi admin salah.";
+                errorDiv.style.display = 'block';
             }
         }
 
-        async function handleLogout() {
+        async function handleAuthSubmit() {
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            const errorDiv = document.getElementById('loginError');
+
+            if (!email || !password) {
+                errorDiv.innerText = "Email dan kata sandi wajib diisi.";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
             try {
-                if (window.unsubNotifications) window.unsubNotifications();
-                await window.signOut(window.firebaseAuth);
-                localStorage.removeItem('tartili_active_screen');
-                localStorage.removeItem('tartili_last_read');
-                hideAllScreens();
-                document.getElementById('login-screen').classList.add('active');
+                if (isRegisterMode) {
+                    const name = document.getElementById('authName').value || email.split('@')[0];
+                    const role = document.getElementById('authRole').value;
+                    
+                    let classCode = "";
+                    let teacherClassName = "";
+
+                    if (role === 'Guru') {
+                        teacherClassName = document.getElementById('authTeacherClassName').value || 'Kelas Guru';
+                        classCode = 'KLS-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+                    } else {
+                        classCode = document.getElementById('authClassCode').value.trim();
+                        if (!classCode) {
+                            errorDiv.innerText = "Kode kelas dari guru wajib diisi bagi siswa.";
+                            errorDiv.style.display = 'block';
+                            return;
+                        }
+                    }
+
+                    const userCredential = await window.createUserWithEmailAndPassword(window.firebaseAuth, email, password);
+                    const user = userCredential.user;
+
+                    await window.setDoc(window.doc(window.firebaseDb, "users", user.uid), {
+                        name: name,
+                        email: email,
+                        role: role,
+                        classCode: classCode,
+                        teacherClassName: teacherClassName,
+                        isMasterApproved: false,
+                        isTeacherApproved: (role === 'Guru'),
+                        createdAt: new Date().toISOString()
+                    });
+
+                    // NOTIFIKASI MASTER ADMIN SAAT PENDAFTAR BARU
+                    await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                        targetUserId: "ALL_ADMINS",
+                        title: "Pendaftar Baru!",
+                        message: `Pengguna baru "${name}" (${role}) telah mendaftar dan menunggu verifikasi.`,
+                        actionUrl: 'admin-approval',
+                        readBy: [],
+                        createdAt: window.serverTimestamp()
+                    });
+
+                    errorDiv.style.display = 'none';
+                    showToast('Pendaftaran berhasil! Akun menunggu persetujuan Admin.');
+                } else {
+                    await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
+                    errorDiv.style.display = 'none';
+                    showToast('Berhasil masuk!');
+                }
             } catch (err) {
-                console.error("Gagal keluar:", err);
+                console.error(err);
+                errorDiv.innerText = isRegisterMode ? "Gagal mendaftar (Email sudah terpakai / sandi terlalu pendek)." : "Email atau kata sandi salah.";
+                errorDiv.style.display = 'block';
             }
         }
 
-        // --- PANEL MASTER ADMIN & GURU ---
-        async function loadMasterPendingUsers() {
-            const container = document.getElementById('pendingMasterUsersContainer');
-            if (!container) return;
-            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat daftar akun...</div>`;
-
-            try {
-                const q = query(collection(window.firebaseDb, "users"), where("isMasterApproved", "==", false));
-                const snap = await window.getDocs(q);
-
-                if (snap.empty) {
-                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:13px;">Tidak ada akun yang menunggu verifikasi master.</div>`;
-                    return;
-                }
-
-                container.innerHTML = "";
-                snap.forEach(docSnap => {
-                    const u = docSnap.data();
-                    const uid = docSnap.id;
-
-                    const item = document.createElement('div');
-                    item.style.cssText = "background:var(--input-bg); border:1px solid var(--border-color); padding:12px 16px; border-radius:14px; display:flex; justify-content:space-between; align-items:center; gap:10px;";
-                    item.innerHTML = `
-                        <div>
-                            <div style="font-weight:700; font-size:13px; color:var(--text-main);">${u.name} (${u.role})</div>
-                            <div style="font-size:11px; color:var(--text-muted);">${u.email} ${u.classCode ? '• Kelas: ' + u.classCode : ''}</div>
-                        </div>
-                        <div style="display:flex; gap:6px;">
-                            <button onclick="approveMasterUser('${uid}', '${u.email}')" style="background:#10b981; color:white; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">Setujui</button>
-                            <button onclick="rejectMasterUser('${uid}')" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">Tolak</button>
-                        </div>
-                    `;
-                    container.appendChild(item);
-                });
-            } catch (e) {
-                console.error("Gagal memuat pending master users:", e);
-            }
-        }
-
-        async function approveMasterUser(uid, email) {
-            try {
-                await window.updateDoc(window.doc(window.firebaseDb, "users", uid), { isMasterApproved: true });
-                showToast("Akun berhasil disetujui!");
-                loadMasterPendingUsers();
-            } catch (e) {
-                showToast("Gagal menyetujui akun.");
-            }
-        }
-
-        async function rejectMasterUser(uid) {
-            try {
-                await window.deleteDoc(window.doc(window.firebaseDb, "users", uid));
-                showToast("Akun ditolak & dihapus.");
-                loadMasterPendingUsers();
-            } catch (e) {
-                showToast("Gagal menolak akun.");
-            }
-        }
-
-        async function openMasterAdminScreen() {
-            hideAllScreens();
-            document.getElementById('admin-screen').classList.add('active');
-            window.appState = 'admin';
-            await loadMasterPendingUsers();
-        }
-
-        async function openTeacherAdminScreen() {
-            const profile = window.currentUserProfile;
-            if (!profile || profile.role !== 'Guru') return;
-
-            hideAllScreens();
-            document.getElementById('teacher-admin-screen').classList.add('active');
-            window.appState = 'teacher-admin';
-
-            document.getElementById('teacherClassCodeDisplay').innerText = profile.classCode || '-';
-            await loadPendingStudents(profile.classCode);
-        }
-
-        async function loadPendingStudents(classCode) {
-            const container = document.getElementById('pendingStudentContainer');
-            if (!container) return;
-            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat daftar siswa...</div>`;
-
-            try {
-                const q = query(
-                    collection(window.firebaseDb, "users"),
-                    where("classCode", "==", classCode),
-                    where("role", "==", "Siswa"),
-                    where("isTeacherApproved", "==", false)
-                );
-                const snap = await window.getDocs(q);
-
-                if (snap.empty) {
-                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:13px;">Tidak ada siswa baru di kelas ini.</div>`;
-                    return;
-                }
-
-                container.innerHTML = "";
-                snap.forEach(docSnap => {
-                    const u = docSnap.data();
-                    const uid = docSnap.id;
-
-                    const item = document.createElement('div');
-                    item.style.cssText = "background:var(--input-bg); border:1px solid var(--border-color); padding:12px 16px; border-radius:14px; display:flex; justify-content:space-between; align-items:center; gap:10px;";
-                    item.innerHTML = `
-                        <div>
-                            <div style="font-weight:700; font-size:13px; color:var(--text-main);">${u.name}</div>
-                            <div style="font-size:11px; color:var(--text-muted);">${u.email}</div>
-                        </div>
-                        <div style="display:flex; gap:6px;">
-                            <button onclick="approveStudent('${uid}', '${u.name}')" style="background:#10b981; color:white; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">Terima</button>
-                            <button onclick="rejectStudent('${uid}')" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">Tolak</button>
-                        </div>
-                    `;
-                    container.appendChild(item);
-                });
-            } catch (e) {
-                console.error("Gagal memuat siswa pending:", e);
-            }
-        }
-
-        async function approveStudent(uid, studentName) {
-            try {
-                await window.updateDoc(window.doc(window.firebaseDb, "users", uid), { isTeacherApproved: true });
-                showToast("Siswa " + studentName + " diterima di kelas!");
-                openTeacherAdminScreen();
-            } catch (e) {
-                showToast("Gagal menerima siswa.");
-            }
-        }
-
-        async function rejectStudent(uid) {
-            try {
-                await window.deleteDoc(window.doc(window.firebaseDb, "users", uid));
-                showToast("Pendaftaran siswa ditolak.");
-                openTeacherAdminScreen();
-            } catch (e) {
-                showToast("Gagal menolak siswa.");
-            }
-        }
-
-        // --- DAFTAR ANGGOTA KELAS ---
-        async function openClassMembersScreen() {
-            const profile = window.currentUserProfile;
-            if (!profile) return;
-
-            hideAllScreens();
-            document.getElementById('class-members-screen').classList.add('active');
-            window.appState = 'class-members';
-
-            const titleEl = document.getElementById('classMembersTitle');
-            const subtitleEl = document.getElementById('classMembersSubtitle');
-            const container = document.getElementById('classMembersContainer');
-
-            if (profile.role === 'Guru') {
-                titleEl.innerText = "Daftar Siswa Kelas Anda";
-                subtitleEl.innerText = `Kelas: ${profile.teacherClassName || '-'} (Kode: ${profile.classCode})`;
-            } else {
-                titleEl.innerText = "Anggota Kelas Saya";
-                subtitleEl.innerText = `Kode Kelas: ${profile.classCode || '-'}`;
-            }
-
-            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat anggota kelas...</div>`;
-
-            try {
-                // Ambil guru kelas
-                let qGuru = query(collection(window.firebaseDb, "users"), where("classCode", "==", profile.classCode), where("role", "==", "Guru"));
-                let snapGuru = await window.getDocs(qGuru);
-                let guruData = null;
-                snapGuru.forEach(d => guruData = d.data());
-
-                // Ambil siswa yang sudah disetujui di kelas ini
-                let qSiswa = query(
-                    collection(window.firebaseDb, "users"),
-                    where("classCode", "==", profile.classCode),
-                    where("role", "==", "Siswa"),
-                    where("isTeacherApproved", "==", true)
-                );
-                let snapSiswa = await window.getDocs(qSiswa);
-
-                container.innerHTML = "";
-
-                // Tampilkan info Guru
-                if (guruData) {
-                    const guruItem = document.createElement('div');
-                    guruItem.style.cssText = "background:rgba(var(--accent-rgb), 0.1); border:1px solid var(--border-color); padding:12px 16px; border-radius:14px; display:flex; justify-content:space-between; align-items:center;";
-                    guruItem.innerHTML = `
-                        <div>
-                            <div style="font-weight:800; font-size:13px; color:var(--accent-solid);">👨‍🏫 GURU PENGAMPU</div>
-                            <div style="font-weight:700; font-size:13px; color:var(--text-main); margin-top:2px;">${guruData.name}</div>
-                            <div style="font-size:11px; color:var(--text-muted);">${guruData.teacherClassName || ''} • ${guruData.email}</div>
-                        </div>
-                    `;
-                    container.appendChild(guruItem);
-                }
-
-                if (snapSiswa.empty) {
-                    const emptyItem = document.createElement('div');
-                    emptyItem.style.cssText = "text-align:center; color:var(--text-muted); padding:20px; font-size:13px;";
-                    emptyItem.innerText = "Belum ada siswa lain yang bergabung di kelas ini.";
-                    container.appendChild(emptyItem);
-                    return;
-                }
-
-                snapSiswa.forEach(docSnap => {
-                    const s = docSnap.data();
-                    const item = document.createElement('div');
-                    item.style.cssText = "background:var(--input-bg); border:1px solid var(--border-color); padding:10px 14px; border-radius:12px; display:flex; justify-content:space-between; align-items:center;";
-                    item.innerHTML = `
-                        <div>
-                            <div style="font-weight:700; font-size:13px; color:var(--text-main);">👤 ${s.name}</div>
-                            <div style="font-size:11px; color:var(--text-muted);">${s.email}</div>
-                        </div>
-                        <div style="font-size:10px; font-weight:700; background:rgba(16, 185, 129, 0.15); color:#10b981; padding:2px 8px; border-radius:6px;">Aktif</div>
-                    `;
-                    container.appendChild(item);
-                });
-
-            } catch (e) {
-                console.error("Gagal memuat anggota kelas:", e);
-            }
-        }
-
-        function goBackFromClassMembers() {
-            const profile = window.currentUserProfile;
-            if (profile && profile.role === 'Guru') {
-                openTeacherAdminScreen();
-            } else {
-                goToMenu();
-            }
-        }
-
-        // --- DASHBOARD SETUP & GREETING ---
         async function updateUserGreeting() {
+            if (!window.currentUserProfile) return;
             const profile = window.currentUserProfile;
-            if (!profile) return;
-
-            document.getElementById('userUsernameText').innerText = profile.name || 'Pengguna';
-            document.getElementById('userClassText').innerText = profile.classCode ? `Kelas: ${profile.classCode}` : 'Kelas: -';
             
-            const roleBadge = document.getElementById('userRoleBadge');
+            const usernameEl = document.getElementById('userUsernameText');
+            const classEl = document.getElementById('userClassText');
+            const teacherNameEl = document.getElementById('userTeacherNameText');
+            const roleEl = document.getElementById('userRoleBadge');
+
+            if (usernameEl) usernameEl.innerText = profile.name || 'Pengguna';
+            if (roleEl) roleEl.innerHTML = `${profile.role || 'Siswa'} 👥`;
+
             if (profile.role === 'Guru') {
-                roleBadge.innerHTML = "Guru 👨‍🏫";
-                document.getElementById('userTeacherNameText').innerText = `Kelas Anda: ${profile.teacherClassName || '-'}`;
+                if (classEl) classEl.innerText = `Kelas ${profile.teacherClassName}`;
+                if (teacherNameEl) teacherNameEl.style.display = 'none';
             } else {
-                roleBadge.innerHTML = "Siswa 👥";
-                // Cari nama guru dari classCode
-                try {
-                    const qGuru = query(collection(window.firebaseDb, "users"), where("classCode", "==", profile.classCode), where("role", "==", "Guru"));
-                    const snapGuru = await window.getDocs(qGuru);
-                    let gName = "-";
-                    snapGuru.forEach(d => gName = d.data().name);
-                    document.getElementById('userTeacherNameText').innerText = `Guru: ${gName}`;
-                } catch(e) {
-                    document.getElementById('userTeacherNameText').innerText = `Guru: -`;
+                if (classEl) classEl.innerText = `Kelas Memuat...`;
+                if (teacherNameEl) {
+                    teacherNameEl.style.display = 'inline';
+                    teacherNameEl.innerText = "Guru: Memuat...";
+                    try {
+                        const q = window.query(window.collection(window.firebaseDb, "users"), window.where("role", "==", "Guru"), window.where("classCode", "==", profile.classCode));
+                        const snap = await window.getDocs(q);
+                        if (!snap.empty) {
+                            const teacherData = snap.docs[0].data();
+                            teacherNameEl.innerText = `Guru: ${teacherData.name}`;
+                            if (classEl) classEl.innerText = `Kelas ${teacherData.teacherClassName || profile.classCode || '-'}`;
+                        } else {
+                            teacherNameEl.innerText = `Guru: -`;
+                            if (classEl) classEl.innerText = `Kelas ${profile.classCode || '-'}`;
+                        }
+                    } catch (e) {
+                        teacherNameEl.innerText = `Guru: -`;
+                        if (classEl) classEl.innerText = `Kelas ${profile.classCode || '-'}`;
+                    }
                 }
             }
         }
 
         function setupDashboardAccess() {
-            const profile = window.currentUserProfile;
-            if (!profile) return;
-
             const btnMaster = document.getElementById('btnMasterAdminPanel');
             const btnTeacher = document.getElementById('btnTeacherPanel');
+            if (!btnMaster || !btnTeacher) return;
 
-            if (profile.email === 'awanproject70@gmail.com' || profile.role === 'Admin') {
-                if (btnMaster) btnMaster.style.display = 'flex';
-                if (btnTeacher) btnTeacher.style.display = 'none';
-            } else if (profile.role === 'Guru') {
-                if (btnMaster) btnMaster.style.display = 'none';
-                if (btnTeacher) btnTeacher.style.display = 'flex';
-            } else {
-                if (btnMaster) btnMaster.style.display = 'none';
-                if (btnTeacher) btnTeacher.style.display = 'none';
-            }
-        }
-
-        function toggleNotifModal(show) {
-            const modal = document.getElementById('notifModal');
-            if (modal) {
-                if (show) modal.classList.add('active');
-                else modal.classList.remove('active');
-            }
-        }
-
-        // --- NAVIGASI ANTARHALAMAN UTAMA & BACA ---
-        function goToMenu() {
-            if (activeAudio) { activeAudio.pause(); activeAudio = null; }
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop();
-            }
-            hideAllScreens();
-            document.getElementById('menu-screen').classList.add('active');
-            window.appState = 'menu';
-            localStorage.setItem('tartili_active_screen', 'menu');
-            updateMenuCoverFocus();
-        }
-
-        function updateMenuCoverFocus() {
-            for (let i = 0; i < 6; i++) {
-                const btn = document.getElementById(`cover-btn-${i}`);
-                if (btn) {
-                    if (i === selectedMenuCoverIndex) {
-                        btn.classList.add('keyboard-focused');
-                    } else {
-                        btn.classList.remove('keyboard-focused');
-                    }
-                }
-            }
-        }
-
-        function openJilid(jilidNum, pageTarget = 'a') {
-            if (activeAudio) { activeAudio.pause(); activeAudio = null; }
-            currentJilid = jilidNum;
-            const dataObj = window['tartili' + jilidNum];
-            if (!dataObj || !dataObj.pages || dataObj.pages.length === 0) return;
-
-            if (pageTarget === 'a' || typeof pageTarget !== 'number') {
-                currentPageIndex = 0;
-            } else {
-                currentPageIndex = Math.max(0, Math.min(pageTarget, dataObj.pages.length - 1));
-            }
-
-            hideAllScreens();
-            document.getElementById('read-screen').classList.add('active');
-            window.appState = 'read';
-            localStorage.setItem('tartili_active_screen', 'read');
-
-            // Set dropdown values
-            document.getElementById('readJilidSelect').value = currentJilid;
-            updateReadPageOptions();
-            document.getElementById('readPageSelect').value = currentPageIndex;
-
-            // Atur panel rekam / review berdasarkan role
             const profile = window.currentUserProfile;
-            const studentRecordPanel = document.getElementById('studentRecordPanel');
-            const teacherReviewPanel = document.getElementById('teacherReviewPanel');
+            const isMaster = profile.email === 'awanproject70@gmail.com' || profile.role === 'Admin';
 
-            if (profile && profile.role === 'Guru') {
-                if (studentRecordPanel) studentRecordPanel.style.display = 'none';
-                if (teacherReviewPanel) teacherReviewPanel.style.display = 'none'; // hanya tampil saat buka review setoran
+            // Gunakan setProperty(..., 'important') supaya visibilitas tombol
+            // Admin/Guru TIDAK BISA ditimpa oleh aturan CSS !important lain
+            // (mis. aturan "paksa semua tombol tampil" di landing-hero-actions).
+            if (isMaster) {
+                btnMaster.style.setProperty('display', 'flex', 'important');
             } else {
-                if (studentRecordPanel) studentRecordPanel.style.display = 'flex';
-                if (teacherReviewPanel) teacherReviewPanel.style.display = 'none';
+                btnMaster.style.setProperty('display', 'none', 'important');
             }
 
-            renderPage();
-            resetAudioState();
+            if (profile.role === 'Guru') {
+                btnTeacher.style.setProperty('display', 'flex', 'important');
+            } else {
+                btnTeacher.style.setProperty('display', 'none', 'important');
+            }
         }
-        window.openJilid = openJilid;
 
-        function renderPage() {
-            const dataObj = window['tartili' + currentJilid];
-            if (!dataObj) return;
-            const pageData = dataObj.pages[currentPageIndex];
-            if (!pageData) return;
+        // --- MASTER ADMIN PANEL ---
+        async function openMasterAdminScreen() {
+            appState = 'admin';
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('admin-screen').classList.add('active');
+            await loadMasterPendingUsers();
+        }
 
-            const spinner = document.getElementById('loadingSpinner');
-            spinner.style.display = 'block';
+        async function loadMasterPendingUsers() {
+            const container = document.getElementById('pendingMasterUsersContainer');
+            if (!container) return;
+            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat data pendaftar...</div>`;
 
-            const img = document.getElementById('jilidImage');
-            img.onload = () => { spinner.style.display = 'none'; };
-            img.src = pageData.imageUrl;
+            try {
+                const q = window.query(window.collection(window.firebaseDb, "users"), window.where("isMasterApproved", "==", false));
+                const querySnapshot = await window.getDocs(q);
+                
+                container.innerHTML = "";
+                if (querySnapshot.empty) {
+                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada akun yang menunggu persetujuan.</div>`;
+                    return;
+                }
 
-            // Render Sound Blocks
-            const container = document.getElementById('soundBlocksContainer');
-            container.innerHTML = '';
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const userId = docSnap.id;
 
-            if (pageData.soundBlocks) {
-                pageData.soundBlocks.forEach(block => {
-                    const div = document.createElement('div');
-                    div.className = 'sound-block';
-                    div.style.left = block.x + '%';
-                    div.style.top = block.y + '%';
-                    div.style.width = block.w + '%';
-                    div.style.height = block.h + '%';
-                    div.onclick = () => playAudio(block.audioUrl);
-                    container.appendChild(div);
+                    let item = document.createElement('div');
+                    item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; gap: 8px;";
+                    item.innerHTML = `
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${data.name} <span class="badge-role" style="margin-left: 6px;">${data.role}</span></div>
+                            <div style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Email: ${data.email}</div>
+                            <div style="font-size: 10px; color: var(--text-muted);">${data.role === 'Guru' ? 'Kelas ' + data.teacherClassName : 'Kode Kelas ' + (data.classCode || '-')}</div>
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                            <button onclick="approveMasterUser('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Setujui</button>
+                            <button onclick="deleteUserAccount('${userId}', '${data.name}')" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;" title="Tolak / Hapus">Hapus</button>
+                        </div>
+                    `;
+                    container.appendChild(item);
                 });
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat data.</div>`;
             }
-
-            // Simpan posisi baca terakhir
-            localStorage.setItem('tartili_last_read', JSON.stringify({ jilid: currentJilid, page: currentPageIndex }));
-            updateBookmarkButtonState();
         }
 
-        function playAudio(url) {
-            if (activeAudio) {
-                activeAudio.pause();
-                activeAudio = null;
+        async function approveMasterUser(userId) {
+            try {
+                await window.updateDoc(window.doc(window.firebaseDb, "users", userId), { isMasterApproved: true });
+                
+                // NOTIFIKASI KE USER KETIKA DISETUJUI ADMIN
+                await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                    targetUserId: userId,
+                    title: "Akun Disetujui!",
+                    message: "Akun Anda telah disetujui. Selamat belajar!",
+                    readBy: [],
+                    createdAt: window.serverTimestamp()
+                });
+
+                showToast('Akun berhasil disetujui Admin!');
+                loadMasterPendingUsers();
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal menyetujui akun.');
             }
-            activeAudio = new Audio(url);
-            activeAudio.play().catch(e => console.log("Audio play info:", e));
         }
 
-        function nextPage() {
-            const dataObj = window['tartili' + currentJilid];
-            if (!dataObj) return;
-            if (currentPageIndex < dataObj.pages.length - 1) {
-                currentPageIndex++;
-                renderPage();
-                document.getElementById('readPageSelect').value = currentPageIndex;
-            } else {
-                if (currentJilid < 6) {
-                    openJilid(currentJilid + 1, 0);
-                } else {
-                    showToast("Ini adalah halaman terakhir dari seluruh Jilid Tartili.");
+        async function deleteUserAccount(userId, userName) {
+            if (!confirm(`Apakah Anda yakin ingin menghapus/menolak pendaftaran akun "${userName}"?`)) return;
+            try {
+                await window.deleteDoc(window.doc(window.firebaseDb, "users", userId));
+                showToast(`Akun ${userName} berhasil dihapus.`);
+                loadMasterPendingUsers();
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal menghapus akun.');
+            }
+        }
+
+        // --- TEACHER PANEL ---
+        async function openTeacherAdminScreen() {
+            appState = 'teacher-admin';
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('teacher-admin-screen').classList.add('active');
+            
+            const profile = window.currentUserProfile;
+            const codeDisplay = document.getElementById('teacherClassCodeDisplay');
+            if (codeDisplay) codeDisplay.innerText = profile.classCode || '-';
+
+            await loadTeacherPendingStudents();
+        }
+
+        async function loadTeacherPendingStudents() {
+            const container = document.getElementById('pendingStudentContainer');
+            if (!container) return;
+            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat data siswa...</div>`;
+
+            try {
+                const teacherClassCode = window.currentUserProfile.classCode;
+                const q = window.query(
+                    window.collection(window.firebaseDb, "users"), 
+                    window.where("role", "==", "Siswa"),
+                    window.where("classCode", "==", teacherClassCode),
+                    window.where("isTeacherApproved", "==", false)
+                );
+                const querySnapshot = await window.getDocs(q);
+                
+                container.innerHTML = "";
+                if (querySnapshot.empty) {
+                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada siswa baru yang mendaftar ke kelas Anda.</div>`;
+                    return;
                 }
+
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const userId = docSnap.id;
+
+                    let item = document.createElement('div');
+                    item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
+                    item.innerHTML = `
+                        <div>
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${data.name}</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${data.email}</div>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button onclick="approveStudent('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Terima</button>
+                            <button onclick="deleteUserAccount('${userId}', '${data.name}')" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Tolak</button>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat siswa kelas.</div>`;
             }
         }
 
-        function prevPage() {
-            if (currentPageIndex > 0) {
-                currentPageIndex--;
-                renderPage();
-                document.getElementById('readPageSelect').value = currentPageIndex;
+        async function approveStudent(userId) {
+            try {
+                await window.updateDoc(window.doc(window.firebaseDb, "users", userId), { isTeacherApproved: true });
+                
+                // NOTIFIKASI KE SISWA KETIKA DISETUJUI GURU
+                await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                    targetUserId: userId,
+                    title: "Diterima di Kelas!",
+                    message: "Guru pengampu telah menyetujui Anda untuk bergabung di kelas.",
+                    readBy: [],
+                    createdAt: window.serverTimestamp()
+                });
+
+                showToast('Siswa berhasil diterima di kelas!');
+                loadTeacherPendingStudents();
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal menerima siswa.');
+            }
+        }
+
+        // --- CLASS MEMBERS SCREEN ---
+        let previousScreenBeforeMembers = 'menu';
+
+        async function openClassMembersScreen() {
+            if (appState === 'teacher-admin') {
+                previousScreenBeforeMembers = 'teacher-admin';
+                document.getElementById('teacher-admin-screen').classList.remove('active');
             } else {
-                if (currentJilid > 1) {
-                    const prevJilidData = window['tartili' + (currentJilid - 1)];
-                    openJilid(currentJilid - 1, prevJilidData.pages.length - 1);
-                } else {
-                    showToast("Ini adalah halaman pertama Tartili Jilid 1.");
+                previousScreenBeforeMembers = 'menu';
+                document.getElementById('menu-screen').classList.remove('active');
+            }
+
+            appState = 'class-members';
+            document.getElementById('class-members-screen').classList.add('active');
+
+            const container = document.getElementById('classMembersContainer');
+            const titleEl = document.getElementById('classMembersTitle');
+            const subtitleEl = document.getElementById('classMembersSubtitle');
+            if (!container) return;
+
+            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Memuat anggota kelas...</div>`;
+
+            try {
+                const profile = window.currentUserProfile;
+                const classCode = profile.classCode;
+
+                if (titleEl) titleEl.innerText = profile.role === 'Guru' ? `Anggota Kelas (${profile.teacherClassName})` : `Anggota Kelas`;
+                if (subtitleEl) subtitleEl.innerText = profile.role === 'Guru' ? `Daftar siswa yang aktif di kelas Anda:` : `Daftar siswa dan guru dalam kelas Anda:`;
+
+                const qTeacher = window.query(window.collection(window.firebaseDb, "users"), window.where("role", "==", "Guru"), window.where("classCode", "==", classCode));
+                const snapTeacher = await window.getDocs(qTeacher);
+
+                const qStudents = window.query(
+                    window.collection(window.firebaseDb, "users"), 
+                    window.where("role", "==", "Siswa"),
+                    window.where("classCode", "==", classCode),
+                    window.where("isTeacherApproved", "==", true)
+                );
+                const snapStudents = await window.getDocs(qStudents);
+
+                container.innerHTML = "";
+
+                if (!snapTeacher.empty) {
+                    snapTeacher.forEach(docSnap => {
+                        const tData = docSnap.data();
+                        const tId = docSnap.id;
+                        let item = document.createElement('div');
+                        item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(var(--accent-rgb), 0.1); border: 1px solid var(--accent-solid); border-radius: 12px;";
+                        item.innerHTML = `
+                            <div>
+                                <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👨‍🏫 ${tData.name} <span class="badge-role" style="margin-left: 6px;">Guru Pengampu</span></div>
+                                <div style="font-size: 11px; color: var(--text-muted);">Email: ${tData.email}</div>
+                            </div>
+                        `;
+                        container.appendChild(item);
+                    });
                 }
+
+                if (snapStudents.empty) {
+                    let emptyItem = document.createElement('div');
+                    emptyItem.style.cssText = "text-align:center; color:var(--text-muted); padding:15px; font-size:12px;";
+                    emptyItem.innerText = "Belum ada siswa lain yang aktif di kelas ini.";
+                    container.appendChild(emptyItem);
+                    return;
+                }
+
+                snapStudents.forEach((docSnap) => {
+                    const sData = docSnap.data();
+                    const sId = docSnap.id;
+                    let item = document.createElement('div');
+                    item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
+                    item.innerHTML = `
+                        <div>
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👤 ${sData.name}</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${sData.email}</div>
+                        </div>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 6px;">Aktif</span>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">Gagal memuat daftar anggota kelas.</div>`;
             }
         }
 
-        // --- PINTASAN DROPDOWN ---
-        function updateQuickPageOptions() {
-            const jilid = document.getElementById('quickJilidSelect').value;
-            const pageSelect = document.getElementById('quickPageSelect');
-            pageSelect.innerHTML = '';
-            const dataObj = window['tartili' + jilid];
-            if (!dataObj) return;
-
-            dataObj.pages.forEach((p, idx) => {
-                const opt = document.createElement('option');
-                opt.value = idx;
-                opt.innerText = `Halaman ${idx + 1}`;
-                pageSelect.appendChild(opt);
-            });
-        }
-
-        function jumpToQuickTarget() {
-            const jilid = parseInt(document.getElementById('quickJilidSelect').value);
-            const page = parseInt(document.getElementById('quickPageSelect').value);
-            openJilid(jilid, page);
-        }
-
-        function updateReadPageOptions() {
-            const jilid = document.getElementById('readJilidSelect').value;
-            const pageSelect = document.getElementById('readPageSelect');
-            pageSelect.innerHTML = '';
-            const dataObj = window['tartili' + jilid];
-            if (!dataObj) return;
-
-            dataObj.pages.forEach((p, idx) => {
-                const opt = document.createElement('option');
-                opt.value = idx;
-                opt.innerText = `Halaman ${idx + 1}`;
-                pageSelect.appendChild(opt);
-            });
-            pageSelect.value = currentPageIndex;
-        }
-
-        function jumpToReadTarget() {
-            const jilid = parseInt(document.getElementById('readJilidSelect').value);
-            const page = parseInt(document.getElementById('readPageSelect').value);
-            if (jilid !== currentJilid) {
-                openJilid(jilid, page);
+        function goBackFromClassMembers() {
+            document.getElementById('class-members-screen').classList.remove('active');
+            if (previousScreenBeforeMembers === 'teacher-admin') {
+                document.getElementById('teacher-admin-screen').classList.add('active');
+                appState = 'teacher-admin';
             } else {
-                currentPageIndex = page;
-                renderPage();
+                document.getElementById('menu-screen').classList.add('active');
+                appState = 'menu';
             }
         }
 
-        // Inisialisasi awal dropdown saat halaman dimuat
-        document.addEventListener("DOMContentLoaded", () => {
-            updateQuickPageOptions();
+        // --- SETORAN BACAAN SISWA (GURU) ---
+        // Fungsi INTI: simpan nilai & feedback ke Firestore + kirim notifikasi
+        // ke siswa. Dipakai oleh tampilan halaman baca saat guru meninjau
+        // 1 setoran lewat notifikasi (kirimPenilaianReview). Mengembalikan
+        // true/false untuk tahu berhasil atau tidak.
+        async function submitPenilaian(setoranId, nilai, feedback) {
+            try {
+                const setoranRef = window.doc(window.firebaseDb, "setoran", setoranId);
+                const setoranSnap = await window.getDoc(setoranRef);
+                if (!setoranSnap.exists()) { showToast('Data setoran tidak ditemukan.'); return false; }
+                const d = setoranSnap.data();
+                const profile = window.currentUserProfile;
+                const nilaiFinal = nilai === '' ? null : Number(nilai);
+                const feedbackFinal = feedback || null;
+
+                // Data lengkap (nilai, catatan, audio, jilid, halaman) disisipkan
+                // LANGSUNG ke notifikasi hasil untuk siswa -- supaya siswa tetap
+                // bisa melihat hasilnya kapan pun, walau dokumen setoran aslinya
+                // nanti ikut dihapus otomatis (24 jam setelah dinilai).
+                await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                    targetUserId: d.studentUid,
+                    title: "📋 Rekaman Anda Telah Dinilai",
+                    message: `Guru telah menilai setoran Jilid ${d.jilid} Hal. ${d.halaman} Anda.`,
+                    senderId: profile.uid,
+                    senderName: profile.name || 'Guru',
+                    actionUrl: 'setoran_hasil',
+                    jilid: d.jilid,
+                    halaman: d.halaman,
+                    audioUrl: d.audioUrl,
+                    nilai: nilaiFinal,
+                    feedback: feedbackFinal,
+                    createdAt: window.serverTimestamp(),
+                    readBy: []
+                });
+
+                // Setoran TIDAK langsung dihapus -- disimpan dulu selama 24 jam
+                // supaya guru masih bisa membuka & mendengarkan ulang lewat
+                // notifikasi yang sama (lihat cleanupExpiredSetoranNotif()).
+                await window.updateDoc(setoranRef, {
+                    nilai: nilaiFinal,
+                    feedback: feedbackFinal,
+                    status: 'dinilai',
+                    gradedAt: window.serverTimestamp()
+                });
+
+                return true;
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal mengirim penilaian.');
+                return false;
+            }
+        }
+
+        // --- TINJAU 1 SETORAN LEWAT HALAMAN BACA (dibuka dari notifikasi) ---
+        // Membuka halaman baca persis di Jilid & Halaman yang disetorkan
+        // siswa, dengan panel bawah diganti jadi panel penilaian guru
+        // (bukan panel rekam siswa).
+        async function openSetoranReview(setoranId) {
+            try {
+                const snap = await window.getDoc(window.doc(window.firebaseDb, "setoran", setoranId));
+                if (!snap.exists()) { showToast('Data setoran tidak ditemukan.'); return; }
+                const d = snap.data();
+
+                openJilid(d.jilid, d.halaman);
+                currentReviewSetoranId = setoranId;
+
+                // Sembunyikan panel Halaman & Pintasan -- guru cukup lihat
+                // panel penilaian saja, tidak perlu navigasi/pindah kelas.
+                // Pakai setProperty(...,'important') karena mode landscape
+                // punya aturan CSS "display: flex !important" untuk kedua
+                // panel ini -- inline style biasa tidak akan menang melawannya.
+                document.querySelector('#read-screen .page-nav-panel').style.setProperty('display', 'none', 'important');
+                document.querySelector('#read-screen .shortcut-panel').style.setProperty('display', 'none', 'important');
+
+                document.getElementById('studentRecordPanel').style.display = 'none';
+                const reviewPanel = document.getElementById('teacherReviewPanel');
+                reviewPanel.style.display = 'flex';
+                document.getElementById('reviewStudentName').innerText = d.studentName || 'Siswa';
+                document.getElementById('reviewAudioContainer').innerHTML =
+                    `<iframe src="${d.audioUrl}" style="width:100%; height:44px; border:none;" allow="autoplay"></iframe>`;
+                document.getElementById('reviewNilaiInput').value = d.nilai != null ? d.nilai : '';
+                document.getElementById('reviewFeedbackInput').value = d.feedback || '';
+                document.getElementById('btnKirimPenilaianReview').innerText = d.status === 'dinilai' ? 'Perbarui Penilaian' : 'Kirim Penilaian';
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal membuka setoran.');
+            }
+        }
+        window.openSetoranReview = openSetoranReview;
+
+        // Mengembalikan halaman baca ke kondisi normal (panel rekam siswa,
+        // Pintasan & Halaman muncul lagi), dipanggil otomatis oleh
+        // goToMenu() saat guru menekan tombol kembali dari mode tinjauan.
+        function exitSetoranReview() {
+            currentReviewSetoranId = null;
+            document.getElementById('teacherReviewPanel').style.display = 'none';
+            document.getElementById('studentRecordPanel').style.display = 'flex';
+            // removeProperty (bukan set ke '') supaya override paksa tadi
+            // benar-benar hilang dan CSS kembali menentukan tampilannya sendiri.
+            document.querySelector('#read-screen .page-nav-panel').style.removeProperty('display');
+            document.querySelector('#read-screen .shortcut-panel').style.removeProperty('display');
+        }
+
+        // Tombol "← Kembali" di panel penilaian: keluar dari halaman baca,
+        // balik ke Panel Guru, lalu langsung buka lagi popup notifikasi
+        // supaya guru bisa pilih setoran lain untuk dinilai.
+        function backToNotifFromReview() {
+            exitSetoranReview();
+            document.getElementById('read-screen').classList.remove('active');
+            document.getElementById('menu-screen').classList.add('active');
+            appState = 'menu';
+            updateMenuCoverFocus();
+            toggleNotifModal(true);
+        }
+        window.backToNotifFromReview = backToNotifFromReview;
+
+        async function kirimPenilaianReview() {
+            if (!currentReviewSetoranId) return;
+            const nilai = document.getElementById('reviewNilaiInput').value.trim();
+            const feedback = document.getElementById('reviewFeedbackInput').value.trim();
+
+            if (nilai === '' && feedback === '') { showToast('Isi nilai atau feedback terlebih dahulu.'); return; }
+
+            const ok = await submitPenilaian(currentReviewSetoranId, nilai, feedback);
+            if (ok) {
+                showToast('Penilaian berhasil dikirim ke siswa!');
+                // Setelah dinilai, otomatis kembali ke popup notifikasi --
+                // notifikasinya TETAP ADA (tidak dihapus) selama 24 jam,
+                // jadi guru masih bisa membukanya lagi untuk dengar ulang
+                // atau memperbarui penilaian (lihat cleanupExpiredSetoranNotif()).
+                backToNotifFromReview();
+            }
+        }
+        window.kirimPenilaianReview = kirimPenilaianReview;
+
+        // --- LIHAT HASIL PENILAIAN (SISWA) ---
+        // Menerima data notifikasi LANGSUNG (bukan mengambil ulang dokumen
+        // "setoran" dari Firestore), karena dokumen setoran yang sudah
+        // dinilai langsung dihapus oleh submitPenilaian(). Semua data yang
+        // dibutuhkan (nilai, catatan, audio, jilid, halaman) sudah disisipkan
+        // ke dalam notifikasinya sendiri.
+        function lihatHasilSetoran(data) {
+            const contentEl = document.getElementById('hasilSetoranContent');
+            contentEl.innerHTML = `
+                <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Jilid ${data.jilid} • Halaman ${data.halaman}</div>
+                <iframe src="${data.audioUrl}" style="width:100%; height:44px; border:none; margin-bottom:12px;" allow="autoplay"></iframe>
+                <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Nilai</div>
+                <div style="font-size:22px; font-weight:800; color:var(--accent-solid); margin-bottom:12px;">${data.nilai != null ? data.nilai : '-'}</div>
+                <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Catatan Guru</div>
+                <div style="font-size:13px; color:var(--text-main); background:var(--input-bg); padding:10px; border-radius:10px;">${data.feedback || 'Tidak ada catatan.'}</div>
+            `;
+            document.getElementById('hasilSetoranModal').classList.add('active');
+        }
+        window.lihatHasilSetoran = lihatHasilSetoran;
+
+        function handleLogout() {
+            window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
+        }
+
+        let savedLastRead = JSON.parse(localStorage.getItem('tartili_last_read')) || { jilid: 1, page: 'a' };
+        let savedBookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks')) || [];
+        
+        let currentJilid = savedLastRead.jilid, currentPage = savedLastRead.page, appState = 'menu', selectedMenuCoverIndex = 0, currentAudio = null;
+        let mediaRecorder, audioChunks = [], recordedAudioBlob = null; 
+        let recordedAudioMimeType = 'audio/webm';
+        let isPlayingRecording = false;
+        let currentReviewSetoranId = null; // diisi saat guru meninjau 1 setoran lewat notifikasi
+        
+        const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/ycfss0no";
+        const LEGACY_MEDIA_BASE_URL = "https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/";
+        const getPageImageUrl = (jilid, page) => {
+            const pageId = /^\\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
+            return `${CLOUDINARY_BASE_URL}/image/upload/t${jilid}_h${pageId}.jpg`;
+        };
+        const getPageAudioUrl = (jilid, page, soundFile) => {
+            const soundId = String(soundFile).replace(/\\.[^.]+$/, '');
+            return `${CLOUDINARY_BASE_URL}/video/upload/t${jilid}_h${page}_${soundId}.mp3`;
+        };
+        let scale = 1, initialDistance = null;
+        let pageLoadRequestId = 0, currentPageObjectUrl = null;
+        let touchStartX = 0, touchEndX = 0;
+        const minSwipeDistance = 50;
+
+        const allAudioConfig = {
+            "1": typeof tartili1Config !== 'undefined' ? tartili1Config : {},
+            "2": typeof tartili2Config !== 'undefined' ? tartili2Config : {},
+            "3": typeof tartili3Config !== 'undefined' ? tartili3Config : {},
+            "4": typeof tartili4Config !== 'undefined' ? tartili4Config : {},
+            "5": typeof tartili5Config !== 'undefined' ? tartili5Config : {},
+            "6": typeof tartili6Config !== 'undefined' ? tartili6Config : {}
+        };
+
+        history.replaceState({ screen: 'menu' }, '', '');
+
+        window.addEventListener('popstate', function(event) {
+            if (appState === 'read') {
+                if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+                resetRecording();
+                goToMenu();
+            } else if (appState === 'bookmarks' || appState === 'admin' || appState === 'teacher-admin' || appState === 'class-members') {
+                goToMenu();
+            } else {
+                history.back();
+            }
         });
 
-        // --- FITUR BOOKMARK / HALAMAN TERSIMPAN ---
-        function toggleBookmark() {
-            const idx = bookmarks.findIndex(b => b.jilid === currentJilid && b.page === currentPageIndex);
-            if (idx >= 0) {
-                bookmarks.splice(idx, 1);
-                showToast("Halaman dihapus dari daftar tersimpan.");
-            } else {
-                const dataObj = window['tartili' + currentJilid];
-                bookmarks.push({
-                    jilid: currentJilid,
-                    page: currentPageIndex,
-                    title: `Tartili Jilid ${currentJilid} - Halaman ${currentPageIndex + 1}`
-                });
-                showToast("Halaman berhasil disimpan!");
-            }
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(bookmarks));
-            updateBookmarkButtonState();
-        }
+        function isPortrait() { return window.innerHeight > window.innerWidth; }
 
-        function updateBookmarkButtonState() {
-            // Bisa disesuaikan jika ada tombol bookmark di halaman baca
-        }
+        window.addEventListener('resize', () => {
+            if (isPortrait()) { resetZoom(); }
+            const container = document.getElementById('imageContainer');
+            if (appState === 'read' && (!container.innerHTML || container.innerHTML.trim() === '')) {
+                loadPageData();
+            }
+        });
+
+        updatePageOptions('Menu');
+        updatePageOptions('Read'); 
+        updatePageOptions('Bookmarks');
+        updateMenuCoverFocus();
 
         function openBookmarksScreen() {
-            hideAllScreens();
+            appState = 'bookmarks';
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('read-screen').classList.remove('active');
             document.getElementById('bookmarks-screen').classList.add('active');
-            window.appState = 'bookmarks';
             renderBookmarksList();
+            updatePageOptions('Bookmarks');
+            history.pushState({ screen: 'bookmarks' }, '', '');
         }
 
         function renderBookmarksList() {
             const container = document.getElementById('bookmarksListContainer');
             if (!container) return;
+            container.innerHTML = "";
 
-            if (bookmarks.length === 0) {
-                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px;">Belum ada halaman yang disimpan.</div>`;
+            if (savedBookmarks.length === 0) {
+                container.innerHTML = `<div style="display:flex; flex-direction: column; align-items:center; justify-content:center; height: 180px; color:var(--text-muted); font-size:13px; padding:20px; text-align:center; gap: 8px;"><span style="font-size: 36px;">📖</span><span>Belum ada halaman tersimpan.</span></div>`;
                 return;
             }
 
-            container.innerHTML = '';
-            bookmarks.forEach((b, idx) => {
-                const item = document.createElement('div');
+            const reversedBookmarks = [...savedBookmarks].reverse();
+
+            reversedBookmarks.forEach((b, revIndex) => {
+                const originalIndex = savedBookmarks.length - 1 - revIndex;
+
+                let item = document.createElement('div');
                 item.className = 'bookmark-item';
+                item.setAttribute('onclick', `openJilid(${b.jilid}, '${b.page}')`);
                 item.innerHTML = `
-                    <div class="bookmark-item-content" onclick="openJilid(${b.jilid}, ${b.page})">
-                        <div class="bookmark-item-icon">📖</div>
+                    <div class="bookmark-item-content">
+                        <div class="bookmark-item-icon">
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:var(--accent-solid);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
+                        </div>
                         <div class="bookmark-item-info">
-                            <div class="bookmark-item-title">${b.title}</div>
-                            <div class="bookmark-item-subtitle">Ketuk untuk langsung membuka halaman</div>
+                            <span class="bookmark-item-title">Tartili Jilid ${b.jilid}</span>
+                            <span class="bookmark-item-subtitle">Halaman ${b.page}</span>
                         </div>
                     </div>
-                    <button class="bookmark-item-delete" onclick="event.stopPropagation(); removeBookmark(${idx})">✕</button>
+                    <button class="bookmark-item-delete" onclick="removeBookmark(${originalIndex}, event)" title="Hapus">✕</button>
                 `;
                 container.appendChild(item);
             });
         }
 
-        function removeBookmark(index) {
-            bookmarks.splice(index, 1);
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(bookmarks));
+        function removeBookmark(index, event) {
+            event.stopPropagation();
+            savedBookmarks.splice(index, 1);
+            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
             renderBookmarksList();
-            showToast("Halaman dihapus dari daftar.");
+            updateBookmarkButtonState();
+            showToast('Halaman dihapus dari simpanan');
         }
 
-        // --- FITUR REKAMAN & UPLOAD KE CLOUDINARY ---
-        async function startRecording() {
-            audioChunks = [];
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                
-                mediaRecorder.ondataavailable = event => {
-                    if (event.data.size > 0) audioChunks.push(event.data);
-                };
+        function goToMenu() {
+            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+            resetRecording();
 
-                mediaRecorder.onstop = () => {
-                    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    audioUrl = URL.createObjectURL(audioBlob);
-                    recordedAudioPlayer = new Audio(audioUrl);
-
-                    document.getElementById('btnPlayRecord').disabled = false;
-                    document.getElementById('btnSendRecord').disabled = false;
-                };
-
-                mediaRecorder.start();
-                document.getElementById('btnStartRecord').classList.add('is-recording');
-                document.getElementById('btnStartRecord').disabled = true;
-                document.getElementById('btnStopRecord').disabled = false;
-                document.getElementById('btnPlayRecord').disabled = true;
-                document.getElementById('btnSendRecord').disabled = true;
-                showToast("Perekaman dimulai...");
-            } catch (err) {
-                console.error("Gagal mengakses mikrofon:", err);
-                showToast("Gagal mengakses mikrofon. Pastikan izin diberikan.");
+            // Kalau sebelumnya guru sedang meninjau 1 setoran (dibuka lewat
+            // notifikasi), tetap kembalikan ke Menu Utama juga (bukan Panel
+            // Guru) supaya konsisten dengan tombol "Kembali" di panel
+            // penilaian (lihat backToNotifFromReview()).
+            if (currentReviewSetoranId) {
+                exitSetoranReview();
             }
+
+            appState = 'menu';
+            localStorage.setItem('tartili_active_screen', 'menu');
+            document.getElementById('read-screen').classList.remove('active');
+            document.getElementById('bookmarks-screen').classList.remove('active');
+            document.getElementById('admin-screen').classList.remove('active');
+            document.getElementById('teacher-admin-screen').classList.remove('active');
+            document.getElementById('class-members-screen').classList.remove('active');
+            document.getElementById('menu-screen').classList.add('active');
+            updateMenuCoverFocus();
+            history.replaceState({ screen: 'menu' }, '', '');
+        }
+
+        function updateMenuCoverFocus() {
+            for (let i = 0; i < 6; i++) {
+                let btn = document.getElementById('cover-btn-' + i);
+                if (btn) {
+                    if (i === selectedMenuCoverIndex) btn.classList.add('keyboard-focused');
+                    else btn.classList.remove('keyboard-focused');
+                }
+            }
+        }
+
+        function getNumericPageList(jilid) {
+            let list = [], max = (jilid === 6) ? 48 : 44;
+            for (let i = 1; i <= max; i++) list.push(i.toString());
+            return list;
+        }
+
+        function getFullPageList(jilid) {
+            let list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', '0'];
+            return list.concat(getNumericPageList(jilid));
+        }
+
+        function updatePageOptions(context) {
+            let selectId = 'jumpJilidMenu';
+            let targetSelectId = 'jumpPageSelectMenu';
+            if (context === 'Read') {
+                selectId = 'jumpJilidRead';
+                targetSelectId = 'jumpPageSelectRead';
+            } else if (context === 'Bookmarks') {
+                selectId = 'jumpJilidBookmarks';
+                targetSelectId = 'jumpPageSelectBookmarks';
+            }
+            
+            let jilidEl = document.getElementById(selectId);
+            let select = document.getElementById(targetSelectId);
+            if (!jilidEl || !select) return;
+            
+            let jilid = parseInt(jilidEl.value);
+            select.innerHTML = "";
+            getNumericPageList(jilid).forEach(p => { 
+                let opt = document.createElement('option'); 
+                opt.value = p; opt.text = p; 
+                select.appendChild(opt); 
+            });
+        }
+
+        function directOpen(context) {
+            let jilidId = 'jumpJilidMenu';
+            let pageId = 'jumpPageSelectMenu';
+            if (context === 'Read') {
+                jilidId = 'jumpJilidRead';
+                pageId = 'jumpPageSelectRead';
+            } else if (context === 'Bookmarks') {
+                jilidId = 'jumpJilidBookmarks';
+                pageId = 'jumpPageSelectBookmarks';
+            }
+            const jilid = parseInt(document.getElementById(jilidId).value);
+            const page = document.getElementById(pageId).value;
+            openJilid(jilid, page);
+        }
+
+        function openJilid(jilid, page) {
+            currentJilid = jilid; currentPage = page; appState = 'read';
+            localStorage.setItem('tartili_active_screen', 'read');
+            document.getElementById('read-screen').classList.add('active');
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('bookmarks-screen').classList.remove('active');
+            document.getElementById('admin-screen').classList.remove('active');
+            document.getElementById('teacher-admin-screen').classList.remove('active');
+            document.getElementById('class-members-screen').classList.remove('active');
+            updatePageOptions('Read');
+            
+            let numList = getNumericPageList(currentJilid);
+            let targetPage = numList.includes(currentPage.toString()) ? currentPage.toString() : "1";
+            document.getElementById('jumpPageSelectRead').value = targetPage;
+            
+            resetZoom();
+            loadPageData();
+            history.pushState({ screen: 'read' }, '', '');
+        }
+
+        function resetZoom() { scale = 1; updateImageTransform(); }
+
+        function updateImageTransform() {
+            const container = document.getElementById('imageContainer');
+            if (container) container.style.transform = `scale(${scale})`;
+        }
+
+        function changePage(delta) {
+            let pages = getFullPageList(currentJilid);
+            let currentIndex = pages.indexOf(currentPage.toString());
+            let newIndex = currentIndex + delta;
+            if (newIndex >= 0 && newIndex < pages.length) {
+                currentPage = pages[newIndex];
+                resetZoom();
+                loadPageData();
+            }
+        }
+
+        function toggleBookmark() {
+            let index = savedBookmarks.findIndex(b => b.jilid === currentJilid && b.page === currentPage);
+            
+            if (index > -1) {
+                savedBookmarks.splice(index, 1);
+                showToast('Halaman dihapus dari simpanan');
+            } else {
+                savedBookmarks.push({ jilid: currentJilid, page: currentPage });
+                showToast('Halaman berhasil disimpan!');
+            }
+            
+            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
+            updateBookmarkButtonState();
+        }
+
+        function updateBookmarkButtonState() {
+            const btn = document.getElementById('btnBookmark');
+            if (!btn) return;
+            let isSaved = savedBookmarks.some(b => b.jilid === currentJilid && b.page === currentPage);
+            if (isSaved) {
+                btn.classList.add('saved');
+                btn.title = "Hapus Simpanan (Unsave)";
+            } else {
+                btn.classList.remove('saved');
+                btn.title = "Simpan Halaman (Save)";
+            }
+        }
+
+        function loadPageData() {
+            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+            resetRecording();
+            
+            localStorage.setItem('tartili_last_read', JSON.stringify({ jilid: currentJilid, page: currentPage }));
+            updateBookmarkButtonState();
+
+            const container = document.getElementById('imageContainer');
+            const spinner = document.getElementById('loadingSpinner');
+            const imgPath = getPageImageUrl(currentJilid, currentPage);
+            const legacyImgPath = `${LEGACY_MEDIA_BASE_URL}tar${currentJilid}/halaman${currentPage}/halaman${currentPage}.jpg`;
+            const requestId = ++pageLoadRequestId;
+
+            if (currentPageObjectUrl) {
+                URL.revokeObjectURL(currentPageObjectUrl);
+                currentPageObjectUrl = null;
+            }
+            
+            if (spinner) spinner.style.display = 'block';
+            container.innerHTML = "";
+
+            let img = new Image();
+            img.alt = `Tartili jilid ${currentJilid}, halaman ${currentPage}`;
+            img.onload = function() {
+                if (requestId !== pageLoadRequestId) return;
+                if (spinner) spinner.style.display = 'none';
+                container.innerHTML = "";
+                container.appendChild(img);
+
+                if (allAudioConfig[currentJilid] && allAudioConfig[currentJilid][currentPage]) {
+                    allAudioConfig[currentJilid][currentPage].forEach(block => {
+                        let [top, left, width, height, soundFile] = block;
+                        const soundBlock = document.createElement('div');
+                        soundBlock.className = 'sound-block';
+                        soundBlock.style.cssText = `top: ${top}%; left: ${left}%; width: ${width}%; height: ${height}%;`;
+                        soundBlock.onclick = () => playSound(soundFile);
+                        container.appendChild(soundBlock);
+                    });
+                }
+            };
+            img.onerror = function() {
+                if (requestId !== pageLoadRequestId) return;
+                if (!img.dataset.legacyFallbackTried) {
+                    img.dataset.legacyFallbackTried = 'true';
+                    img.src = legacyImgPath;
+                    return;
+                }
+                if (spinner) spinner.style.display = 'none';
+                container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;">Gagal memuat halaman</div>`;
+            };
+
+            const loadCachedImage = async () => {
+                if (!window.caches) return imgPath;
+
+                const cacheKey = new URL(imgPath, window.location.href).href;
+                try {
+                    const cache = await window.caches.open(TARTILI_PAGE_IMAGE_CACHE);
+                    let response = await cache.match(cacheKey);
+                    if (!response) {
+                        response = await fetch(cacheKey);
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        await cache.put(cacheKey, response.clone());
+                        const cachedPages = await cache.keys();
+                        if (cachedPages.length > 12) {
+                            await Promise.all(cachedPages.slice(0, cachedPages.length - 12).map((request) => cache.delete(request)));
+                        }
+                    }
+                    return URL.createObjectURL(await response.blob());
+                } catch (error) {
+                    console.warn('Cache gambar halaman tidak tersedia:', error);
+                    return imgPath;
+                }
+            };
+
+            loadCachedImage().then((imageSource) => {
+                if (requestId !== pageLoadRequestId) {
+                    if (imageSource.startsWith('blob:')) URL.revokeObjectURL(imageSource);
+                    return;
+                }
+                if (imageSource.startsWith('blob:')) currentPageObjectUrl = imageSource;
+                img.src = imageSource;
+            });
+
+            document.getElementById('jumpJilidRead').value = currentJilid;
+            let numList = getNumericPageList(currentJilid);
+            if (numList.includes(currentPage.toString())) { 
+                document.getElementById('jumpPageSelectRead').value = currentPage; 
+            }
+        }
+
+        function playSound(soundFile) {
+            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
+            const soundPath = getPageAudioUrl(currentJilid, currentPage, soundFile);
+            const legacySoundPath = `${LEGACY_MEDIA_BASE_URL}tar${currentJilid}/halaman${currentPage}/${soundFile}`;
+            currentAudio = new Audio(soundPath);
+            currentAudio.addEventListener('error', function fallbackToLegacyAudio() {
+                if (currentAudio.src !== soundPath) return;
+                currentAudio.src = legacySoundPath;
+                currentAudio.play();
+            }, { once: true });
+            currentAudio.play();
+        }
+
+        function resetRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') { mediaRecorder.stop(); }
+            audioChunks = []; recordedAudioBlob = null;
+            const playbackEl = document.getElementById('playbackAudioEl');
+            if (playbackEl) { playbackEl.pause(); playbackEl.removeAttribute('src'); }
+            const btnRec = document.getElementById('btnRec');
+            const btnStop = document.getElementById('btnStop');
+            const btnPlay = document.getElementById('btnPlay');
+            const btnSend = document.getElementById('btnSend');
+            if (btnRec) { btnRec.disabled = false; btnRec.classList.remove('is-recording'); }
+            if (btnStop) btnStop.disabled = true;
+            if (btnPlay) { btnPlay.disabled = true; btnPlay.innerText = '▶ Play'; }
+            if (btnSend) { btnSend.disabled = true; btnSend.innerText = 'Kirim'; }
+        }
+
+        // Daftar format audio dari kualitas terbaik ke yang paling umum
+        // didukung -- dipilih otomatis sesuai kemampuan browser pengguna.
+        const PREFERRED_AUDIO_MIME_TYPES = [
+            'audio/webm;codecs=opus',
+            'audio/ogg;codecs=opus',
+            'audio/webm',
+            'audio/mp4'
+        ];
+
+        function startRecording() {
+            // Kalau sebelumnya sedang memutar ulang rekaman lama, hentikan dulu
+            const playbackEl = document.getElementById('playbackAudioEl');
+            if (playbackEl && !playbackEl.paused) {
+                playbackEl.pause();
+                playbackEl.currentTime = 0;
+                isPlayingRecording = false;
+                const btnPlayEl = document.getElementById('btnPlay');
+                if (btnPlayEl) btnPlayEl.innerText = '▶ Play';
+            }
+
+            // Minta mikrofon dengan pengaturan kualitas suara TERBAIK untuk
+            // MEREKAM (bukan untuk panggilan video). echoCancellation,
+            // noiseSuppression, dan autoGainControl SENGAJA dimatikan --
+            // ketiganya didesain untuk panggilan real-time, dan kalau
+            // diaktifkan malah sering membuat suara terdengar "teredam"/
+            // robotic di banyak HP & browser. Sample rate tetap dijaga
+            // tinggi untuk kejernihan alami suara.
+            const constraints = {
+                audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false,
+                    sampleRate: 48000,
+                    channelCount: 1
+                }
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+                // Pilih format audio terbaik yang didukung browser ini
+                let chosenMimeType = '';
+                for (const type of PREFERRED_AUDIO_MIME_TYPES) {
+                    if (window.MediaRecorder && MediaRecorder.isTypeSupported(type)) { chosenMimeType = type; break; }
+                }
+
+                // Bitrate dinaikkan ke 128 kbps (jauh lebih jernih dari bawaan
+                // browser yang biasanya sekitar 32-64 kbps untuk rekaman suara).
+                const recorderOptions = { audioBitsPerSecond: 128000 };
+                if (chosenMimeType) recorderOptions.mimeType = chosenMimeType;
+
+                mediaRecorder = new MediaRecorder(stream, recorderOptions);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    recordedAudioMimeType = mediaRecorder.mimeType || 'audio/webm';
+                    recordedAudioBlob = new Blob(audioChunks, { type: recordedAudioMimeType });
+                    stream.getTracks().forEach(t => t.stop());
+                    document.getElementById('btnPlay').disabled = false;
+                    document.getElementById('btnSend').disabled = false;
+                };
+                mediaRecorder.start();
+                document.getElementById('btnRec').disabled = true;
+                document.getElementById('btnRec').classList.add('is-recording');
+                document.getElementById('btnStop').disabled = false;
+                document.getElementById('btnPlay').disabled = true;
+                document.getElementById('btnSend').disabled = true;
+                showToast('Merekam suara...');
+            }).catch(e => { console.error(e); showToast('Akses mikrofon ditolak/tidak didukung.'); });
         }
 
         function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
-                // Matikan track mikrofon
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                document.getElementById('btnRec').classList.remove('is-recording');
+                document.getElementById('btnRec').disabled = false; // boleh rekam ulang sebelum dikirim
+                document.getElementById('btnStop').disabled = true;
+                showToast('Rekaman selesai. Dengarkan dulu, atau rekam ulang kalau ada yang salah.');
             }
-            document.getElementById('btnStartRecord').classList.remove('is-recording');
-            document.getElementById('btnStartRecord').disabled = false;
-            document.getElementById('btnStopRecord').disabled = true;
-            showToast("Perekaman dihentikan.");
         }
 
+        // Tombol Play: dengarkan ulang hasil rekaman sebelum dikirim
         function playRecording() {
-            if (recordedAudioPlayer) {
-                recordedAudioPlayer.currentTime = 0;
-                recordedAudioPlayer.play().catch(e => console.log("Play error:", e));
+            if (!recordedAudioBlob) { showToast('Belum ada rekaman.'); return; }
+            const playbackEl = document.getElementById('playbackAudioEl');
+            const btnPlay = document.getElementById('btnPlay');
+
+            if (isPlayingRecording) {
+                playbackEl.pause();
+                playbackEl.currentTime = 0;
+                isPlayingRecording = false;
+                btnPlay.innerText = '▶ Play';
+                return;
             }
+
+            playbackEl.src = URL.createObjectURL(recordedAudioBlob);
+            playbackEl.play();
+            isPlayingRecording = true;
+            btnPlay.innerText = '⏸ Pause';
+
+            playbackEl.onended = () => { isPlayingRecording = false; btnPlay.innerText = '▶ Play'; };
+        }
+        window.playRecording = playRecording;
+
+        // ==========================================
+        // ==========================================
+        // KONFIGURASI PENYIMPANAN AUDIO (FILEBASE VIA APPS SCRIPT)
+        // ==========================================
+        // Isi URL Web App Apps Script Anda di bawah ini setelah proses deploy
+        // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini,
+        // supaya aman - kunci itu hanya ada di dalam Apps Script.
+        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbyq5eWrNHSbS6pnReJp-mzFU9MwIIqsztEJHZ06goB22iB99IGQbfTmWT6UVm04cbFK/exec";
+        const FILEBASE_SECRET_KEY = "@awanawan"; // harus sama persis dengan SHARED_SECRET di Code.gs
+        const SETORAN_RETENTION_DAYS = 7; // Rekaman otomatis dihapus setelah 7 hari (dicek tiap guru buka halaman Setoran)
+
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
         }
 
-        // Fungsi Upload Audio ke Cloudinary
-        async function uploadAudioToCloudinary(blob) {
-            const formData = new FormData();
-            formData.append('file', blob, 'setoran.webm');
-            formData.append('upload_preset', 'tartili_preset'); // Preset upload Cloudinary Anda
-
-            const response = await fetch('https://api.cloudinary.com/v1_1/dtj1n520e/upload', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) {
-                throw new Error("Gagal mengunggah audio ke Cloudinary");
+        // Tombol Kirim: kirim rekaman ke Apps Script -> Apps Script yang upload
+        // ke Filebase (kunci rahasia aman di server), lalu simpan data setoran
+        // di Firestore, lalu kirim notifikasi ke guru pemilik kelas.
+        // Mencegah siswa menutup/refresh tab saat proses kirim sedang
+        // berlangsung -- browser akan menampilkan dialog konfirmasi bawaan.
+        let isUploadingSetoran = false;
+        window.addEventListener('beforeunload', (e) => {
+            if (isUploadingSetoran) {
+                e.preventDefault();
+                e.returnValue = '';
             }
+        });
 
-            const data = await response.json();
-            return data.secure_url;
+        function showUploadingOverlay(text) {
+            const el = document.getElementById('uploadingOverlay');
+            document.getElementById('uploadingOverlayText').innerText = text;
+            el.style.display = 'flex';
+        }
+        function hideUploadingOverlay() {
+            document.getElementById('uploadingOverlay').style.display = 'none';
         }
 
         async function kirimSetoran() {
-            if (!audioBlob) {
-                showToast("Belum ada rekaman untuk dikirim.");
+            if (!recordedAudioBlob) { showToast('Belum ada rekaman untuk dikirim.'); return; }
+            const profile = window.currentUserProfile || {};
+            if (!profile.uid) { showToast('Sesi tidak valid, silakan masuk ulang.'); return; }
+            if (!profile.classCode) { showToast('Kelas Anda belum terdaftar, hubungi guru.'); return; }
+            if (!FILEBASE_UPLOAD_URL || FILEBASE_UPLOAD_URL.includes('PASTE_URL')) {
+                showToast('Penyimpanan audio belum dikonfigurasi. Hubungi admin.');
                 return;
             }
 
-            const profile = window.currentUserProfile;
-            if (!profile || !profile.classCode) {
-                showToast("Anda harus tergabung dalam kelas untuk mengirim setoran.");
-                return;
-            }
-
-            const overlay = document.getElementById('uploadingOverlay');
-            overlay.style.display = 'flex';
+            const btnSend = document.getElementById('btnSend');
+            btnSend.disabled = true;
+            btnSend.innerText = 'Mengirim...';
+            isUploadingSetoran = true;
+            showUploadingOverlay('Mengunggah rekaman...');
 
             try {
-                // 1. Upload audio ke Cloudinary
-                document.getElementById('uploadingOverlayText').innerText = "Mengunggah rekaman ke Cloudinary...";
-                const cloudinaryAudioUrl = await uploadAudioToCloudinary(audioBlob);
+                const fileExt = recordedAudioMimeType.includes('mp4') ? 'm4a' : recordedAudioMimeType.includes('ogg') ? 'ogg' : 'webm';
+                const fileName = `${profile.uid}_${Date.now()}.${fileExt}`;
+                const base64Audio = await blobToBase64(recordedAudioBlob);
 
-                // 2. Cari Guru dari classCode siswa
-                document.getElementById('uploadingOverlayText').innerText = "Mengirim data ke guru pengampu...";
-                const qGuru = query(collection(window.firebaseDb, "users"), where("classCode", "==", profile.classCode), where("role", "==", "Guru"));
-                const snapGuru = await window.getDocs(qGuru);
-                let teacherUid = null;
-                snapGuru.forEach(d => teacherUid = d.id);
+                const uploadRes = await fetch(FILEBASE_UPLOAD_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari preflight CORS di Apps Script
+                    body: JSON.stringify({
+                        secret: FILEBASE_SECRET_KEY,
+                        audioBase64: base64Audio,
+                        fileName: fileName,
+                        mimeType: recordedAudioMimeType
+                    })
+                });
+                const uploadData = await uploadRes.json();
+                if (!uploadData.success) throw new Error(uploadData.error || 'Upload gagal');
 
-                if (!teacherUid) {
-                    overlay.style.display = 'none';
-                    showToast("Guru pengampu untuk kelas ini tidak ditemukan.");
-                    return;
-                }
+                showUploadingOverlay('Menyimpan data setoran...');
 
-                // 3. Simpan data setoran ke Firestore
-                const setoranRef = await window.addDoc(collection(window.firebaseDb, "setoran"), {
+                // Filebase bucket bersifat privat, jadi pemutaran audio TIDAK
+                // memakai URL Filebase langsung, melainkan lewat Apps Script
+                // (doGet) yang mengambilkan filenya secara aman.
+                const audioUrl = `${FILEBASE_UPLOAD_URL}?key=${encodeURIComponent(uploadData.key)}&secret=${encodeURIComponent(FILEBASE_SECRET_KEY)}`;
+
+                const setoranRef = await window.addDoc(window.collection(window.firebaseDb, "setoran"), {
                     studentUid: profile.uid,
-                    studentName: profile.name,
-                    teacherUid: teacherUid,
+                    studentName: profile.name || 'Siswa',
                     classCode: profile.classCode,
                     jilid: currentJilid,
-                    page: currentPageIndex,
-                    audioUrl: cloudinaryAudioUrl,
-                    status: 'pending', // pending, dinilai
+                    halaman: currentPage,
+                    audioUrl: audioUrl,
+                    storagePath: fileName,
+                    status: 'pending',
+                    nilai: null,
+                    feedback: null,
                     createdAt: window.serverTimestamp()
                 });
 
-                // 4. Kirim notifikasi ke Guru
-                await window.addDoc(collection(window.firebaseDb, "notifications"), {
-                    targetUserId: teacherUid,
-                    title: "Setoran Baru dari " + profile.name,
-                    message: `Setoran Tartili Jilid ${currentJilid} Halaman ${currentPageIndex + 1} menunggu penilaian.`,
-                    actionUrl: "setoran",
-                    setoranId: setoranRef.id,
-                    createdAt: window.serverTimestamp(),
-                    readBy: []
-                });
+                showUploadingOverlay('Mengirim notifikasi ke guru...');
 
-                overlay.style.display = 'none';
-                showToast("Setoran berhasil dikirim ke guru!");
+                // Cari guru pemilik kelas ini untuk dikirimi notifikasi
+                const qTeacher = window.query(
+                    window.collection(window.firebaseDb, "users"),
+                    window.where("role", "==", "Guru"),
+                    window.where("classCode", "==", profile.classCode)
+                );
+                const teacherSnap = await window.getDocs(qTeacher);
+                for (const tDoc of teacherSnap.docs) {
+                    await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                        targetUserId: tDoc.id,
+                        title: "🎙️ Setoran Bacaan Baru",
+                        message: `${profile.name || 'Siswa'} (Kelas ${profile.classCode}) mengirim rekaman Jilid ${currentJilid} - Hal. ${currentPage}.`,
+                        senderId: profile.uid,
+                        senderName: profile.name || 'Siswa',
+                        actionUrl: 'setoran',
+                        setoranId: setoranRef.id,
+                        createdAt: window.serverTimestamp(),
+                        readBy: []
+                    });
+                }
 
-                // Reset state rekam
-                audioBlob = null;
-                audioUrl = null;
-                recordedAudioPlayer = null;
-                document.getElementById('btnPlayRecord').disabled = true;
-                document.getElementById('btnSendRecord').disabled = true;
-
-            } catch (err) {
-                overlay.style.display = 'none';
-                console.error("Gagal kirim setoran:", err);
-                showToast("Terjadi kesalahan saat mengirim setoran.");
+                showToast('Rekaman berhasil dikirim ke guru!');
+                resetRecording();
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal mengirim rekaman. Coba lagi.');
+                btnSend.disabled = false;
+                btnSend.innerText = 'Kirim';
+            } finally {
+                isUploadingSetoran = false;
+                hideUploadingOverlay();
             }
         }
+        window.kirimSetoran = kirimSetoran;
 
-        // --- PENILAIAN SETORAN OLEH GURU ---
-        async function openSetoranReview(setoranId, notifId) {
-            currentSetoranIdForReview = setoranId;
-            currentSetoranNotifIdForReview = notifId;
-
-            try {
-                const setoranSnap = await window.getDoc(window.doc(window.firebaseDb, "setoran", setoranId));
-                if (!setoranSnap.exists()) {
-                    showToast("Data setoran sudah tidak tersedia.");
+        const scrollArea = document.getElementById('scrollArea');
+        if (scrollArea) {
+            scrollArea.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    if (!isPortrait()) {
+                        initialDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    }
                     return;
                 }
-                const data = setoranSnap.data();
-
-                // Buka halaman jilid & halaman terkait setoran
-                await openJilid(data.jilid, data.page);
-
-                // Tampilkan panel review guru di bagian bawah
-                const reviewPanel = document.getElementById('teacherReviewPanel');
-                const studentRecordPanel = document.getElementById('studentRecordPanel');
-                if (studentRecordPanel) studentRecordPanel.style.display = 'none';
-                if (reviewPanel) {
-                    reviewPanel.style.display = 'flex';
-                    reviewPanel.innerHTML = `
-                        <div class="teacher-review-layout">
-                            <div class="teacher-review-score">
-                                <div class="section-title">Nilai (0-100)</div>
-                                <input type="number" id="reviewScoreInput" min="0" max="100" value="${data.score || 90}" />
-                            </div>
-                            <div class="teacher-review-audio">
-                                <audio controls style="width:100%; height:36px;"><source src="${data.audioUrl}" type="audio/webm"></audio>
-                            </div>
-                            <textarea class="teacher-review-feedback" id="reviewFeedbackInput" placeholder="Tulis catatan atau koreksi untuk siswa...">${data.feedback || ''}</textarea>
-                            <div class="teacher-review-actions">
-                                <button class="review-submit" onclick="submitReview()">Kirim Nilai</button>
-                                <button class="review-back" onclick="closeReviewPanel()">Tutup</button>
-                            </div>
-                        </div>
-                    `;
+                if (e.touches.length === 1) {
+                    touchStartX = e.touches[0].clientX;
                 }
-            } catch (e) {
-                console.error("Gagal memuat setoran untuk review:", e);
-                showToast("Gagal memuat data setoran.");
-            }
-        }
-        window.openSetoranReview = openSetoranReview;
+            }, {passive: true});
 
-        async function submitReview() {
-            if (!currentSetoranIdForReview) return;
-            const score = parseInt(document.getElementById('reviewScoreInput').value) || 0;
-            const feedback = document.getElementById('reviewFeedbackInput').value.trim();
-
-            try {
-                const setoranRef = window.doc(window.firebaseDb, "setoran", currentSetoranIdForReview);
-                const setoranSnap = await window.getDoc(setoranRef);
-                if (!setoranSnap.exists()) return;
-                const d = setoranSnap.data();
-
-                // Update dokumen setoran
-                await window.updateDoc(setoranRef, {
-                    score: score,
-                    feedback: feedback,
-                    status: 'dinilai',
-                    gradedAt: window.serverTimestamp()
-                });
-
-                // Kirim notifikasi hasil ke Siswa
-                await window.addDoc(collection(window.firebaseDb, "notifications"), {
-                    targetUserId: d.studentUid,
-                    title: "Hasil Penilaian Setoran Tartili",
-                    message: `Setoran Jilid ${d.jilid} Halaman ${d.page + 1} telah dinilai. Nilai: ${score}.`,
-                    actionUrl: "setoran_hasil",
-                    score: score,
-                    feedback: feedback,
-                    jilid: d.jilid,
-                    page: d.page + 1,
-                    createdAt: window.serverTimestamp(),
-                    readBy: []
-                });
-
-                showToast("Penilaian berhasil dikirim ke siswa!");
-                closeReviewPanel();
-
-                // Hapus notifikasi guru jika ada
-                if (currentSetoranNotifIdForReview) {
-                    await window.deleteDoc(window.doc(window.firebaseDb, "notifications", currentSetoranNotifIdForReview));
+            scrollArea.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2 && !isPortrait() && initialDistance) {
+                    let currentDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    let delta = (currentDistance - initialDistance) * 0.005;
+                    scale = Math.min(Math.max(1, scale + delta), 2.5);
+                    updateImageTransform();
+                    initialDistance = currentDistance;
                 }
+            }, {passive: true});
 
-            } catch (e) {
-                console.error("Gagal mengirim nilai:", e);
-                showToast("Gagal mengirim penilaian.");
-            }
+            scrollArea.addEventListener('touchend', (e) => {
+                if (e.changedTouches.length === 1 && scale === 1) {
+                    touchEndX = e.changedTouches[0].clientX;
+                    let diff = touchStartX - touchEndX;
+                    if (Math.abs(diff) > minSwipeDistance) {
+                        if (diff > 0) changePage(1);
+                        else changePage(-1);
+                    }
+                }
+            }, {passive: true});
+
+            // Navigasi panah kiri/kanan keyboard (laptop/desktop) untuk
+            // pindah halaman -- hanya aktif saat halaman baca terbuka, dan
+            // TIDAK aktif kalau pengguna sedang mengetik di kotak input
+            // (misal kolom Nilai/Catatan di panel penilaian guru).
+            window.addEventListener('keydown', (e) => {
+                if (appState !== 'read') return;
+                const activeTag = document.activeElement ? document.activeElement.tagName : '';
+                if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
+
+                if (e.key === 'ArrowRight') { e.preventDefault(); changePage(1); }
+                else if (e.key === 'ArrowLeft') { e.preventDefault(); changePage(-1); }
+            });
+
+            // Zoom dengan scroll mouse (laptop/desktop, mode landscape) --
+            // scroll ke atas memperbesar, scroll ke bawah memperkecil,
+            // memakai batas & rumus yang sama dengan pinch-zoom di HP.
+            scrollArea.addEventListener('wheel', (e) => {
+                if (appState !== 'read' || isPortrait()) return;
+                e.preventDefault();
+                let delta = -e.deltaY * 0.0015;
+                scale = Math.min(Math.max(1, scale + delta), 2.5);
+                updateImageTransform();
+            }, { passive: false });
         }
-
-        function closeReviewPanel() {
-            currentSetoranIdForReview = null;
-            currentSetoranNotifIdForReview = null;
-            const reviewPanel = document.getElementById('teacherReviewPanel');
-            const studentRecordPanel = document.getElementById('studentRecordPanel');
-            if (reviewPanel) reviewPanel.style.display = 'none';
-            if (studentRecordPanel) studentRecordPanel.style.display = 'flex';
-        }
-
-        function lihatHasilSetoran(data) {
-            const modal = document.getElementById('hasilSetoranModal');
-            const content = document.getElementById('hasilSetoranContent');
-            if (!modal || !content) return;
-
-            content.innerHTML = `
-                <div style="font-size:14px; font-weight:800; color:var(--text-main); margin-bottom:8px;">Tartili Jilid ${data.jilid} - Halaman ${data.page}</div>
-                <div style="font-size:13px; margin-bottom:6px;"><b>Nilai Anda:</b> <span style="font-size:18px; font-weight:800; color:var(--accent-solid);">${data.score}</span></div>
-                <div style="font-size:13px; margin-bottom:4px;"><b>Catatan Guru:</b></div>
-                <div style="background:var(--input-bg); padding:10px; border-radius:10px; font-size:13px; color:var(--text-main); border:1px solid var(--border-color);">${data.feedback || 'Tidak ada catatan.'}</div>
-            `;
-            modal.classList.add('active');
-        }
-        window.lihatHasilSetoran = lihatHasilSetoran;
     </script>
+<!-- KODE MEMATIKAN ZOOM (Cukup tempel di satu tempat ini saja) -->
+<style>
+    html, body {
+        touch-action: manipulation;
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+</style>
+
+<script>
+    // 1. Ubah meta viewport secara otomatis via JavaScript
+    var meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'viewport';
+        document.head.appendChild(meta);
+    }
+    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+
+    // 2. Mencegah zoom dari Keyboard (Ctrl +, Ctrl -, Ctrl 0)
+    window.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // 3. Mencegah zoom dari Scroll Mouse (Ctrl + Roda Mouse)
+    window.addEventListener('wheel', function (e) {
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // 4. Mencegah Gesture Pinch Zoom pada HP/Touchpad
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+</script>
+    
 </body>
 </html>
