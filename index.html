@@ -281,18 +281,13 @@
 
     <!-- Halaman Daftar Bookmark -->
     <div id="bookmarks-screen" class="screen">
-        <div class="bookmarks-content-wrapper">
-            <div class="bookmarks-header">
-                <h2>Halaman Tersimpan</h2>
+        <div class="modal-box bookmarks-content-wrapper" role="dialog" aria-modal="true" aria-labelledby="bookmarksTitle">
+            <div class="modal-header bookmarks-header">
+                <h3 id="bookmarksTitle">Halaman Tersimpan</h3>
+                <button class="modal-close-btn" onclick="goToMenu()" title="Tutup" aria-label="Tutup halaman tersimpan">✕</button>
             </div>
             
             <div class="bookmarks-list" id="bookmarksListContainer"></div>
-            
-            <div class="shortcut-panel bookmarks-menu-panel">
-                <div class="shortcut-container bookmarks-menu-only">
-                    <button class="universal-btn btn-menu-back" onclick="goToMenu()">Menu</button>
-                </div>
-            </div>
         </div>
     </div>
 
