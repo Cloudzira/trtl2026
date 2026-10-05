@@ -343,7 +343,6 @@
         // --- TEACHER PANEL ---
         async function openTeacherAdminScreen() {
             appState = 'teacher-admin';
-            document.getElementById('menu-screen').classList.remove('active');
             document.getElementById('teacher-admin-screen').classList.add('active');
             
             const profile = window.currentUserProfile;
@@ -851,7 +850,6 @@
 
         function openBookmarksScreen() {
             appState = 'bookmarks';
-            document.getElementById('menu-screen').classList.remove('active');
             document.getElementById('read-screen').classList.remove('active');
             document.getElementById('bookmarks-screen').classList.add('active');
             renderBookmarksList();
