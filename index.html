@@ -199,6 +199,14 @@
     <!-- Halaman Menu Utama -->
     <div id="menu-screen" class="screen">
         <div class="menu-content-wrapper">
+            <div class="menu-top-actions">
+                <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna" aria-label="Ubah tema warna">
+                    <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                <button class="btn-logout" onclick="handleLogout()" title="Keluar Akun" aria-label="Keluar akun">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </button>
+            </div>
             <div class="app-brand-title">TARTILIKU</div>
             <div class="landing-hero-card">
                 <div class="landing-hero-info">
@@ -224,12 +232,6 @@
                     </button>
                     <button class="btn-bookmark" onclick="openBookmarksScreen()" title="Halaman Tersimpan">
                         <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
-                    </button>
-                    <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna">
-                        <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                    </button>
-                    <button class="btn-logout" onclick="handleLogout()" title="Keluar Akun">
-                        <svg viewBox="0 0 24 24"><path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                     </button>
                 </div>
             </div>
