@@ -34,7 +34,7 @@
     <div id="notifModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
-                <h3>Notifikasi</h3>
+                <h3>🔔 Notifikasi</h3>
                 <button class="modal-close-btn" onclick="toggleNotifModal(false)">✕</button>
             </div>
             <div id="notificationListContainer" style="flex:1; overflow-y:auto;">
@@ -138,23 +138,23 @@
     </div>
 
     <!-- Halaman Panel Guru -->
-    <div id="teacher-admin-screen" class="screen">
-        <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
-            <h2>Panel Kelas Guru</h2>
-            <div style="background: var(--input-bg); padding: 10px; border-radius: 12px; text-align: left; margin-bottom: 8px;">
-                <div style="font-size: 11px; color: var(--text-muted);">Kode Kelas Anda untuk dibagikan ke Siswa:</div>
-                <div id="teacherClassCodeDisplay" style="font-size: 16px; font-weight: 800; color: var(--accent-solid); margin-top: 2px;">-</div>
+    <div id="teacher-admin-screen" class="screen modal-overlay">
+        <div class="modal-box teacher-admin-modal" role="dialog" aria-modal="true" aria-labelledby="teacherAdminTitle">
+            <div class="modal-header">
+                <h3 id="teacherAdminTitle">Panel Kelas Guru</h3>
+                <button class="modal-close-btn" onclick="goToMenu()" title="Tutup" aria-label="Tutup panel kelas guru">✕</button>
             </div>
-            
-            <button onclick="openClassMembersScreen()" style="width: 100%; padding: 10px; background: var(--accent-gradient); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-bottom: 8px;">👥 Lihat Daftar Siswa di Kelas</button>
-
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-align: left;">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
-            <div id="pendingStudentContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
-                <!-- Diisi dinamis via JS -->
+            <div class="teacher-admin-content">
+                <div class="teacher-class-code">
+                    <div class="teacher-class-code-label">Kode Kelas Anda untuk dibagikan ke Siswa:</div>
+                    <div id="teacherClassCodeDisplay" class="teacher-class-code-value">-</div>
+                </div>
+                <button class="teacher-members-button" onclick="openClassMembersScreen()">👥 Lihat Daftar Siswa di Kelas</button>
+                <p class="teacher-pending-label">Siswa yang mendaftar menggunakan Kode Kelas Anda:</p>
+                <div id="pendingStudentContainer" class="teacher-pending-students">
+                    <!-- Diisi dinamis via JS -->
+                </div>
             </div>
-
-            <!-- KODE BARU -->
-            <button class="btn-back-compact" onclick="goToMenu()">Kembali</button>
         </div>
     </div>
 
@@ -280,7 +280,7 @@
     </div>
 
     <!-- Halaman Daftar Bookmark -->
-    <div id="bookmarks-screen" class="screen">
+    <div id="bookmarks-screen" class="screen modal-overlay">
         <div class="modal-box bookmarks-content-wrapper" role="dialog" aria-modal="true" aria-labelledby="bookmarksTitle">
             <div class="modal-header bookmarks-header">
                 <h3 id="bookmarksTitle">Halaman Tersimpan</h3>
