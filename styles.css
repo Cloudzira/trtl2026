@@ -144,7 +144,7 @@
         }
         .menu-top-actions {
             width: 100%; display: flex; justify-content: flex-end; align-items: center; gap: 8px;
-            min-height: 38px;
+            min-height: 32px;
         }
         
         .landing-hero-card {
@@ -667,6 +667,10 @@
         }
         body.dark-theme .btn-theme-toggle svg { stroke: var(--accent-solid); }
         .btn-logout svg { stroke: #ef4444; }
+        .menu-top-actions .btn-theme-toggle,
+        .menu-top-actions .btn-logout { width: 32px; height: 32px; border-radius: 10px; }
+        .menu-top-actions .btn-theme-toggle svg,
+        .menu-top-actions .btn-logout svg { width: 16px; height: 16px; }
         .btn-admin, .btn-teacher-panel { display: none; }
 
         .btn-bookmark.saved { background: var(--bg-card); border-color: var(--border-color); }
