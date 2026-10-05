@@ -66,6 +66,9 @@
                         }
 
                         const profile = window.currentUserProfile;
+                        if (typeof window.loadBookmarksForUser === 'function') {
+                            window.loadBookmarksForUser(user.uid, profile.role);
+                        }
 
                         // Setup real-time notifications for user
                         initRealtimeNotifications(user.uid, profile);
@@ -129,6 +132,9 @@
                     }
                 } else {
                     window.currentUserProfile = null;
+                    if (typeof window.loadBookmarksForUser === 'function') {
+                        window.loadBookmarksForUser(null);
+                    }
                     if (window.unsubNotifications) window.unsubNotifications();
                     hideAllScreens();
                     loginScreen.classList.add('active');
