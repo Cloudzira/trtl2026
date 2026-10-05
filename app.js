@@ -682,6 +682,8 @@
         const LEGACY_BOOKMARKS_KEY = 'tartili_bookmarks';
         let savedBookmarks = [];
         let savedBookmarksUserId = null;
+        let bookmarkSyncReadyUserId = null;
+        let unsubscribeBookmarks = null;
 
         function getBookmarksStorageKey(userId) {
             return `tartili_bookmarks_${userId}`;
@@ -697,34 +699,93 @@
         }
 
         function loadBookmarksForUser(userId, role) {
+            if (unsubscribeBookmarks) {
+                unsubscribeBookmarks();
+                unsubscribeBookmarks = null;
+            }
+
             savedBookmarksUserId = userId || null;
+            bookmarkSyncReadyUserId = null;
 
             if (!savedBookmarksUserId) {
                 savedBookmarks = [];
-            } else {
-                const storageKey = getBookmarksStorageKey(savedBookmarksUserId);
-                const userBookmarks = localStorage.getItem(storageKey);
+                updateBookmarkButtonState();
+                if (document.getElementById('bookmarks-screen').classList.contains('active')) {
+                    renderBookmarksList();
+                }
+                return;
+            }
 
-                if (userBookmarks !== null) {
-                    savedBookmarks = parseBookmarkList(userBookmarks);
+            const currentUserId = savedBookmarksUserId;
+            const userRef = window.doc(window.firebaseDb, 'users', currentUserId);
+            savedBookmarks = parseBookmarkList(localStorage.getItem(getBookmarksStorageKey(currentUserId)));
+            updateBookmarkButtonState();
+
+            unsubscribeBookmarks = window.onSnapshot(userRef, (snapshot) => {
+                if (savedBookmarksUserId !== currentUserId) return;
+
+                const userData = snapshot.exists() ? snapshot.data() : {};
+                if (Array.isArray(userData.bookmarks)) {
+                    savedBookmarks = userData.bookmarks;
+                    bookmarkSyncReadyUserId = currentUserId;
+                    localStorage.setItem(getBookmarksStorageKey(currentUserId), JSON.stringify(savedBookmarks));
+                    updateBookmarkButtonState();
+                    if (document.getElementById('bookmarks-screen').classList.contains('active')) {
+                        renderBookmarksList();
+                    }
+                    return;
+                }
+
+                if (bookmarkSyncReadyUserId === currentUserId) return;
+                bookmarkSyncReadyUserId = currentUserId;
+
+                const localBookmarksKey = getBookmarksStorageKey(currentUserId);
+                const localBookmarks = localStorage.getItem(localBookmarksKey);
+                let migratedLegacyBookmarks = false;
+                if (localBookmarks !== null) {
+                    savedBookmarks = parseBookmarkList(localBookmarks);
                 } else if (role === 'Guru' && localStorage.getItem(LEGACY_BOOKMARKS_KEY) !== null) {
                     savedBookmarks = parseBookmarkList(localStorage.getItem(LEGACY_BOOKMARKS_KEY));
-                    localStorage.setItem(storageKey, JSON.stringify(savedBookmarks));
-                    localStorage.removeItem(LEGACY_BOOKMARKS_KEY);
+                    migratedLegacyBookmarks = true;
                 } else {
                     savedBookmarks = [];
                 }
-            }
 
-            updateBookmarkButtonState();
-            if (document.getElementById('bookmarks-screen').classList.contains('active')) {
-                renderBookmarksList();
-            }
+                localStorage.setItem(localBookmarksKey, JSON.stringify(savedBookmarks));
+                updateBookmarkButtonState();
+                if (document.getElementById('bookmarks-screen').classList.contains('active')) {
+                    renderBookmarksList();
+                }
+
+                window.setDoc(userRef, { bookmarks: savedBookmarks }, { merge: true }).then(() => {
+                    if (migratedLegacyBookmarks) localStorage.removeItem(LEGACY_BOOKMARKS_KEY);
+                }).catch((error) => {
+                    console.error('Gagal memigrasikan bookmark ke Firestore:', error);
+                    showToast('Bookmark tersimpan di perangkat ini, tetapi gagal disinkronkan.');
+                });
+            }, (error) => {
+                if (savedBookmarksUserId !== currentUserId) return;
+                console.error('Gagal memuat bookmark dari Firestore:', error);
+                savedBookmarks = parseBookmarkList(localStorage.getItem(getBookmarksStorageKey(currentUserId)));
+                bookmarkSyncReadyUserId = currentUserId;
+                updateBookmarkButtonState();
+                if (document.getElementById('bookmarks-screen').classList.contains('active')) {
+                    renderBookmarksList();
+                }
+                showToast('Bookmark tersimpan di perangkat ini, tetapi gagal disinkronkan.');
+            });
         }
 
         function persistBookmarks() {
-            if (!savedBookmarksUserId) return;
-            localStorage.setItem(getBookmarksStorageKey(savedBookmarksUserId), JSON.stringify(savedBookmarks));
+            if (!savedBookmarksUserId || bookmarkSyncReadyUserId !== savedBookmarksUserId) return;
+
+            const currentUserId = savedBookmarksUserId;
+            const bookmarks = [...savedBookmarks];
+            localStorage.setItem(getBookmarksStorageKey(currentUserId), JSON.stringify(bookmarks));
+            window.setDoc(window.doc(window.firebaseDb, 'users', currentUserId), { bookmarks }, { merge: true }).catch((error) => {
+                console.error('Gagal menyinkronkan bookmark ke Firestore:', error);
+                showToast('Bookmark tersimpan di perangkat ini, tetapi gagal disinkronkan.');
+            });
         }
 
         window.loadBookmarksForUser = loadBookmarksForUser;
