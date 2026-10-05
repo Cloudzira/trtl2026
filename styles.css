@@ -64,7 +64,7 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        #login-screen, #admin-login-screen, #verify-screen, #admin-screen, #teacher-admin-screen, #class-members-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
+        #login-screen, #admin-login-screen, #verify-screen, #admin-screen, #class-members-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
         .login-card {
             background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding: 30px 24px; border-radius: 28px; border: 1px solid var(--border-color);
@@ -222,7 +222,7 @@
         /* Footer copyright follows the social links below the divider. */
         .app-footer { position: relative; }
         
-        #bookmarks-screen { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); overflow: hidden; padding: 16px; justify-content: center; align-items: center; height: 100vh; height: 100dvh; }
+        #bookmarks-screen { z-index: 10000; overflow: hidden; }
         .bookmarks-content-wrapper {
             display: flex; flex-direction: column; align-items: stretch; gap: 0; width: 100%; max-width: 480px; height: 80vh; max-height: 600px; justify-content: flex-start; padding: 0;
         }
@@ -232,6 +232,16 @@
             width: 100%; min-height: 0; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px;
             border: 0; border-radius: 0 0 24px 24px; background: transparent; box-shadow: none; scrollbar-width: thin;
         }
+
+        #teacher-admin-screen { z-index: 10000; }
+        .teacher-admin-modal { max-width: 480px; }
+        .teacher-admin-content { display: flex; flex: 1; min-height: 0; flex-direction: column; gap: 10px; overflow-y: auto; padding: 16px; }
+        .teacher-class-code { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--input-bg); }
+        .teacher-class-code-label { color: var(--text-muted); font-size: 11px; }
+        .teacher-class-code-value { margin-top: 2px; color: var(--accent-solid); font-size: 16px; font-weight: 800; }
+        .teacher-members-button { width: 100%; flex: 0 0 auto; padding: 10px; border: 0; border-radius: 10px; background: var(--accent-gradient); color: white; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+        .teacher-pending-label { margin: 2px 0 0; color: var(--text-muted); font-size: 12px; }
+        .teacher-pending-students { display: flex; min-height: 100px; flex-direction: column; gap: 8px; overflow-y: auto; padding: 4px; text-align: left; }
         
         .bookmark-item {
             display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;
@@ -299,6 +309,7 @@
   margin: 0 !important;
   flex-shrink: 0 !important;
 }
+                .landing-hero-actions .btn-teacher-panel { order: 1; }
 
         .btn-back-admin {
   background-color: #374151 !important;
