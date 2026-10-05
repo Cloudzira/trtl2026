@@ -679,7 +679,55 @@
         }
 
         let savedLastRead = JSON.parse(localStorage.getItem('tartili_last_read')) || { jilid: 1, page: 'a' };
-        let savedBookmarks = JSON.parse(localStorage.getItem('tartili_bookmarks')) || [];
+        const LEGACY_BOOKMARKS_KEY = 'tartili_bookmarks';
+        let savedBookmarks = [];
+        let savedBookmarksUserId = null;
+
+        function getBookmarksStorageKey(userId) {
+            return `tartili_bookmarks_${userId}`;
+        }
+
+        function parseBookmarkList(value) {
+            try {
+                const parsed = JSON.parse(value || '[]');
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function loadBookmarksForUser(userId, role) {
+            savedBookmarksUserId = userId || null;
+
+            if (!savedBookmarksUserId) {
+                savedBookmarks = [];
+            } else {
+                const storageKey = getBookmarksStorageKey(savedBookmarksUserId);
+                const userBookmarks = localStorage.getItem(storageKey);
+
+                if (userBookmarks !== null) {
+                    savedBookmarks = parseBookmarkList(userBookmarks);
+                } else if (role === 'Guru' && localStorage.getItem(LEGACY_BOOKMARKS_KEY) !== null) {
+                    savedBookmarks = parseBookmarkList(localStorage.getItem(LEGACY_BOOKMARKS_KEY));
+                    localStorage.setItem(storageKey, JSON.stringify(savedBookmarks));
+                    localStorage.removeItem(LEGACY_BOOKMARKS_KEY);
+                } else {
+                    savedBookmarks = [];
+                }
+            }
+
+            updateBookmarkButtonState();
+            if (document.getElementById('bookmarks-screen').classList.contains('active')) {
+                renderBookmarksList();
+            }
+        }
+
+        function persistBookmarks() {
+            if (!savedBookmarksUserId) return;
+            localStorage.setItem(getBookmarksStorageKey(savedBookmarksUserId), JSON.stringify(savedBookmarks));
+        }
+
+        window.loadBookmarksForUser = loadBookmarksForUser;
         
         let currentJilid = savedLastRead.jilid, currentPage = savedLastRead.page, appState = 'menu', selectedMenuCoverIndex = 0, currentAudio = null;
         let mediaRecorder, audioChunks = [], recordedAudioBlob = null; 
@@ -787,7 +835,7 @@
         function removeBookmark(index, event) {
             event.stopPropagation();
             savedBookmarks.splice(index, 1);
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
+            persistBookmarks();
             renderBookmarksList();
             updateBookmarkButtonState();
             showToast('Halaman dihapus dari simpanan');
@@ -926,7 +974,7 @@
                 showToast('Halaman berhasil disimpan!');
             }
             
-            localStorage.setItem('tartili_bookmarks', JSON.stringify(savedBookmarks));
+            persistBookmarks();
             updateBookmarkButtonState();
         }
 
