@@ -981,3 +981,10 @@
         /* Cetak / simpan sebagai PDF: sembunyikan halaman */
         @media print { .image-container, .setoran-player, audio { display: none !important; } }
 
+        /* ===== SAMPUL JILID: tampil utuh sesuai rasio aslinya =====
+           Sebelumnya tinggi sampul dibatasi dan gambar dipotong (object-fit: cover),
+           sehingga angka jilid di pojok kiri atas ikut terpotong. */
+        .btn-cover { aspect-ratio: auto !important; height: auto !important; max-height: none !important; }
+        .btn-cover img { height: auto !important; object-fit: contain !important; }
+        .grid-jilid { align-items: start; }
+
