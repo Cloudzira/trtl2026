@@ -256,7 +256,7 @@
             const profile = window.currentUserProfile;
             if (!PAGE_WATERMARK_ENABLED || !profile) { root.style.removeProperty('--page-watermark'); return; }
             const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
-            const label = esc((profile.name || 'Pengguna').slice(0, 24)) + ' • TartiliKu';
+            const label = esc((profile.name || 'Pengguna').slice(0, 24)) + ' • Kurniapedia';
             const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='170'>" +
                 "<text x='120' y='90' text-anchor='middle' transform='rotate(-28 120 85)' " +
                 "font-family='Arial, sans-serif' font-size='14' font-weight='700' fill='#000' fill-opacity='0.085'>" + label + "</text></svg>";
