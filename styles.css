@@ -853,3 +853,8 @@
         -ms-text-size-adjust: 100%;
         text-size-adjust: 100%;
     }
+
+        /* ===== MODE HEMAT EFEK (otomatis untuk HP dengan RAM kecil) ===== */
+        html.lite-fx * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+        html.lite-fx body.light-theme { --bg-panel: rgba(255, 255, 255, 0.96); }
+        html.lite-fx body.dark-theme { --bg-panel: rgba(15, 23, 42, 0.96); }

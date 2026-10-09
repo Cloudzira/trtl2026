@@ -6,20 +6,23 @@
     <title>TartiliKu</title>
     
     <link rel="icon" href="favicon.png">
-    <link href="https://fonts.bunny.net/css?family=Plus+Jakarta+Sans:400,500,600,700,800%7CAmiri:700" rel="stylesheet">
+    <!-- Percepat koneksi ke server luar -->
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+    <link rel="preconnect" href="https://res.cloudinary.com">
+    <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+    <link rel="preconnect" href="https://esm.sh" crossorigin>
+    <link rel="modulepreload" href="https://esm.sh/firebase@10.8.0/app">
+    <link rel="modulepreload" href="https://esm.sh/firebase@10.8.0/auth?deps=@firebase/app@0.9.27">
+    <link rel="modulepreload" href="https://esm.sh/firebase@10.8.0/firestore?deps=@firebase/app@0.9.27">
+
+    <link href="https://fonts.bunny.net/css?family=Plus+Jakarta+Sans:400,500,600,700,800%7CAmiri:700&display=swap" rel="stylesheet">
     
     <!-- ==========================================
          1. INISIALISASI FIREBASE & AUTENTIKASI
          ========================================== -->
     <script type="module" src="firebase-auth.js"></script>
 
-    <!-- Berkas Konfigurasi Data Buku Tartili (Jilid 1-6) -->
-    <script src="tartili1.js"></script>
-    <script src="tartili2.js"></script>
-    <script src="tartili3.js"></script>
-    <script src="tartili4.js"></script>
-    <script src="tartili5.js"></script>
-    <script src="tartili6.js"></script>
+    <!-- Data blok suara Tartili (tartili1.js - tartili6.js) kini dimuat otomatis per jilid oleh app.js -->
 
     <!-- ==========================================
          2. PENGATURAN TAMPILAN (CSS / GLASS MORPHISM)
@@ -239,12 +242,12 @@
             <div class="menu-section-title">DALAM PENGEMBANGAN KURNIAPEDIA</div>
             
             <div class="grid-jilid">
-                <button class="btn-cover" id="cover-btn-0" onclick="openJilid(1, 'a')" onmouseenter="selectedMenuCoverIndex=0; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover1.jpg"></button>
-                <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover2.jpg"></button>
-                <button class="btn-cover" id="cover-btn-2" onclick="openJilid(3, 'a')" onmouseenter="selectedMenuCoverIndex=2; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover3.jpg"></button>
-                <button class="btn-cover" id="cover-btn-3" onclick="openJilid(4, 'a')" onmouseenter="selectedMenuCoverIndex=3; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover4.jpg"></button>
-                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover5.jpg"></button>
-                <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/cover6.jpg"></button>
+                <button class="btn-cover" id="cover-btn-0" onclick="openJilid(1, 'a')" onmouseenter="selectedMenuCoverIndex=0; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover1.jpg" alt="Tartili jilid 1" loading="lazy" decoding="async"></button>
+                <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover2.jpg" alt="Tartili jilid 2" loading="lazy" decoding="async"></button>
+                <button class="btn-cover" id="cover-btn-2" onclick="openJilid(3, 'a')" onmouseenter="selectedMenuCoverIndex=2; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover3.jpg" alt="Tartili jilid 3" loading="lazy" decoding="async"></button>
+                <button class="btn-cover" id="cover-btn-3" onclick="openJilid(4, 'a')" onmouseenter="selectedMenuCoverIndex=3; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover4.jpg" alt="Tartili jilid 4" loading="lazy" decoding="async"></button>
+                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=4; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover5.jpg" alt="Tartili jilid 5" loading="lazy" decoding="async"></button>
+                <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover6.jpg" alt="Tartili jilid 6" loading="lazy" decoding="async"></button>
             </div>
             
             <div class="shortcut-panel" style="width: 100%; max-width: 100%;">

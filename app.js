@@ -4,7 +4,7 @@
         // (Firestore, gambar, audio setoran ikut gagal dimuat). Kode di
         // bawah ini secara aktif membersihkan Service Worker yang mungkin
         // sudah terpasang di browser pengguna dari versi sebelumnya.
-        const TARTILI_PAGE_IMAGE_CACHE = 'tartili-page-images-v1';
+        const TARTILI_PAGE_IMAGE_CACHE = 'tartili-page-images-v2';
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then((registrations) => {
                 registrations.forEach((reg) => reg.unregister());
@@ -19,6 +19,19 @@
         const savedTheme = localStorage.getItem('tartili_theme') || 'light-theme';
         document.body.className = savedTheme;
         updateThemeToggleIcon();
+
+        // MODE HEMAT EFEK: pada HP dengan RAM kecil, efek blur kaca (backdrop-filter)
+        // dimatikan supaya animasi dan geser halaman lebih lancar.
+        (function detectLowEndDevice() {
+            try {
+                const mem = navigator.deviceMemory;
+                const cores = navigator.hardwareConcurrency;
+                const isTouch = 'ontouchstart' in window;
+                if ((mem && mem <= 4) || (cores && cores <= 4 && isTouch)) {
+                    document.documentElement.classList.add('lite-fx');
+                }
+            } catch (e) { /* abaikan */ }
+        })();
 
         function toggleTheme() {
             if (document.body.classList.contains('light-theme')) {
@@ -797,9 +810,15 @@
         
         const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/ycfss0no";
         const LEGACY_MEDIA_BASE_URL = "https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/";
+        // Transformasi Cloudinary untuk gambar halaman:
+        //  f_webp  = kirim format WebP (lebih kecil dari JPG)
+        //  q_auto  = kualitas otomatis
+        //  c_limit,w_1800 = lebar maksimal 1800px (tidak pernah memperbesar gambar kecil)
+        // Kalau gambar terlihat kurang tajam saat di-zoom, naikkan angka 1800.
+        const PAGE_IMAGE_TRANSFORM = "f_webp,q_auto,c_limit,w_1800";
         const getPageImageUrl = (jilid, page) => {
             const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
-            return `${CLOUDINARY_BASE_URL}/image/upload/t${jilid}_h${pageId}.jpg`;
+            return `${CLOUDINARY_BASE_URL}/image/upload/${PAGE_IMAGE_TRANSFORM}/t${jilid}_h${pageId}.jpg`;
         };
         const getPageAudioUrl = (jilid, page, soundFile) => {
             const soundId = String(soundFile).replace(/\.[^.]+$/, '');
@@ -810,14 +829,51 @@
         let touchStartX = 0, touchEndX = 0;
         const minSwipeDistance = 50;
 
-        const allAudioConfig = {
-            "1": typeof tartili1Config !== 'undefined' ? tartili1Config : {},
-            "2": typeof tartili2Config !== 'undefined' ? tartili2Config : {},
-            "3": typeof tartili3Config !== 'undefined' ? tartili3Config : {},
-            "4": typeof tartili4Config !== 'undefined' ? tartili4Config : {},
-            "5": typeof tartili5Config !== 'undefined' ? tartili5Config : {},
-            "6": typeof tartili6Config !== 'undefined' ? tartili6Config : {}
-        };
+        // Data blok suara per jilid (tartili1.js ... tartili6.js) dimuat SAAT
+        // DIBUTUHKAN saja, bukan keenam-enamnya di awal.
+        const allAudioConfig = { "1": null, "2": null, "3": null, "4": null, "5": null, "6": null };
+        const jilidConfigPromises = {};
+
+        function readLoadedJilidConfig(jilid) {
+            switch (String(jilid)) {
+                case '1': return typeof tartili1Config !== 'undefined' ? tartili1Config : null;
+                case '2': return typeof tartili2Config !== 'undefined' ? tartili2Config : null;
+                case '3': return typeof tartili3Config !== 'undefined' ? tartili3Config : null;
+                case '4': return typeof tartili4Config !== 'undefined' ? tartili4Config : null;
+                case '5': return typeof tartili5Config !== 'undefined' ? tartili5Config : null;
+                case '6': return typeof tartili6Config !== 'undefined' ? tartili6Config : null;
+            }
+            return null;
+        }
+
+        function loadJilidConfig(jilid) {
+            const key = String(jilid);
+            if (allAudioConfig[key]) return Promise.resolve(allAudioConfig[key]);
+            if (jilidConfigPromises[key]) return jilidConfigPromises[key];
+
+            // Kalau ternyata sudah termuat (mis. tag <script> lama masih ada di HTML)
+            const already = readLoadedJilidConfig(key);
+            if (already) { allAudioConfig[key] = already; return Promise.resolve(already); }
+
+            jilidConfigPromises[key] = new Promise((resolve) => {
+                const s = document.createElement('script');
+                s.src = `tartili${key}.js`;
+                s.async = true;
+                s.onload = () => {
+                    const cfg = readLoadedJilidConfig(key) || {};
+                    allAudioConfig[key] = cfg;
+                    resolve(cfg);
+                };
+                s.onerror = () => {
+                    // Gagal (mis. offline): jangan disimpan, supaya bisa dicoba lagi nanti
+                    delete jilidConfigPromises[key];
+                    s.remove();
+                    resolve({});
+                };
+                document.head.appendChild(s);
+            });
+            return jilidConfigPromises[key];
+        }
 
         history.replaceState({ screen: 'menu' }, '', '');
 
@@ -1050,6 +1106,66 @@
             }
         }
 
+        // ===== CACHE & PRELOAD GAMBAR HALAMAN =====
+        const MAX_CACHED_PAGES = 24;
+        const pageFetchInFlight = new Map();
+
+        function trimPageCache(cache) {
+            cache.keys().then((keys) => {
+                if (keys.length > MAX_CACHED_PAGES) {
+                    return Promise.all(keys.slice(0, keys.length - MAX_CACHED_PAGES).map((req) => cache.delete(req)));
+                }
+            }).catch(() => {});
+        }
+
+        // Memastikan gambar ada di cache. Kalau sedang diunduh (mis. oleh preload),
+        // permintaan yang sama menunggu unduhan itu, bukan mengunduh dua kali.
+        function ensurePageCached(url) {
+            if (pageFetchInFlight.has(url)) return pageFetchInFlight.get(url);
+            const p = (async () => {
+                const cache = await window.caches.open(TARTILI_PAGE_IMAGE_CACHE);
+                const hit = await cache.match(url);
+                if (hit) return;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                await cache.put(url, res.clone());
+                trimPageCache(cache);
+            })();
+            pageFetchInFlight.set(url, p);
+            const done = () => pageFetchInFlight.delete(url);
+            p.then(done, done);
+            return p;
+        }
+
+        function getNeighborPageIds(jilid, page) {
+            const pages = getFullPageList(jilid);
+            const i = pages.indexOf(String(page));
+            const out = [];
+            if (i >= 0 && i + 1 < pages.length) out.push(pages[i + 1]);
+            if (i > 0) out.push(pages[i - 1]);
+            return out;
+        }
+
+        function shouldSkipPrefetch() {
+            const c = navigator.connection;
+            return !!(c && (c.saveData || /2g/.test(c.effectiveType || '')));
+        }
+
+        // Setelah halaman aktif tampil, unduh halaman sesudah & sebelumnya di
+        // latar belakang supaya saat digeser langsung muncul.
+        function schedulePrefetchNeighbors(requestId) {
+            if (!window.caches || shouldSkipPrefetch()) return;
+            const jilid = currentJilid, page = currentPage;
+            const run = () => {
+                if (requestId !== pageLoadRequestId) return;
+                getNeighborPageIds(jilid, page).forEach((p) => {
+                    ensurePageCached(getPageImageUrl(jilid, p)).catch(() => {});
+                });
+            };
+            if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 1500 });
+            else setTimeout(run, 400);
+        }
+
         function loadPageData() {
             if (currentAudio) { currentAudio.pause(); currentAudio = null; }
             resetRecording();
@@ -1062,6 +1178,7 @@
             const imgPath = getPageImageUrl(currentJilid, currentPage);
             const legacyImgPath = `${LEGACY_MEDIA_BASE_URL}tar${currentJilid}/halaman${currentPage}/halaman${currentPage}.jpg`;
             const requestId = ++pageLoadRequestId;
+            loadJilidConfig(currentJilid); // mulai muat data suara paralel dengan gambar
 
             if (currentPageObjectUrl) {
                 URL.revokeObjectURL(currentPageObjectUrl);
@@ -1079,8 +1196,13 @@
                 container.innerHTML = "";
                 container.appendChild(img);
 
-                if (allAudioConfig[currentJilid] && allAudioConfig[currentJilid][currentPage]) {
-                    allAudioConfig[currentJilid][currentPage].forEach(block => {
+                const blocksJilid = currentJilid;
+                const blocksPage = currentPage;
+                loadJilidConfig(blocksJilid).then((cfg) => {
+                    if (requestId !== pageLoadRequestId) return;
+                    const blocks = cfg && cfg[blocksPage];
+                    if (!blocks) return;
+                    blocks.forEach(block => {
                         let [top, left, width, height, soundFile] = block;
                         const soundBlock = document.createElement('div');
                         soundBlock.className = 'sound-block';
@@ -1088,7 +1210,9 @@
                         soundBlock.onclick = () => playSound(soundFile);
                         container.appendChild(soundBlock);
                     });
-                }
+                });
+
+                schedulePrefetchNeighbors(requestId);
             };
             img.onerror = function() {
                 if (requestId !== pageLoadRequestId) return;
@@ -1103,20 +1227,11 @@
 
             const loadCachedImage = async () => {
                 if (!window.caches) return imgPath;
-
-                const cacheKey = new URL(imgPath, window.location.href).href;
                 try {
+                    await ensurePageCached(imgPath);
                     const cache = await window.caches.open(TARTILI_PAGE_IMAGE_CACHE);
-                    let response = await cache.match(cacheKey);
-                    if (!response) {
-                        response = await fetch(cacheKey);
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        await cache.put(cacheKey, response.clone());
-                        const cachedPages = await cache.keys();
-                        if (cachedPages.length > 12) {
-                            await Promise.all(cachedPages.slice(0, cachedPages.length - 12).map((request) => cache.delete(request)));
-                        }
-                    }
+                    const response = await cache.match(imgPath);
+                    if (!response) return imgPath;
                     return URL.createObjectURL(await response.blob());
                 } catch (error) {
                     console.warn('Cache gambar halaman tidak tersedia:', error);
