@@ -12,7 +12,8 @@ const SHELL_CACHE = `tartili-shell-${VERSION}`;
 const EXT_CACHE = `tartili-ext-${VERSION}`;
 const MEDIA_CACHE = 'tartili-media-v1';     // sampul + audio (dibiarkan tetap supaya unduhan offline tidak hilang)
 const PAGE_IMAGE_CACHE = 'tartili-page-images-v2'; // milik app.js, jangan dihapus
-const KEEP = [SHELL_CACHE, EXT_CACHE, MEDIA_CACHE, PAGE_IMAGE_CACHE];
+const OFFLINE_IMAGE_CACHE = 'tartili-offline-pages-v1'; // halaman unduhan offline (milik app.js), jangan dihapus
+const KEEP = [SHELL_CACHE, EXT_CACHE, MEDIA_CACHE, PAGE_IMAGE_CACHE, OFFLINE_IMAGE_CACHE];
 
 const SHELL_FILES = [
   './', 'app.js', 'styles.css', 'firebase-auth.js',

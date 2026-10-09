@@ -90,6 +90,21 @@
 
     <div id="offlineBadge">Offline</div>
 
+    <!-- ===== SIMPAN JILID UNTUK OFFLINE ===== -->
+    <div id="offline-modal" onclick="if (event.target === this) closeOfflineManager()">
+        <div class="offline-card" role="dialog" aria-modal="true" aria-labelledby="offlineTitle">
+            <div class="offline-head">
+                <div>
+                    <div class="offline-title" id="offlineTitle">Simpan untuk Offline</div>
+                    <div class="offline-desc">Jilid yang sudah disimpan bisa dibaca dan didengar tanpa internet.</div>
+                </div>
+                <button type="button" class="offline-close" onclick="closeOfflineManager()" aria-label="Tutup">✕</button>
+            </div>
+            <div class="offline-list" id="offlineList"></div>
+            <div class="offline-foot" id="offlineStorageText"></div>
+        </div>
+    </div>
+
     <div id="toastNotification">Pemberitahuan</div>
 
     <!-- MODAL NOTIFIKASI -->
@@ -262,6 +277,9 @@
     <div id="menu-screen" class="screen">
         <div class="menu-content-wrapper">
             <div class="menu-top-actions">
+                <button class="btn-theme-toggle btn-offline-manager" onclick="openOfflineManager()" title="Simpan untuk Offline" aria-label="Simpan untuk offline">
+                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </button>
                 <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna" aria-label="Ubah tema warna">
                     <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                 </button>

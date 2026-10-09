@@ -904,3 +904,45 @@
             background: #f59e0b; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); pointer-events: none;
         }
         body.is-offline #offlineBadge { display: block; }
+
+        /* ===== SIMPAN JILID UNTUK OFFLINE ===== */
+        #offline-modal {
+            position: fixed; inset: 0; z-index: 9500; display: none; align-items: center; justify-content: center;
+            padding: 16px; background: rgba(0, 0, 0, 0.5);
+        }
+        #offline-modal.open { display: flex; }
+        .offline-card {
+            width: 100%; max-width: 440px; max-height: 88vh; overflow-y: auto; border-radius: 20px; padding: 18px;
+            background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+        }
+        .offline-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+        .offline-title { font-size: 17px; font-weight: 800; }
+        .offline-desc { margin-top: 3px; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+        .offline-close {
+            flex-shrink: 0; width: 30px; height: 30px; border-radius: 10px; cursor: pointer; font-size: 13px;
+            border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main);
+        }
+        .offline-list { display: flex; flex-direction: column; gap: 10px; }
+        .offline-row {
+            display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px;
+            background: var(--bg-card); border: 1px solid var(--border-color);
+        }
+        .offline-row-info { flex: 1; min-width: 0; }
+        .offline-row-title { font-size: 14px; font-weight: 800; }
+        .offline-row-sub { margin-top: 2px; font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
+        .offline-bar { margin-top: 7px; height: 6px; border-radius: 99px; overflow: hidden; background: rgba(var(--accent-rgb), 0.15); }
+        .offline-bar-fill { height: 100%; width: 0%; border-radius: 99px; background: var(--accent-gradient); transition: width 0.3s ease; }
+        .offline-row-actions { display: flex; flex-direction: column; align-items: stretch; gap: 6px; flex-shrink: 0; }
+        .offline-btn {
+            min-width: 82px; padding: 8px 12px; border: none; border-radius: 10px; cursor: pointer;
+            font-family: inherit; font-size: 12px; font-weight: 700; color: #fff; background: var(--accent-gradient);
+        }
+        .offline-btn:disabled { opacity: 0.5; cursor: default; }
+        .offline-btn-del {
+            display: none; padding: 5px 10px; border-radius: 10px; cursor: pointer; font-family: inherit;
+            font-size: 11px; font-weight: 700; color: var(--text-muted); background: transparent;
+            border: 1px solid var(--border-color);
+        }
+        .offline-foot { margin-top: 14px; text-align: center; font-size: 11.5px; font-weight: 600; color: var(--text-muted); min-height: 14px; }
+

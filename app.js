@@ -3,7 +3,9 @@
         // Service Worker baru (sw.js) bersifat TERBATAS: hanya mengurus berkas
         // aplikasi, modul Firebase/font, sampul, dan audio. Firestore, login, dan
         // upload setoran tidak disentuh sama sekali.
-        const TARTILI_PAGE_IMAGE_CACHE = 'tartili-page-images-v2';
+        const TARTILI_PAGE_IMAGE_CACHE = 'tartili-page-images-v2';   // cache sementara (24 halaman terakhir)
+        const OFFLINE_IMAGE_CACHE = 'tartili-offline-pages-v1';      // halaman yang diunduh permanen untuk offline
+        const MEDIA_CACHE_NAME = 'tartili-media-v1';                 // audio (sama dengan yang dipakai sw.js)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').catch((err) => {
@@ -853,8 +855,16 @@
         const getPageImageUrl = (jilid, page) => {
             const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
             if (isImageTransformDisabled()) return getPlainPageImageUrl(jilid, page);
+            return getTransformedPageImageUrl(jilid, page);
+        };
+        const getTransformedPageImageUrl = (jilid, page) => {
+            const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
             return `${CLOUDINARY_BASE_URL}/image/upload/${PAGE_IMAGE_TRANSFORM}/t${jilid}_h${pageId}.jpg`;
         };
+        // Semua kemungkinan kunci cache untuk satu halaman (URL sekarang, bertransformasi, polos)
+        const getPageImageKeys = (jilid, page) =>
+            Array.from(new Set([getPageImageUrl(jilid, page), getTransformedPageImageUrl(jilid, page), getPlainPageImageUrl(jilid, page)]));
+        const normalizePageId = (page) => /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : String(page);
         // URL tanpa transformasi (gambar asli di Cloudinary)
         const getPlainPageImageUrl = (jilid, page) => {
             const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
@@ -1163,20 +1173,44 @@
             }).catch(() => {});
         }
 
+        // Mencari gambar halaman di cache offline permanen, lalu cache sementara.
+        async function matchPageCache(jilid, page) {
+            const keys = getPageImageKeys(jilid, page);
+            for (const name of [OFFLINE_IMAGE_CACHE, TARTILI_PAGE_IMAGE_CACHE]) {
+                const cache = await window.caches.open(name);
+                for (const k of keys) {
+                    const hit = await cache.match(k);
+                    if (hit) return hit;
+                }
+            }
+            return null;
+        }
+
         // Memastikan gambar halaman ada di cache. Urutan percobaan:
         //   1) Cloudinary dengan transformasi (WebP kecil)
         //   2) Cloudinary gambar asli
         //   3) Server cadangan (Supabase)
-        // Kunci cache selalu URL utama, jadi mudah dicari ulang.
+        // persist = true -> simpan di cache offline PERMANEN (tidak ikut dibuang otomatis).
         // Kalau sedang diunduh (mis. oleh preload), permintaan yang sama menunggu
         // unduhan itu, bukan mengunduh dua kali.
-        function ensurePageCached(jilid, page) {
+        function ensurePageCached(jilid, page, persist = false) {
             const key = getPageImageUrl(jilid, page);
-            if (pageFetchInFlight.has(key)) return pageFetchInFlight.get(key);
+            const flightKey = (persist ? 'P|' : 'N|') + key;
+            if (pageFetchInFlight.has(flightKey)) return pageFetchInFlight.get(flightKey);
             const p = (async () => {
-                const cache = await window.caches.open(TARTILI_PAGE_IMAGE_CACHE);
-                if (await cache.match(key)) return;
+                const keys = getPageImageKeys(jilid, page);
+                const offlineCache = await window.caches.open(OFFLINE_IMAGE_CACHE);
+                for (const k of keys) { if (await offlineCache.match(k)) return; }
+                const normalCache = await window.caches.open(TARTILI_PAGE_IMAGE_CACHE);
+                for (const k of keys) {
+                    const hit = await normalCache.match(k);
+                    if (hit) {
+                        if (persist) await offlineCache.put(key, hit.clone());
+                        return;
+                    }
+                }
 
+                const target = persist ? offlineCache : normalCache;
                 const plain = getPlainPageImageUrl(jilid, page);
                 const candidates = [key];
                 if (plain !== key) candidates.push(plain);
@@ -1187,12 +1221,12 @@
                     try {
                         const res = await fetch(candidates[i]);
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                        await cache.put(key, res.clone());
+                        await target.put(key, res.clone());
                         // Transformasi gagal tapi gambar asli berhasil -> matikan transformasi
                         if (i === 1 && candidates[1] === plain && key !== plain) {
                             try { localStorage.setItem('tartili_img_transform_off', '1'); } catch (e) {}
                         }
-                        trimPageCache(cache);
+                        if (!persist) trimPageCache(normalCache);
                         return;
                     } catch (err) {
                         lastError = err;
@@ -1200,8 +1234,8 @@
                 }
                 throw lastError || new Error('Gagal mengunduh gambar halaman');
             })();
-            pageFetchInFlight.set(key, p);
-            const done = () => pageFetchInFlight.delete(key);
+            pageFetchInFlight.set(flightKey, p);
+            const done = () => pageFetchInFlight.delete(flightKey);
             p.then(done, done);
             return p;
         }
@@ -1298,8 +1332,7 @@
                 if (!window.caches) return imgPath;
                 try {
                     await ensurePageCached(currentJilid, currentPage);
-                    const cache = await window.caches.open(TARTILI_PAGE_IMAGE_CACHE);
-                    const response = await cache.match(imgPath);
+                    const response = await matchPageCache(currentJilid, currentPage);
                     if (!response) return imgPath;
                     return URL.createObjectURL(await response.blob());
                 } catch (error) {
@@ -1677,3 +1710,209 @@
     document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
     document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
     document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+
+        // =====================================================================
+        // SIMPAN JILID UNTUK OFFLINE
+        // Mengunduh semua gambar halaman + semua suara satu jilid ke penyimpanan
+        // perangkat. Status dihitung langsung dari isi cache (bukan dari catatan),
+        // jadi selalu sesuai kenyataan.
+        // =====================================================================
+        const offlineDownloads = {}; // jilid -> { cancelled, done, total, failed }
+        const OFFLINE_JILID_LIST = [1, 2, 3, 4, 5, 6];
+
+        function getJilidAudioUrls(jilid, cfg) {
+            const urls = [];
+            if (!cfg) return urls;
+            Object.keys(cfg).forEach((page) => {
+                (cfg[page] || []).forEach((block) => urls.push(getPageAudioUrl(jilid, page, block[4])));
+            });
+            return Array.from(new Set(urls));
+        }
+
+        function formatBytes(n) {
+            if (!n) return '0 MB';
+            if (n < 1024 * 1024) return Math.max(1, Math.round(n / 1024)) + ' KB';
+            return (n / (1024 * 1024)).toFixed(n < 100 * 1024 * 1024 ? 1 : 0) + ' MB';
+        }
+
+        async function getJilidOfflineStatus(jilid) {
+            const cfg = await loadJilidConfig(jilid);
+            const audioUrls = getJilidAudioUrls(jilid, cfg);
+            const pages = getFullPageList(jilid);
+            const imgCache = await caches.open(OFFLINE_IMAGE_CACHE);
+            const cachedPageIds = new Set();
+            const imgRe = new RegExp('/t' + jilid + '_h([^/.]+)\\.jpg');
+            (await imgCache.keys()).forEach((req) => {
+                const m = req.url.match(imgRe);
+                if (m) cachedPageIds.add(m[1]);
+            });
+            const mediaCache = await caches.open(MEDIA_CACHE_NAME);
+            const cachedAudio = new Set((await mediaCache.keys()).map((r) => r.url));
+            return {
+                pagesTotal: pages.length,
+                pagesDone: pages.filter((p) => cachedPageIds.has(normalizePageId(p))).length,
+                audioTotal: audioUrls.length,
+                audioDone: audioUrls.filter((u) => cachedAudio.has(u)).length
+            };
+        }
+
+        function renderOfflineRow(jilid, status) {
+            const sub = document.getElementById('offline-sub-' + jilid);
+            const bar = document.getElementById('offline-bar-' + jilid);
+            const btn = document.getElementById('offline-btn-' + jilid);
+            const del = document.getElementById('offline-del-' + jilid);
+            if (!sub || !bar || !btn || !del) return;
+            const running = offlineDownloads[jilid];
+            if (running) {
+                const pct = running.total ? Math.round((running.done / running.total) * 100) : 0;
+                sub.textContent = `Mengunduh... ${pct}%` + (running.failed ? ` (${running.failed} gagal)` : '');
+                bar.style.width = pct + '%';
+                btn.textContent = 'Batal';
+                btn.onclick = () => { running.cancelled = true; };
+                btn.disabled = false;
+                del.style.display = 'none';
+                return;
+            }
+            if (!status) { sub.textContent = 'Memeriksa...'; bar.style.width = '0%'; btn.disabled = true; del.style.display = 'none'; return; }
+            const total = status.pagesTotal + status.audioTotal;
+            const done = status.pagesDone + status.audioDone;
+            const pct = total ? Math.round((done / total) * 100) : 0;
+            const complete = total > 0 && done >= total;
+            bar.style.width = pct + '%';
+            btn.disabled = false;
+            btn.onclick = () => downloadJilidOffline(jilid);
+            if (complete) {
+                sub.textContent = `✓ Tersimpan (${status.pagesDone} halaman, ${status.audioDone} suara)`;
+                btn.textContent = 'Perbarui';
+            } else if (done > 0) {
+                sub.textContent = `Tersimpan sebagian: ${pct}%`;
+                btn.textContent = 'Lengkapi';
+            } else {
+                sub.textContent = 'Belum disimpan';
+                btn.textContent = 'Unduh';
+            }
+            del.style.display = done > 0 ? 'inline-block' : 'none';
+        }
+
+        async function refreshOfflineRow(jilid) {
+            renderOfflineRow(jilid, null);
+            try { renderOfflineRow(jilid, await getJilidOfflineStatus(jilid)); }
+            catch (e) { const sub = document.getElementById('offline-sub-' + jilid); if (sub) sub.textContent = 'Tidak dapat memeriksa'; }
+        }
+
+        async function refreshOfflineStorage() {
+            const el = document.getElementById('offlineStorageText');
+            if (!el) return;
+            try {
+                if (navigator.storage && navigator.storage.estimate) {
+                    const est = await navigator.storage.estimate();
+                    el.textContent = `Ruang yang dipakai aplikasi: ${formatBytes(est.usage || 0)}`;
+                    return;
+                }
+            } catch (e) { /* abaikan */ }
+            el.textContent = '';
+        }
+
+        function openOfflineManager() {
+            const list = document.getElementById('offlineList');
+            if (!list) return;
+            if (!window.caches) { showToast('Browser Anda belum mendukung penyimpanan offline.'); return; }
+            list.innerHTML = '';
+            OFFLINE_JILID_LIST.forEach((j) => {
+                const row = document.createElement('div');
+                row.className = 'offline-row';
+                row.innerHTML =
+                    '<div class="offline-row-info">' +
+                        '<div class="offline-row-title">Jilid ' + j + '</div>' +
+                        '<div class="offline-row-sub" id="offline-sub-' + j + '">Memeriksa...</div>' +
+                        '<div class="offline-bar"><div class="offline-bar-fill" id="offline-bar-' + j + '"></div></div>' +
+                    '</div>' +
+                    '<div class="offline-row-actions">' +
+                        '<button type="button" class="offline-btn" id="offline-btn-' + j + '">...</button>' +
+                        '<button type="button" class="offline-btn-del" id="offline-del-' + j + '" onclick="deleteJilidOffline(' + j + ')">Hapus</button>' +
+                    '</div>';
+                list.appendChild(row);
+            });
+            document.getElementById('offline-modal').classList.add('open');
+            OFFLINE_JILID_LIST.forEach((j) => refreshOfflineRow(j));
+            refreshOfflineStorage();
+        }
+
+        function closeOfflineManager() {
+            const m = document.getElementById('offline-modal');
+            if (m) m.classList.remove('open');
+        }
+
+        async function downloadAudioToCache(cache, url) {
+            if (await cache.match(url)) return;
+            const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            await cache.put(url, res);
+        }
+
+        async function downloadJilidOffline(jilid) {
+            if (!window.caches) { showToast('Browser Anda belum mendukung penyimpanan offline.'); return; }
+            if (!navigator.onLine) { showToast('Anda sedang offline. Sambungkan internet untuk mengunduh.'); return; }
+            if (offlineDownloads[jilid]) return;
+            if (!confirm('Unduh Jilid ' + jilid + ' untuk dibaca tanpa internet?\n\nSemua halaman dan suara jilid ini akan disimpan di perangkat dan memakai data internet. Disarankan memakai Wi-Fi.')) return;
+
+            const state = { cancelled: false, done: 0, total: 0, failed: 0 };
+            offlineDownloads[jilid] = state;
+            try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* abaikan */ }
+            renderOfflineRow(jilid, null);
+            const sub = document.getElementById('offline-sub-' + jilid);
+            if (sub) sub.textContent = 'Menyiapkan...';
+
+            try {
+                const cfg = await loadJilidConfig(jilid);
+                const pages = getFullPageList(jilid);
+                const audioUrls = getJilidAudioUrls(jilid, cfg);
+                const mediaCache = await caches.open(MEDIA_CACHE_NAME);
+                const tasks = [
+                    ...pages.map((p) => () => ensurePageCached(jilid, p, true)),
+                    ...audioUrls.map((u) => () => downloadAudioToCache(mediaCache, u))
+                ];
+                state.total = tasks.length;
+                let next = 0;
+                const worker = async () => {
+                    while (!state.cancelled) {
+                        if (!navigator.onLine) { state.cancelled = true; state.lostConnection = true; return; }
+                        const i = next++;
+                        if (i >= tasks.length) return;
+                        try { await tasks[i](); } catch (e) { state.failed++; }
+                        state.done++;
+                        renderOfflineRow(jilid, null);
+                    }
+                };
+                await Promise.all(Array.from({ length: 5 }, worker));
+            } catch (e) {
+                console.warn('Unduhan offline gagal:', e);
+            }
+
+            const finished = !state.cancelled;
+            delete offlineDownloads[jilid];
+            await refreshOfflineRow(jilid);
+            refreshOfflineStorage();
+            if (state.lostConnection) showToast('Koneksi terputus. Yang sudah tersimpan aman, tekan Lengkapi untuk melanjutkan.');
+            else if (!finished) showToast('Unduhan dibatalkan. Yang sudah tersimpan tetap aman.');
+            else if (state.failed) showToast('Selesai, tetapi ' + state.failed + ' berkas gagal. Tekan Lengkapi untuk mencoba lagi.');
+            else showToast('Jilid ' + jilid + ' siap dipakai offline.');
+        }
+
+        async function deleteJilidOffline(jilid) {
+            if (offlineDownloads[jilid]) return;
+            if (!confirm('Hapus data offline Jilid ' + jilid + ' dari perangkat ini?')) return;
+            try {
+                const imgCache = await caches.open(OFFLINE_IMAGE_CACHE);
+                const re = new RegExp('/t' + jilid + '_h');
+                for (const req of await imgCache.keys()) { if (re.test(req.url)) await imgCache.delete(req); }
+                const mediaCache = await caches.open(MEDIA_CACHE_NAME);
+                const audioRe = new RegExp('/video/upload/t' + jilid + '_h');
+                for (const req of await mediaCache.keys()) { if (audioRe.test(req.url)) await mediaCache.delete(req); }
+            } catch (e) { console.warn('Gagal menghapus data offline:', e); }
+            await refreshOfflineRow(jilid);
+            refreshOfflineStorage();
+            showToast('Data offline Jilid ' + jilid + ' dihapus.');
+        }
+
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeOfflineManager(); });
