@@ -3,8 +3,8 @@
         // Service Worker baru (sw.js) bersifat TERBATAS: hanya mengurus berkas
         // aplikasi, modul Firebase/font, sampul, dan audio. Firestore, login, dan
         // upload setoran tidak disentuh sama sekali.
-        const TARTILI_PAGE_IMAGE_CACHE = 'tartili-page-images-v2';   // cache sementara (24 halaman terakhir)
-        const OFFLINE_IMAGE_CACHE = 'tartili-offline-pages-v1';      // halaman yang diunduh permanen untuk offline
+        const TARTILI_PAGE_IMAGE_CACHE = 'tartili-page-images-v3';   // cache sementara (24 halaman terakhir)
+        const OFFLINE_IMAGE_CACHE = 'tartili-offline-pages-v2';      // halaman yang diunduh permanen untuk offline
         const MEDIA_CACHE_NAME = 'tartili-media-v1';                 // audio (sama dengan yang dipakai sw.js)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -245,7 +245,34 @@
             }
         }
 
+        // ===== PERLINDUNGAN KONTEN (pencegah, bukan penjamin 100%) =====
+        // Gambar halaman & rekaman tidak bisa diklik-kanan / ditahan-lama untuk disimpan,
+        // tidak bisa diseret, dan diberi tanda air nama pengguna agar tangkapan layar
+        // yang disebar bisa dikenali asalnya. Ubah ke false untuk mematikan tanda air.
+        const PAGE_WATERMARK_ENABLED = true;
+
+        function applyPageWatermark() {
+            const root = document.documentElement;
+            const profile = window.currentUserProfile;
+            if (!PAGE_WATERMARK_ENABLED || !profile) { root.style.removeProperty('--page-watermark'); return; }
+            const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
+            const label = esc((profile.name || 'Pengguna').slice(0, 24)) + ' • TartiliKu';
+            const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='170'>" +
+                "<text x='120' y='90' text-anchor='middle' transform='rotate(-28 120 85)' " +
+                "font-family='Arial, sans-serif' font-size='14' font-weight='700' fill='#000' fill-opacity='0.085'>" + label + "</text></svg>";
+            root.style.setProperty('--page-watermark', 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")');
+        }
+
+        // Matikan menu klik-kanan / tahan-lama pada gambar halaman & pemutar rekaman
+        document.addEventListener('contextmenu', (e) => {
+            if (e.target && e.target.closest && e.target.closest('.image-container, .setoran-player, audio')) e.preventDefault();
+        });
+        document.addEventListener('dragstart', (e) => {
+            if (e.target && e.target.closest && e.target.closest('.image-container')) e.preventDefault();
+        });
+
         async function updateUserGreeting() {
+            applyPageWatermark();
             if (!window.currentUserProfile) return;
             const profile = window.currentUserProfile;
             
@@ -595,7 +622,8 @@
                     actionUrl: 'setoran_hasil',
                     jilid: d.jilid,
                     halaman: d.halaman,
-                    audioUrl: d.audioUrl,
+                    audioUrl: d.audioUrl || '',
+                    audioKey: extractSetoranKey(d),
                     nilai: nilaiFinal,
                     feedback: feedbackFinal,
                     createdAt: window.serverTimestamp(),
@@ -646,7 +674,7 @@
                 reviewPanel.style.display = 'flex';
                 document.getElementById('reviewStudentName').innerText = d.studentName || 'Siswa';
                 document.getElementById('reviewAudioContainer').innerHTML =
-                    `<iframe src="${d.audioUrl}" style="width:100%; height:44px; border:none;" allow="autoplay"></iframe>`;
+                    setoranPlayerHtml(d);
                 document.getElementById('reviewNilaiInput').value = d.nilai != null ? d.nilai : '';
                 document.getElementById('reviewFeedbackInput').value = d.feedback || '';
                 document.getElementById('btnKirimPenilaianReview').innerText = d.status === 'dinilai' ? 'Perbarui Penilaian' : 'Kirim Penilaian';
@@ -712,7 +740,7 @@
             const contentEl = document.getElementById('hasilSetoranContent');
             contentEl.innerHTML = `
                 <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Jilid ${data.jilid} • Halaman ${data.halaman}</div>
-                <iframe src="${data.audioUrl}" style="width:100%; height:44px; border:none; margin-bottom:12px;" allow="autoplay"></iframe>
+                ${setoranPlayerHtml(data, 'margin-bottom:12px;')}
                 <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Nilai</div>
                 <div style="font-size:22px; font-weight:800; color:var(--accent-solid); margin-bottom:12px;">${data.nilai != null ? data.nilai : '-'}</div>
                 <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Catatan Guru</div>
@@ -848,10 +876,11 @@
         const LEGACY_MEDIA_BASE_URL = "https://xdicoipqprrkczagarra.supabase.co/storage/v1/object/public/media-tartili/allfiles/";
         // Transformasi Cloudinary untuk gambar halaman:
         //  f_webp  = kirim format WebP (lebih kecil dari JPG)
-        //  q_auto  = kualitas otomatis
-        //  c_limit,w_1800 = lebar maksimal 1800px (tidak pernah memperbesar gambar kecil)
-        // Kalau gambar terlihat kurang tajam saat di-zoom, naikkan angka 1800.
-        const PAGE_IMAGE_TRANSFORM = "f_webp,q_auto,c_limit,w_1800";
+        //  q_auto:good = kualitas otomatis tingkat "baik" (lebih tajam dari q_auto biasa)
+        //  c_limit,w_2400 = lebar maksimal 2400px (tidak pernah memperbesar gambar kecil)
+        // Kalau masih kurang tajam saat di-zoom naikkan 2400 (mis. 3000); kalau terlalu
+        // berat/lambat, turunkan lagi. Angka lebih besar = file lebih besar.
+        const PAGE_IMAGE_TRANSFORM = "f_webp,q_auto:good,c_limit,w_2400";
         const getPageImageUrl = (jilid, page) => {
             const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
             if (isImageTransformDisabled()) return getPlainPageImageUrl(jilid, page);
@@ -1292,6 +1321,7 @@
             container.innerHTML = "";
 
             let img = new Image();
+            img.draggable = false;
             img.alt = `Tartili jilid ${currentJilid}, halaman ${currentPage}`;
             img.onload = function() {
                 if (requestId !== pageLoadRequestId) return;
@@ -1372,7 +1402,7 @@
 
         function resetRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') { mediaRecorder.stop(); }
-            audioChunks = []; recordedAudioBlob = null;
+            audioChunks = []; recordedAudioBlob = null; recordingQualityIssue = '';
             const playbackEl = document.getElementById('playbackAudioEl');
             if (playbackEl) { playbackEl.pause(); playbackEl.removeAttribute('src'); }
             const btnRec = document.getElementById('btnRec');
@@ -1394,6 +1424,87 @@
             'audio/mp4'
         ];
 
+        // ===== PEMERIKSAAN KUALITAS REKAMAN =====
+        // Setelah merekam, suara dianalisis: terlalu pelan, terlalu keras (pecah),
+        // terlalu berisik, atau terlalu pendek. Siswa langsung diberi saran sebelum
+        // mengirim, karena rekaman ini yang akan dinilai guru.
+        let recordingQualityIssue = '';
+        let nextRecordingUsesAutoGain = false;
+
+        function decodeAudioBlob(blob) {
+            return blob.arrayBuffer().then((ab) => {
+                const Ctx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+                if (!Ctx) return null;
+                const ctx = new Ctx(1, 1, 44100);
+                return new Promise((resolve, reject) => ctx.decodeAudioData(ab, resolve, reject));
+            });
+        }
+
+        async function analyzeRecordingQuality(blob) {
+            try {
+                const buf = await decodeAudioBlob(blob);
+                if (!buf) return null;
+                const data = buf.getChannelData(0);
+                const sr = buf.sampleRate;
+                const win = Math.floor(sr * 0.05);
+                const rmsList = [];
+                let peak = 0, clipped = 0;
+                for (let i = 0; i < data.length; i += win) {
+                    let sum = 0, n = 0;
+                    const end = Math.min(i + win, data.length);
+                    for (let j = i; j < end; j++) {
+                        const a = Math.abs(data[j]);
+                        if (a > peak) peak = a;
+                        if (a >= 0.985) clipped++;
+                        sum += a * a; n++;
+                    }
+                    rmsList.push(Math.sqrt(sum / Math.max(1, n)));
+                }
+                rmsList.sort((a, b) => a - b);
+                const db = (x) => 20 * Math.log10(Math.max(x, 1e-6));
+                const p10 = rmsList[Math.floor(rmsList.length * 0.1)] || 0;
+                const p90 = rmsList[Math.floor(rmsList.length * 0.9)] || 0;
+                return {
+                    duration: buf.duration,
+                    peakDb: db(peak),
+                    levelDb: db(p90),
+                    snrDb: db(p90) - db(p10),
+                    clippedPct: (clipped / Math.max(1, data.length)) * 100
+                };
+            } catch (e) {
+                console.warn('Analisis rekaman dilewati:', e);
+                return null;
+            }
+        }
+
+        // Mengembalikan teks saran (kosong = kualitas baik)
+        function describeRecordingIssue(q) {
+            if (!q) return '';
+            if (q.duration < 1) return 'Rekaman terlalu pendek.';
+            if (q.levelDb < -48 || q.peakDb < -30) {
+                nextRecordingUsesAutoGain = true;
+                return 'Hampir tidak ada suara yang terekam. Periksa mikrofon, lalu rekam ulang.';
+            }
+            if (q.peakDb < -18 || q.levelDb < -38) {
+                nextRecordingUsesAutoGain = true;
+                return 'Suara terlalu pelan. Dekatkan mikrofon (sekitar 10-15 cm) lalu rekam ulang. Rekaman berikutnya dibantu penguat otomatis.';
+            }
+            if (q.clippedPct > 0.5) {
+                nextRecordingUsesAutoGain = false;
+                return 'Suara terlalu keras sehingga pecah. Jauhkan mikrofon sedikit atau baca lebih pelan, lalu rekam ulang.';
+            }
+            if (q.snrDb < 8) return 'Suara latar terlalu berisik dibanding suara bacaan. Pindah ke tempat lebih sepi lalu rekam ulang.';
+            return '';
+        }
+
+        async function checkRecordingQualityAfterStop(blob) {
+            recordingQualityIssue = '';
+            const q = await analyzeRecordingQuality(blob);
+            if (blob !== recordedAudioBlob) return; // sudah diganti rekaman lain
+            recordingQualityIssue = describeRecordingIssue(q);
+            if (recordingQualityIssue) showToast(recordingQualityIssue);
+        }
+
         function startRecording() {
             // Kalau sebelumnya sedang memutar ulang rekaman lama, hentikan dulu
             const playbackEl = document.getElementById('playbackAudioEl');
@@ -1405,18 +1516,17 @@
                 if (btnPlayEl) btnPlayEl.innerText = '▶ Play';
             }
 
-            // Minta mikrofon dengan pengaturan kualitas suara TERBAIK untuk
-            // MEREKAM (bukan untuk panggilan video). echoCancellation,
-            // noiseSuppression, dan autoGainControl SENGAJA dimatikan --
-            // ketiganya didesain untuk panggilan real-time, dan kalau
-            // diaktifkan malah sering membuat suara terdengar "teredam"/
-            // robotic di banyak HP & browser. Sample rate tetap dijaga
-            // tinggi untuk kejernihan alami suara.
+            // Minta mikrofon dengan pengaturan kualitas suara terbaik untuk MEREKAM.
+            // Peredam gema & peredam bising dimatikan (membuat suara teredam/robotic).
+            // Penguat otomatis (autoGainControl) mati secara bawaan supaya suara alami,
+            // tetapi otomatis dinyalakan di rekaman berikutnya kalau rekaman sebelumnya
+            // terdeteksi terlalu pelan.
+            recordingQualityIssue = '';
             const constraints = {
                 audio: {
                     echoCancellation: false,
                     noiseSuppression: false,
-                    autoGainControl: false,
+                    autoGainControl: nextRecordingUsesAutoGain,
                     sampleRate: 48000,
                     channelCount: 1
                 }
@@ -1441,6 +1551,7 @@
                     recordedAudioMimeType = mediaRecorder.mimeType || 'audio/webm';
                     recordedAudioBlob = new Blob(audioChunks, { type: recordedAudioMimeType });
                     stream.getTracks().forEach(t => t.stop());
+                    checkRecordingQualityAfterStop(recordedAudioBlob);
                     document.getElementById('btnPlay').disabled = false;
                     document.getElementById('btnSend').disabled = false;
                 };
@@ -1492,10 +1603,77 @@
         // KONFIGURASI PENYIMPANAN AUDIO (FILEBASE VIA APPS SCRIPT)
         // ==========================================
         // Isi URL Web App Apps Script Anda di bawah ini setelah proses deploy
-        // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini,
-        // supaya aman - kunci itu hanya ada di dalam Apps Script.
+        // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini.
+        // Setiap permintaan membuktikan diri dengan TOKEN LOGIN FIREBASE milik
+        // pengguna (berlaku singkat), lalu Apps Script yang memeriksanya.
         const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbwKj91_XK1XKKblERh6YA2R55fyj1CDNGLDFA15ghKn6319zHXtM-RSWiigVLEWUHs2/exec";
-        const FILEBASE_SECRET_KEY = "@awanawan"; // harus sama persis dengan SHARED_SECRET di Code.gs
+        // ===== AUTENTIKASI KE APPS SCRIPT (token login Firebase) =====
+        async function callFilebaseApi(payload) {
+            const user = window.firebaseAuth && window.firebaseAuth.currentUser;
+            if (!user) throw new Error('Sesi login tidak ditemukan, silakan masuk ulang.');
+            const idToken = await user.getIdToken(); // diperbarui otomatis kalau hampir kedaluwarsa
+            const res = await fetch(FILEBASE_UPLOAD_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari preflight CORS di Apps Script
+                body: JSON.stringify({ ...payload, idToken })
+            });
+            const data = await res.json();
+            if (!data.success) {
+                const err = new Error(data.error || 'Permintaan ke server gagal');
+                err.fromServer = true;
+                throw err;
+            }
+            return data;
+        }
+
+        // Mengambil nama file rekaman dari data setoran/notifikasi (data baru maupun lama)
+        function extractSetoranKey(src) {
+            if (!src) return '';
+            if (src.audioKey) return String(src.audioKey);
+            if (src.storagePath) return String(src.storagePath);
+            if (src.audioUrl) {
+                try { return new URL(src.audioUrl).searchParams.get('key') || ''; } catch (e) { /* abaikan */ }
+            }
+            return '';
+        }
+
+        // Pemutar rekaman: tombol dulu, audio baru diambil (dengan token) saat ditekan
+        function setoranPlayerHtml(src, extraStyle) {
+            const key = extractSetoranKey(src).replace(/[^A-Za-z0-9._\/-]/g, '');
+            const style = extraStyle || '';
+            if (!key) return `<div class="setoran-player-msg" style="${style}">Rekaman tidak tersedia.</div>`;
+            return `<div class="setoran-player" data-key="${key}" style="${style}">` +
+                   `<button type="button" class="setoran-play-btn" onclick="loadSetoranAudio(this)">▶ Putar Rekaman</button></div>`;
+        }
+
+        const setoranAudioCache = {};
+        async function loadSetoranAudio(btn) {
+            const box = btn.closest('.setoran-player');
+            if (!box) return;
+            if (!navigator.onLine) { showToast('Anda sedang offline. Rekaman tidak bisa dimuat.'); return; }
+            const key = box.dataset.key;
+            btn.disabled = true;
+            btn.textContent = 'Memuat rekaman...';
+            try {
+                let url = setoranAudioCache[key];
+                if (!url) {
+                    const data = await callFilebaseApi({ action: 'get', key });
+                    const bin = atob(data.audioBase64);
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    url = URL.createObjectURL(new Blob([bytes], { type: data.mimeType || 'audio/webm' }));
+                    setoranAudioCache[key] = url;
+                }
+                box.innerHTML = '<audio controls autoplay controlsList="nodownload noplaybackrate" style="width:100%; height:40px; display:block;"></audio>';
+                box.firstChild.src = url;
+            } catch (e) {
+                console.error(e);
+                btn.disabled = false;
+                btn.textContent = '▶ Putar Rekaman';
+                showToast(e && e.fromServer ? e.message : 'Gagal memuat rekaman. Coba lagi.');
+            }
+        }
+
         const SETORAN_RETENTION_DAYS = 7; // Rekaman otomatis dihapus setelah 7 hari (dicek tiap guru buka halaman Setoran)
 
         function blobToBase64(blob) {
@@ -1532,6 +1710,7 @@
         async function kirimSetoran() {
             if (!navigator.onLine) { showToast('Anda sedang offline. Rekaman belum bisa dikirim, coba lagi saat online.'); return; }
             if (!recordedAudioBlob) { showToast('Belum ada rekaman untuk dikirim.'); return; }
+            if (recordingQualityIssue && !confirm(recordingQualityIssue + '\n\nRekaman ini yang akan dinilai guru.\nTekan OK untuk tetap mengirim, atau Batal untuk merekam ulang.')) return;
             const profile = window.currentUserProfile || {};
             if (!profile.uid) { showToast('Sesi tidak valid, silakan masuk ulang.'); return; }
             if (!profile.classCode) { showToast('Kelas Anda belum terdaftar, hubungi guru.'); return; }
@@ -1547,29 +1726,21 @@
             showUploadingOverlay('Mengunggah rekaman...');
 
             try {
-                const fileExt = recordedAudioMimeType.includes('mp4') ? 'm4a' : recordedAudioMimeType.includes('ogg') ? 'ogg' : 'webm';
-                const fileName = `${profile.uid}_${Date.now()}.${fileExt}`;
                 const base64Audio = await blobToBase64(recordedAudioBlob);
 
-                const uploadRes = await fetch(FILEBASE_UPLOAD_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari preflight CORS di Apps Script
-                    body: JSON.stringify({
-                        secret: FILEBASE_SECRET_KEY,
-                        audioBase64: base64Audio,
-                        fileName: fileName,
-                        mimeType: recordedAudioMimeType
-                    })
+                // Nama file dibuat oleh server (acak & terikat ke akun ini).
+                const uploadData = await callFilebaseApi({
+                    action: 'upload',
+                    audioBase64: base64Audio,
+                    mimeType: recordedAudioMimeType
                 });
-                const uploadData = await uploadRes.json();
-                if (!uploadData.success) throw new Error(uploadData.error || 'Upload gagal');
+                const audioKey = uploadData.key;
 
                 showUploadingOverlay('Menyimpan data setoran...');
 
                 // Filebase bucket bersifat privat, jadi pemutaran audio TIDAK
                 // memakai URL Filebase langsung, melainkan lewat Apps Script
                 // (doGet) yang mengambilkan filenya secara aman.
-                const audioUrl = `${FILEBASE_UPLOAD_URL}?key=${encodeURIComponent(uploadData.key)}&secret=${encodeURIComponent(FILEBASE_SECRET_KEY)}`;
 
                 const setoranRef = await window.addDoc(window.collection(window.firebaseDb, "setoran"), {
                     studentUid: profile.uid,
@@ -1577,8 +1748,9 @@
                     classCode: profile.classCode,
                     jilid: currentJilid,
                     halaman: currentPage,
-                    audioUrl: audioUrl,
-                    storagePath: fileName,
+                    audioUrl: '',
+                    audioKey: audioKey,
+                    storagePath: audioKey,
                     status: 'pending',
                     nilai: null,
                     feedback: null,
@@ -1612,7 +1784,7 @@
                 resetRecording();
             } catch (e) {
                 console.error(e);
-                showToast('Gagal mengirim rekaman. Coba lagi.');
+                showToast(e && e.fromServer ? e.message : 'Gagal mengirim rekaman. Coba lagi.');
                 btnSend.disabled = false;
                 btnSend.innerText = 'Kirim';
             } finally {
