@@ -6,6 +6,15 @@
     <title>TartiliKu</title>
     
     <link rel="icon" href="favicon.png">
+
+    <!-- Aplikasi bisa dipasang di layar utama HP (PWA) -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#a855f7">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TartiliKu">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <!-- Percepat koneksi ke server luar -->
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
     <link rel="preconnect" href="https://res.cloudinary.com">
@@ -30,6 +39,56 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="light-theme">
+
+    <!-- ===== SPLASH / HALAMAN AWAL ===== -->
+    <div id="splash-screen" role="status" aria-live="polite">
+        <div class="splash-center">
+            <img class="splash-logo" src="icon-192.png" alt="Logo TartiliKu" width="112" height="112">
+            <div class="splash-title">TARTILIKU</div>
+            <div class="splash-tagline">Metode Cepat Tartil Membaca Al-Qur'an</div>
+            <div class="splash-spinner" aria-hidden="true"></div>
+            <div class="splash-status" id="splashStatus"></div>
+            <button class="splash-retry" id="splashRetry" type="button" onclick="location.reload()">Coba Lagi</button>
+        </div>
+        <div class="app-footer splash-footer">Crafted with ♥ by <span style="color: #00f2fe; font-weight: 600;">Kurniapedia </span> 2026</div>
+    </div>
+    <script>
+    // Splash tampil sampai halaman pertama (login / menu) siap, minimal 0,7 detik.
+    (function () {
+        var splash = document.getElementById('splash-screen');
+        if (!splash) return;
+        try { var t = localStorage.getItem('tartili_theme'); if (t) document.body.className = t; } catch (e) {}
+        var MIN_SHOW_MS = 700, SLOW_MS = 10000;
+        var hidden = false, pending = false, slowTimer = null;
+        function hideSplash() {
+            if (hidden) return;
+            hidden = true;
+            clearTimeout(slowTimer);
+            observer.disconnect();
+            splash.classList.add('hide');
+            setTimeout(function () { if (splash.parentNode) splash.parentNode.removeChild(splash); }, 600);
+        }
+        function tryHide() {
+            if (hidden || pending || !document.querySelector('.screen.active')) return;
+            pending = true;
+            setTimeout(hideSplash, Math.max(0, MIN_SHOW_MS - performance.now()));
+        }
+        var observer = new MutationObserver(tryHide);
+        observer.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['class'] });
+        document.addEventListener('DOMContentLoaded', tryHide);
+        // Kalau terlalu lama (mis. offline saat pertama kali dibuka), tampilkan pesan
+        slowTimer = setTimeout(function () {
+            var s = document.getElementById('splashStatus'), b = document.getElementById('splashRetry');
+            if (s) s.textContent = navigator.onLine
+                ? 'Memuat lebih lama dari biasanya...'
+                : 'Anda sedang offline. Buka aplikasi sekali saat online agar bisa dipakai offline.';
+            if (b) b.style.display = 'inline-block';
+        }, SLOW_MS);
+        window.addEventListener('online', function () { if (!hidden) location.reload(); });
+    })();
+    </script>
+
+    <div id="offlineBadge">Offline</div>
 
     <div id="toastNotification">Pemberitahuan</div>
 
@@ -242,12 +301,12 @@
             <div class="menu-section-title">DALAM PENGEMBANGAN KURNIAPEDIA</div>
             
             <div class="grid-jilid">
-                <button class="btn-cover" id="cover-btn-0" onclick="openJilid(1, 'a')" onmouseenter="selectedMenuCoverIndex=0; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover1.jpg" alt="Tartili jilid 1" loading="lazy" decoding="async"></button>
-                <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover2.jpg" alt="Tartili jilid 2" loading="lazy" decoding="async"></button>
-                <button class="btn-cover" id="cover-btn-2" onclick="openJilid(3, 'a')" onmouseenter="selectedMenuCoverIndex=2; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover3.jpg" alt="Tartili jilid 3" loading="lazy" decoding="async"></button>
-                <button class="btn-cover" id="cover-btn-3" onclick="openJilid(4, 'a')" onmouseenter="selectedMenuCoverIndex=3; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover4.jpg" alt="Tartili jilid 4" loading="lazy" decoding="async"></button>
-                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=4; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover5.jpg" alt="Tartili jilid 5" loading="lazy" decoding="async"></button>
-                <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover6.jpg" alt="Tartili jilid 6" loading="lazy" decoding="async"></button>
+                <button class="btn-cover" id="cover-btn-0" onclick="openJilid(1, 'a')" onmouseenter="selectedMenuCoverIndex=0; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_320/cover1.jpg" alt="Tartili jilid 1" loading="lazy" decoding="async"></button>
+                <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_320/cover2.jpg" alt="Tartili jilid 2" loading="lazy" decoding="async"></button>
+                <button class="btn-cover" id="cover-btn-2" onclick="openJilid(3, 'a')" onmouseenter="selectedMenuCoverIndex=2; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_320/cover3.jpg" alt="Tartili jilid 3" loading="lazy" decoding="async"></button>
+                <button class="btn-cover" id="cover-btn-3" onclick="openJilid(4, 'a')" onmouseenter="selectedMenuCoverIndex=3; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_320/cover4.jpg" alt="Tartili jilid 4" loading="lazy" decoding="async"></button>
+                <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=4; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_320/cover5.jpg" alt="Tartili jilid 5" loading="lazy" decoding="async"></button>
+                <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_320/cover6.jpg" alt="Tartili jilid 6" loading="lazy" decoding="async"></button>
             </div>
             
             <div class="shortcut-panel" style="width: 100%; max-width: 100%;">

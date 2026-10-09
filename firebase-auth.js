@@ -1,7 +1,7 @@
 
         import { initializeApp } from "https://esm.sh/firebase@10.8.0/app";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://esm.sh/firebase@10.8.0/auth?deps=@firebase/app@0.9.27";
-        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc, addDoc, onSnapshot, orderBy, serverTimestamp } from "https://esm.sh/firebase@10.8.0/firestore?deps=@firebase/app@0.9.27";
+        import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc, addDoc, onSnapshot, orderBy, serverTimestamp } from "https://esm.sh/firebase@10.8.0/firestore?deps=@firebase/app@0.9.27";
         
         const firebaseConfig = {
             apiKey: "AIzaSyDCkiYKe-lKkbb0czz9y9ZBGN9SgOhbjmw",
@@ -15,7 +15,18 @@
         try {
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
-            const db = getFirestore(app);
+            // Cache offline Firestore: data yang pernah dibuka (profil, penanda halaman, dll.)
+            // tetap terbaca saat tidak ada internet. Kalau browser tidak mendukung,
+            // otomatis kembali ke cara biasa.
+            let db;
+            try {
+                db = initializeFirestore(app, {
+                    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+                });
+            } catch (e) {
+                console.warn('Cache offline Firestore tidak aktif:', e);
+                db = getFirestore(app);
+            }
 
             window.firebaseAuth = auth;
             window.firebaseDb = db;

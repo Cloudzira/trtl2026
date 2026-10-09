@@ -858,3 +858,49 @@
         html.lite-fx * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
         html.lite-fx body.light-theme { --bg-panel: rgba(255, 255, 255, 0.96); }
         html.lite-fx body.dark-theme { --bg-panel: rgba(15, 23, 42, 0.96); }
+
+        /* ===== SPLASH / HALAMAN AWAL ===== */
+        #splash-screen {
+            position: fixed; inset: 0; z-index: 10000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: var(--bg-gradient); background-color: var(--bg-main);
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        #splash-screen.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+        .splash-center { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 24px; }
+        .splash-logo {
+            width: 112px; height: 112px; object-fit: contain; border-radius: 28px;
+            filter: drop-shadow(0 12px 24px rgba(var(--accent-rgb), 0.35));
+            animation: splashFloat 2.4s ease-in-out infinite;
+        }
+        .splash-title {
+            margin-top: 18px; font-size: 26px; font-weight: 800; letter-spacing: 4px;
+            background: var(--accent-gradient); -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent; color: transparent;
+        }
+        .splash-tagline { margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+        .splash-spinner {
+            margin-top: 26px; width: 30px; height: 30px; border-radius: 50%;
+            border: 3px solid rgba(var(--accent-rgb), 0.18); border-top-color: var(--accent-solid);
+            animation: splashSpin 0.9s linear infinite;
+        }
+        .splash-status { margin-top: 16px; max-width: 280px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); min-height: 16px; }
+        .splash-retry {
+            display: none; margin-top: 12px; padding: 9px 22px; border: none; border-radius: 12px;
+            font-family: inherit; font-size: 13px; font-weight: 700; color: #fff; cursor: pointer;
+            background: var(--accent-gradient);
+        }
+        .splash-footer {
+            position: absolute; left: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+        }
+        @keyframes splashSpin { to { transform: rotate(360deg); } }
+        @keyframes splashFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+        /* ===== PENANDA OFFLINE ===== */
+        #offlineBadge {
+            display: none; position: fixed; top: calc(env(safe-area-inset-top, 0px) + 8px); left: 50%;
+            transform: translateX(-50%); z-index: 9000; padding: 4px 14px; border-radius: 999px;
+            font-size: 11px; font-weight: 800; letter-spacing: 0.5px; color: #fff;
+            background: #f59e0b; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); pointer-events: none;
+        }
+        body.is-offline #offlineBadge { display: block; }

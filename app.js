@@ -1,23 +1,51 @@
 
-        // CATATAN: Fitur cache offline (Service Worker) DIHAPUS karena
-        // menyebabkan gangguan pada permintaan jaringan lain di aplikasi
-        // (Firestore, gambar, audio setoran ikut gagal dimuat). Kode di
-        // bawah ini secara aktif membersihkan Service Worker yang mungkin
-        // sudah terpasang di browser pengguna dari versi sebelumnya.
+        // ===== SERVICE WORKER (offline) =====
+        // Service Worker baru (sw.js) bersifat TERBATAS: hanya mengurus berkas
+        // aplikasi, modul Firebase/font, sampul, dan audio. Firestore, login, dan
+        // upload setoran tidak disentuh sama sekali.
         const TARTILI_PAGE_IMAGE_CACHE = 'tartili-page-images-v2';
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then((registrations) => {
-                registrations.forEach((reg) => reg.unregister());
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch((err) => {
+                    console.warn('Service Worker gagal didaftarkan:', err);
+                });
+                // Setelah semuanya termuat, minta SW menyimpan modul Firebase & font
+                // yang baru saja dipakai supaya aplikasi bisa dibuka offline.
+                navigator.serviceWorker.ready.then((reg) => {
+                    setTimeout(() => {
+                        try {
+                            const urls = performance.getEntriesByType('resource')
+                                .map((e) => e.name)
+                                .filter((u) => /^https:\/\/(esm\.sh|fonts\.bunny\.net)\//.test(u));
+                            if (reg.active && urls.length) reg.active.postMessage({ type: 'CACHE_EXTERNAL', urls });
+                        } catch (e) { /* abaikan */ }
+                    }, 2500);
+                });
             });
+            // Bersihkan cache peninggalan versi lama (yang bukan milik TartiliKu)
             if (window.caches) {
                 caches.keys().then((names) => {
-                    names.filter((name) => name !== TARTILI_PAGE_IMAGE_CACHE).forEach((name) => caches.delete(name));
+                    names.filter((name) => !name.startsWith('tartili-')).forEach((name) => caches.delete(name));
                 });
             }
         }
 
+        // ===== STATUS ONLINE / OFFLINE =====
+        function updateOnlineStatus(showMessage) {
+            const offline = !navigator.onLine;
+            document.body.classList.toggle('is-offline', offline);
+            if (showMessage) {
+                showToast(offline
+                    ? 'Anda sedang offline. Halaman yang sudah pernah dibuka tetap bisa dibaca.'
+                    : 'Kembali online.');
+            }
+        }
+        window.addEventListener('online', () => updateOnlineStatus(true));
+        window.addEventListener('offline', () => updateOnlineStatus(true));
+
         const savedTheme = localStorage.getItem('tartili_theme') || 'light-theme';
         document.body.className = savedTheme;
+        updateOnlineStatus(false);
         updateThemeToggleIcon();
 
         // MODE HEMAT EFEK: pada HP dengan RAM kecil, efek blur kaca (backdrop-filter)
@@ -144,6 +172,12 @@
             const email = document.getElementById('authEmail').value;
             const password = document.getElementById('authPassword').value;
             const errorDiv = document.getElementById('loginError');
+
+            if (!navigator.onLine) {
+                errorDiv.innerText = "Anda sedang offline. Masuk atau daftar membutuhkan internet.";
+                errorDiv.style.display = 'block';
+                return;
+            }
 
             if (!email || !password) {
                 errorDiv.innerText = "Email dan kata sandi wajib diisi.";
@@ -1463,6 +1497,7 @@
         }
 
         async function kirimSetoran() {
+            if (!navigator.onLine) { showToast('Anda sedang offline. Rekaman belum bisa dikirim, coba lagi saat online.'); return; }
             if (!recordedAudioBlob) { showToast('Belum ada rekaman untuk dikirim.'); return; }
             const profile = window.currentUserProfile || {};
             if (!profile.uid) { showToast('Sesi tidak valid, silakan masuk ulang.'); return; }
