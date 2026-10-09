@@ -818,8 +818,19 @@
         const PAGE_IMAGE_TRANSFORM = "f_webp,q_auto,c_limit,w_1800";
         const getPageImageUrl = (jilid, page) => {
             const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
+            if (isImageTransformDisabled()) return getPlainPageImageUrl(jilid, page);
             return `${CLOUDINARY_BASE_URL}/image/upload/${PAGE_IMAGE_TRANSFORM}/t${jilid}_h${pageId}.jpg`;
         };
+        // URL tanpa transformasi (gambar asli di Cloudinary)
+        const getPlainPageImageUrl = (jilid, page) => {
+            const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
+            return `${CLOUDINARY_BASE_URL}/image/upload/t${jilid}_h${pageId}.jpg`;
+        };
+        const getLegacyPageImageUrl = (jilid, page) =>
+            `${LEGACY_MEDIA_BASE_URL}tar${jilid}/halaman${page}/halaman${page}.jpg`;
+        // Kalau transformasi Cloudinary ditolak (404) tapi gambar asli ada, ingat
+        // pilihan ini supaya tidak mencoba URL yang gagal lagi di kunjungan berikutnya.
+        const isImageTransformDisabled = () => localStorage.getItem('tartili_img_transform_off') === '1';
         const getPageAudioUrl = (jilid, page, soundFile) => {
             const soundId = String(soundFile).replace(/\.[^.]+$/, '');
             return `${CLOUDINARY_BASE_URL}/video/upload/t${jilid}_h${page}_${soundId}.mp3`;
@@ -1118,21 +1129,45 @@
             }).catch(() => {});
         }
 
-        // Memastikan gambar ada di cache. Kalau sedang diunduh (mis. oleh preload),
-        // permintaan yang sama menunggu unduhan itu, bukan mengunduh dua kali.
-        function ensurePageCached(url) {
-            if (pageFetchInFlight.has(url)) return pageFetchInFlight.get(url);
+        // Memastikan gambar halaman ada di cache. Urutan percobaan:
+        //   1) Cloudinary dengan transformasi (WebP kecil)
+        //   2) Cloudinary gambar asli
+        //   3) Server cadangan (Supabase)
+        // Kunci cache selalu URL utama, jadi mudah dicari ulang.
+        // Kalau sedang diunduh (mis. oleh preload), permintaan yang sama menunggu
+        // unduhan itu, bukan mengunduh dua kali.
+        function ensurePageCached(jilid, page) {
+            const key = getPageImageUrl(jilid, page);
+            if (pageFetchInFlight.has(key)) return pageFetchInFlight.get(key);
             const p = (async () => {
                 const cache = await window.caches.open(TARTILI_PAGE_IMAGE_CACHE);
-                const hit = await cache.match(url);
-                if (hit) return;
-                const res = await fetch(url);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                await cache.put(url, res.clone());
-                trimPageCache(cache);
+                if (await cache.match(key)) return;
+
+                const plain = getPlainPageImageUrl(jilid, page);
+                const candidates = [key];
+                if (plain !== key) candidates.push(plain);
+                candidates.push(getLegacyPageImageUrl(jilid, page));
+
+                let lastError = null;
+                for (let i = 0; i < candidates.length; i++) {
+                    try {
+                        const res = await fetch(candidates[i]);
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        await cache.put(key, res.clone());
+                        // Transformasi gagal tapi gambar asli berhasil -> matikan transformasi
+                        if (i === 1 && candidates[1] === plain && key !== plain) {
+                            try { localStorage.setItem('tartili_img_transform_off', '1'); } catch (e) {}
+                        }
+                        trimPageCache(cache);
+                        return;
+                    } catch (err) {
+                        lastError = err;
+                    }
+                }
+                throw lastError || new Error('Gagal mengunduh gambar halaman');
             })();
-            pageFetchInFlight.set(url, p);
-            const done = () => pageFetchInFlight.delete(url);
+            pageFetchInFlight.set(key, p);
+            const done = () => pageFetchInFlight.delete(key);
             p.then(done, done);
             return p;
         }
@@ -1159,7 +1194,7 @@
             const run = () => {
                 if (requestId !== pageLoadRequestId) return;
                 getNeighborPageIds(jilid, page).forEach((p) => {
-                    ensurePageCached(getPageImageUrl(jilid, p)).catch(() => {});
+                    ensurePageCached(jilid, p).catch(() => {});
                 });
             };
             if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 1500 });
@@ -1176,7 +1211,7 @@
             const container = document.getElementById('imageContainer');
             const spinner = document.getElementById('loadingSpinner');
             const imgPath = getPageImageUrl(currentJilid, currentPage);
-            const legacyImgPath = `${LEGACY_MEDIA_BASE_URL}tar${currentJilid}/halaman${currentPage}/halaman${currentPage}.jpg`;
+            const legacyImgPath = getLegacyPageImageUrl(currentJilid, currentPage);
             const requestId = ++pageLoadRequestId;
             loadJilidConfig(currentJilid); // mulai muat data suara paralel dengan gambar
 
@@ -1228,7 +1263,7 @@
             const loadCachedImage = async () => {
                 if (!window.caches) return imgPath;
                 try {
-                    await ensurePageCached(imgPath);
+                    await ensurePageCached(currentJilid, currentPage);
                     const cache = await window.caches.open(TARTILI_PAGE_IMAGE_CACHE);
                     const response = await cache.match(imgPath);
                     if (!response) return imgPath;
