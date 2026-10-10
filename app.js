@@ -259,7 +259,7 @@
             const label = esc((profile.name || 'Pengguna').slice(0, 24)) + ' • Kurniapedia';
             const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='170'>" +
                 "<text x='120' y='90' text-anchor='middle' transform='rotate(-28 120 85)' " +
-                "font-family='Arial, sans-serif' font-size='14' font-weight='700' fill='#000' fill-opacity='0.085'>" + label + "</text></svg>";
+                "font-family='poppins, sans-serif' font-size='12' font-weight='700' fill='#000' fill-opacity='0.05'>" + label + "</text></svg>";
             root.style.setProperty('--page-watermark', 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")');
         }
 
