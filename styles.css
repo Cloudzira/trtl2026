@@ -906,11 +906,11 @@
         body.is-offline #offlineBadge { display: block; }
 
         /* ===== SIMPAN JILID UNTUK OFFLINE ===== */
-        #offline-modal {
+        #offline-modal, #install-help-modal {
             position: fixed; inset: 0; z-index: 9500; display: none; align-items: center; justify-content: center;
             padding: 16px; background: rgba(0, 0, 0, 0.5);
         }
-        #offline-modal.open { display: flex; }
+        #offline-modal.open, #install-help-modal.open { display: flex; }
         .offline-card {
             width: 100%; max-width: 440px; max-height: 88vh; overflow-y: auto; border-radius: 20px; padding: 18px;
             background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main);
@@ -987,4 +987,12 @@
         .btn-cover { aspect-ratio: auto !important; height: auto !important; max-height: none !important; }
         .btn-cover img { height: auto !important; object-fit: contain !important; }
         .grid-jilid { align-items: start; }
+
+        /* ===== PASANG APLIKASI ===== */
+        .install-app-link {
+            display: block; margin: 10px auto 0; padding: 6px 10px; background: transparent; border: none; cursor: pointer;
+            font-family: inherit; font-size: 12px; font-weight: 700; color: var(--accent-solid);
+        }
+        .install-steps { margin: 4px 0 0; padding-left: 20px; font-size: 13px; font-weight: 600; line-height: 1.6; color: var(--text-main); }
+        .install-steps li { margin-bottom: 6px; }
 

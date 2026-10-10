@@ -256,10 +256,10 @@
             const profile = window.currentUserProfile;
             if (!PAGE_WATERMARK_ENABLED || !profile) { root.style.removeProperty('--page-watermark'); return; }
             const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
-            const label = esc((profile.name || 'Pengguna').slice(0, 24)) + ' • Kurniapedia';
+            const label = esc((profile.name || 'Pengguna').slice(0, 24)) + ' • TartiliKu';
             const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='170'>" +
                 "<text x='120' y='90' text-anchor='middle' transform='rotate(-28 120 85)' " +
-                "font-family='poppins, sans-serif' font-size='12' font-weight='700' fill='#000' fill-opacity='0.05'>" + label + "</text></svg>";
+                "font-family='Arial, sans-serif' font-size='14' font-weight='700' fill='#000' fill-opacity='0.085'>" + label + "</text></svg>";
             root.style.setProperty('--page-watermark', 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")');
         }
 
@@ -1606,7 +1606,7 @@
         // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini.
         // Setiap permintaan membuktikan diri dengan TOKEN LOGIN FIREBASE milik
         // pengguna (berlaku singkat), lalu Apps Script yang memeriksanya.
-        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbwKj91_XK1XKKblERh6YA2R55fyj1CDNGLDFA15ghKn6319zHXtM-RSWiigVLEWUHs2/exec";
+        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbyq5eWrNHSbS6pnReJp-mzFU9MwIIqsztEJHZ06goB22iB99IGQbfTmWT6UVm04cbFK/exec";
         // ===== AUTENTIKASI KE APPS SCRIPT (token login Firebase) =====
         async function callFilebaseApi(payload) {
             const user = window.firebaseAuth && window.firebaseAuth.currentUser;
@@ -1883,6 +1883,76 @@
     document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
     document.addEventListener('gestureend', function (e) { e.preventDefault(); });
 
+        // ===== PASANG APLIKASI (PWA) DI HP & LAPTOP =====
+        // Chrome/Edge (Android & komputer) memberi sinyal "bisa dipasang" -> tombol Pasang muncul.
+        // iPhone/iPad (Safari) tidak punya sinyal itu, jadi ditampilkan petunjuk manual.
+        let deferredInstallPrompt = null;
+
+        function isAppInstalled() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        }
+        function isIOSDevice() {
+            return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+        function updateInstallButtons() {
+            const canShow = !isAppInstalled() && (!!deferredInstallPrompt || isIOSDevice());
+            document.querySelectorAll('.install-app-trigger').forEach((el) => {
+                el.style.display = canShow ? '' : 'none';
+            });
+        }
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            updateInstallButtons();
+        });
+        window.addEventListener('appinstalled', () => {
+            deferredInstallPrompt = null;
+            updateInstallButtons();
+            showToast('Aplikasi TartiliKu berhasil dipasang.');
+        });
+
+        async function installApp() {
+            if (deferredInstallPrompt) {
+                const promptEvent = deferredInstallPrompt;
+                deferredInstallPrompt = null;
+                promptEvent.prompt();
+                try { await promptEvent.userChoice; } catch (e) { /* abaikan */ }
+                updateInstallButtons();
+                return;
+            }
+            showInstallHelp();
+        }
+
+        function showInstallHelp() {
+            const desc = document.getElementById('installHelpDesc');
+            const steps = document.getElementById('installHelpSteps');
+            if (!desc || !steps) return;
+            let items;
+            if (isIOSDevice()) {
+                desc.textContent = 'Di iPhone/iPad, pemasangan dilakukan dari Safari.';
+                items = [
+                    'Buka tartili.vercel.app memakai <b>Safari</b> (bukan Chrome).',
+                    'Ketuk tombol <b>Bagikan</b> (kotak dengan panah ke atas).',
+                    'Pilih <b>Tambah ke Layar Utama</b>, lalu ketuk <b>Tambah</b>.'
+                ];
+            } else {
+                desc.textContent = 'Browser ini belum menampilkan tombol pasang otomatis.';
+                items = [
+                    'Gunakan <b>Chrome</b> atau <b>Edge</b>.',
+                    'Di komputer: klik ikon pasang di kanan kolom alamat, atau menu ⋮ → <b>Instal TartiliKu</b>.',
+                    'Di Android: menu ⋮ → <b>Instal aplikasi</b> atau <b>Tambahkan ke layar utama</b>.'
+                ];
+            }
+            steps.innerHTML = items.map((t) => '<li>' + t + '</li>').join('');
+            document.getElementById('install-help-modal').classList.add('open');
+        }
+        function closeInstallHelp() {
+            const m = document.getElementById('install-help-modal');
+            if (m) m.classList.remove('open');
+        }
+        updateInstallButtons();
+
         // =====================================================================
         // SIMPAN JILID UNTUK OFFLINE
         // Mengunduh semua gambar halaman + semua suara satu jilid ke penyimpanan
@@ -2087,4 +2157,4 @@
             showToast('Data offline Jilid ' + jilid + ' dihapus.');
         }
 
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeOfflineManager(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeOfflineManager(); closeInstallHelp(); } });

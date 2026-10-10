@@ -90,6 +90,20 @@
 
     <div id="offlineBadge">Offline</div>
 
+    <!-- ===== PETUNJUK PASANG APLIKASI (iPhone/iPad & browser tanpa tombol pasang) ===== -->
+    <div id="install-help-modal" onclick="if (event.target === this) closeInstallHelp()">
+        <div class="offline-card" role="dialog" aria-modal="true" aria-labelledby="installHelpTitle">
+            <div class="offline-head">
+                <div>
+                    <div class="offline-title" id="installHelpTitle">Pasang TartiliKu</div>
+                    <div class="offline-desc" id="installHelpDesc"></div>
+                </div>
+                <button type="button" class="offline-close" onclick="closeInstallHelp()" aria-label="Tutup">✕</button>
+            </div>
+            <ol class="install-steps" id="installHelpSteps"></ol>
+        </div>
+    </div>
+
     <!-- ===== SIMPAN JILID UNTUK OFFLINE ===== -->
     <div id="offline-modal" onclick="if (event.target === this) closeOfflineManager()">
         <div class="offline-card" role="dialog" aria-modal="true" aria-labelledby="offlineTitle">
@@ -150,6 +164,9 @@
 
             <button class="btn-login" id="authSubmitBtn" onclick="handleAuthSubmit()">Masuk Sekarang</button>
             <div id="loginError" class="login-error">Terjadi kesalahan pada data yang dimasukkan.</div>
+
+            <!-- Tombol pasang aplikasi (muncul otomatis kalau perangkat mendukung) -->
+            <button type="button" class="install-app-link install-app-trigger" style="display:none" onclick="installApp()">📲 Pasang aplikasi di perangkat ini</button>
 
             <!-- Tombol Pengarah ke Halaman Masuk Admin -->
             <button onclick="showAdminLoginScreen()" style="background: transparent; border: none; color: var(--accent-solid); font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 8px;">🔐 Cloudzone</button>
@@ -277,6 +294,9 @@
     <div id="menu-screen" class="screen">
         <div class="menu-content-wrapper">
             <div class="menu-top-actions">
+                <button class="btn-offline-manager install-app-trigger" style="display:none" onclick="installApp()" title="Pasang aplikasi" aria-label="Pasang aplikasi di perangkat ini">
+                    <svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"></rect><line x1="12" y1="8" x2="12" y2="14"></line><polyline points="9.5 11.5 12 14 14.5 11.5"></polyline></svg>
+                </button>
                 <button class="btn-offline-manager" onclick="openOfflineManager()" title="Simpan untuk Offline" aria-label="Simpan untuk offline">
                     <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 </button>
