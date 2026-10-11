@@ -9,7 +9,16 @@
 
     <!-- Aplikasi bisa dipasang di layar utama HP (PWA) -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#a855f7">
+    <meta name="theme-color" id="metaThemeColor" content="#fdf4ff">
+    <script>
+        // Warna status bar HP mengikuti tema (terang #fdf4ff / gelap #020617) sejak awal, tanpa berkedip
+        (function () {
+            try {
+                var dark = localStorage.getItem('tartili_theme') === 'dark-theme';
+                document.getElementById('metaThemeColor').setAttribute('content', dark ? '#020617' : '#fdf4ff');
+            } catch (e) {}
+        })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="TartiliKu">

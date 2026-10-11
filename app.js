@@ -49,6 +49,7 @@
         document.body.className = savedTheme;
         updateOnlineStatus(false);
         updateThemeToggleIcon();
+        updateThemeColorMeta();
 
         // MODE HEMAT EFEK: pada HP dengan RAM kecil, efek blur kaca (backdrop-filter)
         // dimatikan supaya animasi dan geser halaman lebih lancar.
@@ -63,6 +64,14 @@
             } catch (e) { /* abaikan */ }
         })();
 
+        // Warna status bar HP (atas) mengikuti tema aktif
+        function updateThemeColorMeta() {
+            const meta = document.getElementById('metaThemeColor');
+            if (!meta) return;
+            const isDark = document.body.classList.contains('dark-theme');
+            meta.setAttribute('content', isDark ? '#020617' : '#fdf4ff');
+        }
+
         function toggleTheme() {
             if (document.body.classList.contains('light-theme')) {
                 document.body.className = 'dark-theme';
@@ -72,6 +81,7 @@
                 localStorage.setItem('tartili_theme', 'light-theme');
             }
             updateThemeToggleIcon();
+            updateThemeColorMeta();
             showToast(document.body.classList.contains('dark-theme') ? 'Mode Gelap diaktifkan' : 'Mode Terang diaktifkan');
         }
 
