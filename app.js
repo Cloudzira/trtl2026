@@ -2167,4 +2167,29 @@
             showToast('Data offline Jilid ' + jilid + ' dihapus.');
         }
 
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeOfflineManager(); closeInstallHelp(); } });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeOfflineManager(); closeInstallHelp(); closeInfoModal(); } });
+        // =====================================================================
+        // INFORMASI & PETUNJUK PENGGUNAAN (tombol "i" di halaman login)
+        // =====================================================================
+        function openInfoModal() {
+            const m = document.getElementById('info-modal');
+            if (!m) return;
+            switchInfoTab('siswa');
+            m.classList.add('open');
+            const closeBtn = m.querySelector('.offline-close');
+            if (closeBtn) closeBtn.focus();
+        }
+        function closeInfoModal() {
+            const m = document.getElementById('info-modal');
+            if (m) m.classList.remove('open');
+        }
+        function switchInfoTab(which) {
+            const siswa = which !== 'guru';
+            document.getElementById('infoStepsSiswa').style.display = siswa ? '' : 'none';
+            document.getElementById('infoStepsGuru').style.display = siswa ? 'none' : '';
+            document.getElementById('infoTabSiswa').classList.toggle('active', siswa);
+            document.getElementById('infoTabGuru').classList.toggle('active', !siswa);
+            document.getElementById('infoTabSiswa').setAttribute('aria-selected', siswa);
+            document.getElementById('infoTabGuru').setAttribute('aria-selected', !siswa);
+        }
+

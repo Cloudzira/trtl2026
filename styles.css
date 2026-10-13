@@ -996,3 +996,38 @@
         .install-steps { margin: 4px 0 0; padding-left: 20px; font-size: 13px; font-weight: 600; line-height: 1.6; color: var(--text-main); }
         .install-steps li { margin-bottom: 6px; }
 
+
+
+        /* ===== TOMBOL & MODAL INFORMASI (Halaman Login) ===== */
+        .info-btn {
+            position: absolute; top: 14px; right: 14px; z-index: 2;
+            width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--border-color); border-radius: 50%; background: var(--bg-card);
+            color: var(--text-muted); cursor: pointer; transition: var(--transition);
+        }
+        .info-btn svg { width: 18px; height: 18px; }
+        .info-btn:hover { color: var(--accent-solid); border-color: var(--accent-solid); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.2); }
+        .info-btn:focus-visible { outline: 2px solid var(--accent-solid); outline-offset: 3px; }
+
+        #info-modal {
+            position: fixed; inset: 0; z-index: 9500; display: none; align-items: center; justify-content: center;
+            padding: 16px; background: rgba(0, 0, 0, 0.5);
+        }
+        #info-modal.open { display: flex; animation: fadeIn 0.25s ease forwards; }
+        .info-card { max-width: 440px; }
+        .info-tabs { display: flex; background: var(--input-bg); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
+        .info-tab {
+            flex: 1; padding: 8px; border: none; background: transparent; font: inherit; font-size: 12px; font-weight: 700;
+            color: var(--text-muted); cursor: pointer; border-radius: 10px; transition: var(--transition);
+        }
+        .info-tab.active { background: var(--bg-card); color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .info-steps { margin: 0; padding-left: 20px; font-size: 13px; font-weight: 500; line-height: 1.6; color: var(--text-main); text-align: left; }
+        .info-steps li { margin-bottom: 8px; padding-left: 2px; }
+        .info-steps li::marker { color: var(--accent-solid); font-weight: 800; }
+        .info-steps b { font-weight: 700; }
+        .info-tip {
+            margin-top: 6px; padding: 10px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; line-height: 1.5;
+            color: var(--text-muted); background: rgba(var(--accent-rgb), 0.08); text-align: left;
+        }
+        .info-about { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .info-about .social-media-row { width: 100%; }
