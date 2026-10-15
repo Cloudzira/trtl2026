@@ -7,7 +7,7 @@
    TIDAK menyentuh: Firestore, Firebase Auth, upload setoran (Apps Script),
    gambar halaman (sudah di-cache oleh app.js), dan permintaan selain GET.
    ===================================================================== */
-const VERSION = 'v1.1';                       // naikkan angka ini kalau ingin memaksa cache aplikasi dibuat ulang
+const VERSION = 'v1.2';                       // naikkan angka ini kalau ingin memaksa cache aplikasi dibuat ulang
 const SHELL_CACHE = `tartili-shell-${VERSION}`;
 const EXT_CACHE = `tartili-ext-${VERSION}`;
 const MEDIA_CACHE = 'tartili-media-v1';     // sampul + audio (dibiarkan tetap supaya unduhan offline tidak hilang)
@@ -120,7 +120,8 @@ async function networkFirst(req, cacheName, fallbackKey, isNavigation) {
     return isNavigation ? cleanResponse(hit) : hit;
   };
   try {
-    const netPromise = fetch(req);
+    // no-cache: selalu validasi ke server (cache HTTP hosting bisa menahan app.js lama berjam-jam)
+    const netPromise = fetch(req.url, { cache: 'no-cache' });
     const cachedNow = await fromCache();
     // Kalau ada cache, jangan menunggu jaringan lambat lebih dari 4 detik
     const res = cachedNow
@@ -138,7 +139,7 @@ async function networkFirst(req, cacheName, fallbackKey, isNavigation) {
 async function staleWhileRevalidate(event, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(event.request, { ignoreVary: true });
-  const update = fetch(event.request).then((res) => {
+  const update = fetch(event.request.url, { cache: 'no-cache' }).then((res) => {
     if (res && res.ok) cache.put(event.request, res.clone());
     return res;
   }).catch(() => null);

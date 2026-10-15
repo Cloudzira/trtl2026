@@ -7,7 +7,7 @@
         const MEDIA_CACHE_NAME = 'tartili-media-v1';                 // audio (sama dengan yang dipakai sw.js)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch((err) => {
+                navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => reg.update().catch(() => {})).catch((err) => {
                     console.warn('Service Worker gagal didaftarkan:', err);
                 });
                 // Setelah semuanya termuat, minta SW menyimpan modul Firebase & font
@@ -23,6 +23,15 @@
                     }, 2500);
                 });
             });
+            // Saat SW baru mengambil alih, muat ulang SEKALI agar app.js terbaru langsung dipakai
+            if (navigator.serviceWorker.controller) {
+                let swReloaded = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (swReloaded) return;
+                    swReloaded = true;
+                    location.reload();
+                });
+            }
             // Bersihkan cache peninggalan versi lama (yang bukan milik TartiliKu)
             if (window.caches) {
                 caches.keys().then((names) => {
