@@ -900,11 +900,14 @@
             }
             return Array.from(new Set([raw.toLowerCase(), raw.toUpperCase()]));
         };
+        // Nama berkas: halaman angka -> t4_h05.jpg ; halaman huruf (a-g) -> t4_a.jpg
+        const getPageFileStem = (jilid, page) =>
+            /^\d+$/.test(String(page)) ? `t${jilid}_h${normalizePageId(page)}` : `t${jilid}_${String(page).toLowerCase()}`;
         const getTransformedPageImageUrl = (jilid, page) =>
-            `${CLOUDINARY_BASE_URL}/image/upload/${PAGE_IMAGE_TRANSFORM}/t${jilid}_h${normalizePageId(page)}.jpg`;
+            `${CLOUDINARY_BASE_URL}/image/upload/${PAGE_IMAGE_TRANSFORM}/${getPageFileStem(jilid, page)}.jpg`;
         // URL tanpa transformasi (gambar asli di Cloudinary)
         const getPlainPageImageUrl = (jilid, page) =>
-            `${CLOUDINARY_BASE_URL}/image/upload/t${jilid}_h${normalizePageId(page)}.jpg`;
+            `${CLOUDINARY_BASE_URL}/image/upload/${getPageFileStem(jilid, page)}.jpg`;
         const getPageImageUrl = (jilid, page) =>
             isImageTransformDisabled() ? getPlainPageImageUrl(jilid, page) : getTransformedPageImageUrl(jilid, page);
         // Semua kemungkinan kunci cache untuk satu halaman (URL sekarang, bertransformasi, polos)
@@ -915,7 +918,11 @@
         // Urutan sumber yang dicoba: transformasi -> asli -> nama alternatif -> Supabase
         const getPageImageCandidates = (jilid, page) => {
             const list = [getPageImageUrl(jilid, page), getPlainPageImageUrl(jilid, page)];
-            getPageIdVariants(page).forEach((id) => list.push(`${CLOUDINARY_BASE_URL}/image/upload/t${jilid}_h${id}.jpg`));
+            const raw = String(page);
+            const stems = /^\d+$/.test(raw)
+                ? getPageIdVariants(raw).flatMap((id) => [`t${jilid}_h${id}`, `t${jilid}_${id}`])
+                : [`t${jilid}_h${raw.toLowerCase()}`, `t${jilid}_${raw.toUpperCase()}`];
+            stems.forEach((st) => list.push(`${CLOUDINARY_BASE_URL}/image/upload/${st}.jpg`));
             list.push(getLegacyPageImageUrl(jilid, page));
             return Array.from(new Set(list));
         };
@@ -2022,7 +2029,7 @@
             const pages = getFullPageList(jilid);
             const imgCache = await caches.open(OFFLINE_IMAGE_CACHE);
             const cachedPageIds = new Set();
-            const imgRe = new RegExp('/t' + jilid + '_h([^/.]+)\\.jpg');
+            const imgRe = new RegExp('/t' + jilid + '_h?([^/.]+)\\.jpg');
             (await imgCache.keys()).forEach((req) => {
                 const m = req.url.match(imgRe);
                 if (m) cachedPageIds.add(m[1]);
