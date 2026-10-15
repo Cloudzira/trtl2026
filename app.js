@@ -1,5 +1,4 @@
-
-        // ===== SERVICE WORKER (offline) =====
+// ===== SERVICE WORKER (offline) =====
         // Service Worker baru (sw.js) bersifat TERBATAS: hanya mengurus berkas
         // aplikasi, modul Firebase/font, sampul, dan audio. Firestore, login, dan
         // upload setoran tidak disentuh sama sekali.
@@ -891,26 +890,37 @@
         // Kalau masih kurang tajam saat di-zoom naikkan 2400 (mis. 3000); kalau terlalu
         // berat/lambat, turunkan lagi. Angka lebih besar = file lebih besar.
         const PAGE_IMAGE_TRANSFORM = "f_webp,q_auto:good,c_limit,w_2400";
-        const getPageImageUrl = (jilid, page) => {
-            const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
-            if (isImageTransformDisabled()) return getPlainPageImageUrl(jilid, page);
-            return getTransformedPageImageUrl(jilid, page);
+        const normalizePageId = (page) => /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : String(page);
+        // Kemungkinan penulisan nama berkas untuk satu halaman (utama dulu, lalu cadangan)
+        const getPageIdVariants = (page) => {
+            const raw = String(page);
+            if (/^\d+$/.test(raw)) {
+                const n = String(parseInt(raw, 10));
+                return Array.from(new Set([n.padStart(2, '0'), n]));
+            }
+            return Array.from(new Set([raw.toLowerCase(), raw.toUpperCase()]));
         };
-        const getTransformedPageImageUrl = (jilid, page) => {
-            const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
-            return `${CLOUDINARY_BASE_URL}/image/upload/${PAGE_IMAGE_TRANSFORM}/t${jilid}_h${pageId}.jpg`;
-        };
+        const getTransformedPageImageUrl = (jilid, page) =>
+            `${CLOUDINARY_BASE_URL}/image/upload/${PAGE_IMAGE_TRANSFORM}/t${jilid}_h${normalizePageId(page)}.jpg`;
+        // URL tanpa transformasi (gambar asli di Cloudinary)
+        const getPlainPageImageUrl = (jilid, page) =>
+            `${CLOUDINARY_BASE_URL}/image/upload/t${jilid}_h${normalizePageId(page)}.jpg`;
+        const getPageImageUrl = (jilid, page) =>
+            isImageTransformDisabled() ? getPlainPageImageUrl(jilid, page) : getTransformedPageImageUrl(jilid, page);
         // Semua kemungkinan kunci cache untuk satu halaman (URL sekarang, bertransformasi, polos)
         const getPageImageKeys = (jilid, page) =>
             Array.from(new Set([getPageImageUrl(jilid, page), getTransformedPageImageUrl(jilid, page), getPlainPageImageUrl(jilid, page)]));
-        const normalizePageId = (page) => /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : String(page);
-        // URL tanpa transformasi (gambar asli di Cloudinary)
-        const getPlainPageImageUrl = (jilid, page) => {
-            const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
-            return `${CLOUDINARY_BASE_URL}/image/upload/t${jilid}_h${pageId}.jpg`;
-        };
         const getLegacyPageImageUrl = (jilid, page) =>
             `${LEGACY_MEDIA_BASE_URL}tar${jilid}/halaman${page}/halaman${page}.jpg`;
+        // Urutan sumber yang dicoba: transformasi -> asli -> nama alternatif -> Supabase
+        const getPageImageCandidates = (jilid, page) => {
+            const list = [getPageImageUrl(jilid, page), getPlainPageImageUrl(jilid, page)];
+            getPageIdVariants(page).forEach((id) => list.push(`${CLOUDINARY_BASE_URL}/image/upload/t${jilid}_h${id}.jpg`));
+            list.push(getLegacyPageImageUrl(jilid, page));
+            return Array.from(new Set(list));
+        };
+        // Halaman yang sudah terbukti tidak ada di semua sumber (selama sesi) -> jangan diminta ulang
+        const missingPageImages = new Set();
         // Kalau transformasi Cloudinary ditolak (404) tapi gambar asli ada, ingat
         // pilihan ini supaya tidak mencoba URL yang gagal lagi di kunjungan berikutnya.
         const isImageTransformDisabled = () => localStorage.getItem('tartili_img_transform_off') === '1';
@@ -1236,6 +1246,8 @@
             const key = getPageImageUrl(jilid, page);
             const flightKey = (persist ? 'P|' : 'N|') + key;
             if (pageFetchInFlight.has(flightKey)) return pageFetchInFlight.get(flightKey);
+            const missKey = `${jilid}|${normalizePageId(page)}`;
+            if (missingPageImages.has(missKey)) return Promise.reject(new Error('Gambar halaman tidak ditemukan'));
             const p = (async () => {
                 const keys = getPageImageKeys(jilid, page);
                 const offlineCache = await window.caches.open(OFFLINE_IMAGE_CACHE);
@@ -1250,27 +1262,34 @@
                 }
 
                 const target = persist ? offlineCache : normalCache;
+                const candidates = getPageImageCandidates(jilid, page);
                 const plain = getPlainPageImageUrl(jilid, page);
-                const candidates = [key];
-                if (plain !== key) candidates.push(plain);
-                candidates.push(getLegacyPageImageUrl(jilid, page));
 
                 let lastError = null;
+                let allNotFound = true;
+                let transformFailed = false;
                 for (let i = 0; i < candidates.length; i++) {
                     try {
                         const res = await fetch(candidates[i]);
-                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        if (!res.ok) {
+                            if (![400, 404].includes(res.status)) allNotFound = false;
+                            if (i === 0 && candidates[0] !== plain) transformFailed = true;
+                            throw new Error(`HTTP ${res.status}`);
+                        }
                         await target.put(key, res.clone());
                         // Transformasi gagal tapi gambar asli berhasil -> matikan transformasi
-                        if (i === 1 && candidates[1] === plain && key !== plain) {
+                        if (transformFailed && candidates[i] === plain) {
                             try { localStorage.setItem('tartili_img_transform_off', '1'); } catch (e) {}
                         }
                         if (!persist) trimPageCache(normalCache);
                         return;
                     } catch (err) {
+                        // Kesalahan jaringan (bukan 404/400) -> jangan anggap halaman hilang
+                        if (!/^HTTP /.test(String(err && err.message))) allNotFound = false;
                         lastError = err;
                     }
                 }
+                if (allNotFound) missingPageImages.add(missKey);
                 throw lastError || new Error('Gagal mengunduh gambar halaman');
             })();
             pageFetchInFlight.set(flightKey, p);
@@ -1318,7 +1337,7 @@
             const container = document.getElementById('imageContainer');
             const spinner = document.getElementById('loadingSpinner');
             const imgPath = getPageImageUrl(currentJilid, currentPage);
-            const legacyImgPath = getLegacyPageImageUrl(currentJilid, currentPage);
+            const fallbackQueue = getPageImageCandidates(currentJilid, currentPage).filter((u) => u !== imgPath);
             const requestId = ++pageLoadRequestId;
             loadJilidConfig(currentJilid); // mulai muat data suara paralel dengan gambar
 
@@ -1359,13 +1378,20 @@
             };
             img.onerror = function() {
                 if (requestId !== pageLoadRequestId) return;
-                if (!img.dataset.legacyFallbackTried) {
-                    img.dataset.legacyFallbackTried = 'true';
-                    img.src = legacyImgPath;
+                if (fallbackQueue.length) {
+                    img.src = fallbackQueue.shift();
                     return;
                 }
                 if (spinner) spinner.style.display = 'none';
-                container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;">Gagal memuat halaman</div>`;
+                container.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;text-align:center;padding:16px;">
+                    <div>Gambar halaman ini belum tersedia atau gagal dimuat</div>
+                    <button type="button" id="retryPageLoad" style="padding:6px 14px;border-radius:999px;border:1px solid #ef4444;background:#fff;color:#ef4444;font-size:12px;cursor:pointer;">Coba lagi</button>
+                </div>`;
+                const retryBtn = document.getElementById('retryPageLoad');
+                if (retryBtn) retryBtn.onclick = () => {
+                    missingPageImages.delete(`${currentJilid}|${normalizePageId(currentPage)}`);
+                    loadPageData();
+                };
             };
 
             const loadCachedImage = async () => {
@@ -1376,6 +1402,8 @@
                     if (!response) return imgPath;
                     return URL.createObjectURL(await response.blob());
                 } catch (error) {
+                    // Sudah dicoba di semua sumber dan memang tidak ada -> langsung tampilkan pesan
+                    if (missingPageImages.has(`${currentJilid}|${normalizePageId(currentPage)}`)) return null;
                     console.warn('Cache gambar halaman tidak tersedia:', error);
                     return imgPath;
                 }
@@ -1383,9 +1411,10 @@
 
             loadCachedImage().then((imageSource) => {
                 if (requestId !== pageLoadRequestId) {
-                    if (imageSource.startsWith('blob:')) URL.revokeObjectURL(imageSource);
+                    if (imageSource && imageSource.startsWith('blob:')) URL.revokeObjectURL(imageSource);
                     return;
                 }
+                if (!imageSource) { fallbackQueue.length = 0; img.onerror(); return; }
                 if (imageSource.startsWith('blob:')) currentPageObjectUrl = imageSource;
                 img.src = imageSource;
             });
@@ -2192,4 +2221,3 @@
             document.getElementById('infoTabSiswa').setAttribute('aria-selected', siswa);
             document.getElementById('infoTabGuru').setAttribute('aria-selected', !siswa);
         }
-
