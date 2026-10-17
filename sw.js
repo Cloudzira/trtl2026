@@ -7,7 +7,7 @@
    TIDAK menyentuh: Firestore, Firebase Auth, upload setoran (Apps Script),
    gambar halaman (sudah di-cache oleh app.js), dan permintaan selain GET.
    ===================================================================== */
-const VERSION = 'v1.2';                       // naikkan angka ini kalau ingin memaksa cache aplikasi dibuat ulang
+const VERSION = 'v1';                       // naikkan angka ini kalau ingin memaksa cache aplikasi dibuat ulang
 const SHELL_CACHE = `tartili-shell-${VERSION}`;
 const EXT_CACHE = `tartili-ext-${VERSION}`;
 const MEDIA_CACHE = 'tartili-media-v1';     // sampul + audio (dibiarkan tetap supaya unduhan offline tidak hilang)
@@ -17,7 +17,7 @@ const KEEP = [SHELL_CACHE, EXT_CACHE, MEDIA_CACHE, PAGE_IMAGE_CACHE, OFFLINE_IMA
 
 const SHELL_FILES = [
   './', 'app.js', 'styles.css', 'firebase-auth.js',
-  'tartili1.js', 'tartili2.js', 'tartili3.js', 'tartili4.js', 'tartili5.js', 'tartili6.js',
+  'tartili1.js', 'tartili2.js', 'tartili3.js', 'tartili4.js', 'tartili5.js', 'tartili6.js', 'tartili7.js',
   'manifest.json', 'favicon.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'
 ];
 
@@ -120,8 +120,7 @@ async function networkFirst(req, cacheName, fallbackKey, isNavigation) {
     return isNavigation ? cleanResponse(hit) : hit;
   };
   try {
-    // no-cache: selalu validasi ke server (cache HTTP hosting bisa menahan app.js lama berjam-jam)
-    const netPromise = fetch(req.url, { cache: 'no-cache' });
+    const netPromise = fetch(req);
     const cachedNow = await fromCache();
     // Kalau ada cache, jangan menunggu jaringan lambat lebih dari 4 detik
     const res = cachedNow
@@ -139,7 +138,7 @@ async function networkFirst(req, cacheName, fallbackKey, isNavigation) {
 async function staleWhileRevalidate(event, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(event.request, { ignoreVary: true });
-  const update = fetch(event.request.url, { cache: 'no-cache' }).then((res) => {
+  const update = fetch(event.request).then((res) => {
     if (res && res.ok) cache.put(event.request, res.clone());
     return res;
   }).catch(() => null);

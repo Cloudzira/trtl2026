@@ -163,7 +163,7 @@
         .landing-hero-actions { display: flex; gap: 10px; align-items: center; }
 
         .menu-section-title { width: 100%; text-align: left; font-size: 14px; font-weight: 800; color: var(--text-main); letter-spacing: 0.5px; margin-top: 4px; }
-        .grid-jilid { display: grid; gap: 16px; width: 100%; margin: 0; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+        .grid-jilid { display: grid; gap: 16px; width: 100%; margin: 0; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 
         /* ==========================================================
            HALAMAN UTAMA (MENU) - TEMA GLASSMORPHISM FUTURISTIK
@@ -377,7 +377,9 @@
 
         @media (orientation: portrait) {
             .menu-content-wrapper { max-width: 420px; }
-            .grid-jilid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, auto); }
+            /* 7 jilid: 3 kolom (3 + 3 + 1), sampul ke-7 di tengah baris terakhir */
+            .grid-jilid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: none; gap: 12px; }
+            .grid-jilid .btn-cover:nth-child(7) { grid-column: 2; }
             .btn-cover { aspect-ratio: 3/4; }
             
             .landing-hero-card { flex-direction: row; align-items: center; gap: 12px; padding: 16px; }
@@ -422,7 +424,7 @@
             .menu-content-wrapper { max-width: 880px !important; gap: 12px !important; }
 
             .landing-hero-card { padding: 14px 20px; }
-            .grid-jilid { grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: 1fr; gap: 12px; }
+            .grid-jilid { grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: 1fr; gap: 10px; }
             .btn-cover { aspect-ratio: 3/4; max-height: 150px !important; }
             
             #menu-screen .shortcut-panel { 
