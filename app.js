@@ -1876,7 +1876,7 @@
         // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini.
         // Setiap permintaan membuktikan diri dengan TOKEN LOGIN FIREBASE milik
         // pengguna (berlaku singkat), lalu Apps Script yang memeriksanya.
-        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbyq5eWrNHSbS6pnReJp-mzFU9MwIIqsztEJHZ06goB22iB99IGQbfTmWT6UVm04cbFK/exec";
+        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbwKj91_XK1XKKblERh6YA2R55fyj1CDNGLDFA15ghKn6319zHXtM-RSWiigVLEWUHs2/exec";
         // ===== AUTENTIKASI KE APPS SCRIPT (token login Firebase) =====
         async function callFilebaseApi(payload) {
             const user = window.firebaseAuth && window.firebaseAuth.currentUser;
