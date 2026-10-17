@@ -277,6 +277,25 @@
                         createdAt: window.serverTimestamp()
                     });
 
+                    // NOTIFIKASI GURU SAAT SISWA BARU MENDAFTAR KE KELASNYA
+                    // Tujuannya "CLASS_<kode kelas>" (bukan ID guru), karena siswa yang
+                    // belum disetujui tidak boleh membaca data guru. Kalau gagal,
+                    // pendaftaran tetap berhasil.
+                    if (role === 'Siswa') {
+                        try {
+                            await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
+                                targetUserId: "CLASS_" + classCode,
+                                title: "Siswa Baru Mendaftar",
+                                message: `Siswa "${name}" mendaftar ke kelas Anda dan menunggu persetujuan Anda.`,
+                                actionUrl: 'teacher-approval',
+                                readBy: [],
+                                createdAt: window.serverTimestamp()
+                            });
+                        } catch (e) {
+                            console.warn('Notifikasi ke guru gagal dikirim:', e);
+                        }
+                    }
+
                     errorDiv.style.display = 'none';
                     showToast('Pendaftaran berhasil! Akun menunggu persetujuan Admin.');
                 } else {

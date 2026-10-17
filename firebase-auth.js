@@ -242,21 +242,31 @@
 
             const onNotifError = (err) => console.log("Notif snapshot info:", err);
 
-            if (isAdminUser) {
-                // Admin: notifikasi pribadi + notifikasi bersama admin (2 listener, digabung)
+            // Tujuan bersama: admin -> "ALL_ADMINS", guru -> "CLASS_<kode kelas>"
+            // (mis. siswa baru mendaftar). Siswa hanya membaca notifikasi pribadinya.
+            const sharedTargets = [];
+            if (isAdminUser) sharedTargets.push("ALL_ADMINS");
+            if (profile.role === 'Guru' && profile.classCode) sharedTargets.push("CLASS_" + profile.classCode);
+
+            if (sharedTargets.length) {
+                // Notifikasi pribadi + notifikasi bersama (beberapa listener, digabung)
                 let ownDocs = [];
-                let sharedDocs = [];
+                const sharedDocs = {};
                 const emit = () => {
-                    const docs = ownDocs.concat(sharedDocs);
+                    let docs = ownDocs.slice();
+                    sharedTargets.forEach(tg => { docs = docs.concat(sharedDocs[tg] || []); });
                     handleSnapshot({ empty: docs.length === 0, docs: docs });
                 };
-                const unsubOwn = onSnapshot(query(notifCol, where("targetUserId", "==", userId)),
-                    (snap) => { ownDocs = snap.docs; emit(); }, onNotifError);
-                const unsubShared = onSnapshot(query(notifCol, where("targetUserId", "==", "ALL_ADMINS")),
-                    (snap) => { sharedDocs = snap.docs; emit(); }, onNotifError);
-                window.unsubNotifications = () => { unsubOwn(); unsubShared(); };
+                const unsubs = [];
+                unsubs.push(onSnapshot(query(notifCol, where("targetUserId", "==", userId)),
+                    (snap) => { ownDocs = snap.docs; emit(); }, onNotifError));
+                sharedTargets.forEach(tg => {
+                    unsubs.push(onSnapshot(query(notifCol, where("targetUserId", "==", tg)),
+                        (snap) => { sharedDocs[tg] = snap.docs; emit(); }, onNotifError));
+                });
+                window.unsubNotifications = () => { unsubs.forEach(u => u()); };
             } else {
-                // Guru & siswa: HANYA notifikasi yang ditujukan ke akunnya sendiri
+                // Siswa: HANYA notifikasi yang ditujukan ke akunnya sendiri
                 window.unsubNotifications = onSnapshot(
                     query(notifCol, where("targetUserId", "==", userId)),
                     handleSnapshot, onNotifError);
@@ -340,6 +350,10 @@
             } else if (data.actionUrl === 'setoran_hasil') {
                 toggleNotifModal(false);
                 lihatHasilSetoran(data);
+            } else if (data.actionUrl === 'teacher-approval') {
+                // Siswa baru mendaftar -> buka panel guru untuk menyetujui
+                toggleNotifModal(false);
+                if (typeof window.openTeacherAdminScreen === 'function') window.openTeacherAdminScreen();
             }
         }
         window.markNotificationRead = markNotificationRead;
