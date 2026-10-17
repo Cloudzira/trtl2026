@@ -46,10 +46,8 @@
         window.addEventListener('offline', () => updateOnlineStatus(true));
 
         const savedTheme = localStorage.getItem('tartili_theme') || 'light-theme';
-        document.body.className = savedTheme;
         updateOnlineStatus(false);
-        updateThemeToggleIcon();
-        updateThemeColorMeta();
+        applyTheme(savedTheme, false);
 
         // MODE HEMAT EFEK: pada HP dengan RAM kecil, efek blur kaca (backdrop-filter)
         // dimatikan supaya animasi dan geser halaman lebih lancar.
@@ -64,36 +62,74 @@
             } catch (e) { /* abaikan */ }
         })();
 
+        // ===== TEMA =====
+        // Daftar tema ada di <head> index.html (window.TARTILI_THEMES).
+        // Menambah tema baru: tambah 1 baris di daftar itu + 1 blok warna di styles.css.
+        function getCurrentThemeId() {
+            const first = (document.body.className || '').split(' ')[0];
+            return window.getTartiliTheme ? window.getTartiliTheme(first).id : first;
+        }
+
+        function applyTheme(id, persist) {
+            if (window.applyTartiliTheme) {
+                window.applyTartiliTheme(id, persist);
+            } else {
+                document.body.className = id;
+                if (persist) localStorage.setItem('tartili_theme', id);
+            }
+            updateThemeToggleIcon();
+            renderThemePicker();
+        }
+
         // Warna status bar HP (atas) mengikuti tema aktif
         function updateThemeColorMeta() {
             const meta = document.getElementById('metaThemeColor');
-            if (!meta) return;
-            const isDark = document.body.classList.contains('dark-theme');
-            meta.setAttribute('content', isDark ? '#020617' : '#fdf4ff');
+            if (!meta || !window.getTartiliTheme) return;
+            meta.setAttribute('content', window.getTartiliTheme(getCurrentThemeId()).bar);
         }
 
-        function toggleTheme() {
-            if (document.body.classList.contains('light-theme')) {
-                document.body.className = 'dark-theme';
-                localStorage.setItem('tartili_theme', 'dark-theme');
-            } else {
-                document.body.className = 'light-theme';
-                localStorage.setItem('tartili_theme', 'light-theme');
-            }
-            updateThemeToggleIcon();
-            updateThemeColorMeta();
-            showToast(document.body.classList.contains('dark-theme') ? 'Mode Gelap diaktifkan' : 'Mode Terang diaktifkan');
+        function renderThemePicker() {
+            const box = document.getElementById('themeListContainer');
+            if (!box || !window.TARTILI_THEMES) return;
+            const current = getCurrentThemeId();
+            box.innerHTML = window.TARTILI_THEMES.map(t => `
+                <button class="theme-card ${t.id === current ? 'active' : ''}" onclick="selectTheme('${t.id}')" aria-label="Tema ${t.name}">
+                    <span class="theme-preview" style="background:${t.sw[2]};">
+                        <span class="tp-dot" style="background:${t.sw[0]};"></span>
+                        <span class="tp-dot" style="background:${t.sw[1]};"></span>
+                        <span class="tp-bar" style="background:linear-gradient(135deg, ${t.sw[0]}, ${t.sw[1]});"></span>
+                        ${t.id === current ? '<span class="tp-check">✓</span>' : ''}
+                    </span>
+                    <span class="theme-name">${t.name}</span>
+                    <span class="theme-desc">${t.desc}</span>
+                </button>`).join('');
         }
 
+        function openThemePicker() {
+            renderThemePicker();
+            const modal = document.getElementById('themeModal');
+            if (modal) modal.classList.add('active');
+        }
+
+        function closeThemePicker() {
+            const modal = document.getElementById('themeModal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function selectTheme(id) {
+            applyTheme(id, true);
+            showToast(`Tema ${window.getTartiliTheme(id).name} diaktifkan`);
+        }
+
+        window.openThemePicker = openThemePicker;
+        window.closeThemePicker = closeThemePicker;
+        window.selectTheme = selectTheme;
+
+        // Ikon tombol tema (palet warna)
         function updateThemeToggleIcon() {
             const btn = document.querySelector('.btn-theme-toggle');
             if (btn) {
-                const isDark = document.body.classList.contains('dark-theme');
-                if (isDark) {
-                    btn.innerHTML = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
-                } else {
-                    btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
-                }
+                btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.8-.9 1.5-1.9-.3-1 .4-2.1 1.5-2.1H17a4 4 0 0 0 4-4c0-5-4-10-9-10z"></path><circle cx="7.5" cy="11" r="1"></circle><circle cx="10" cy="7" r="1"></circle><circle cx="15" cy="7.5" r="1"></circle></svg>`;
             }
         }
 

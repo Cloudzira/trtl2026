@@ -11,11 +11,38 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" id="metaThemeColor" content="#fdf4ff">
     <script>
-        // Warna status bar HP mengikuti tema (terang #fdf4ff / gelap #020617) sejak awal, tanpa berkedip
+        // ===== DAFTAR TEMA =====
+        // id    : nama class pada <body> (juga disimpan di localStorage 'tartili_theme')
+        // dark  : true untuk tema gelap (body otomatis diberi class 'is-dark')
+        // bar   : warna status bar HP (sama dengan warna latar tema)
+        // sw    : 3 warna contoh untuk kartu pilihan tema [aksen 1, aksen 2, latar]
+        window.TARTILI_THEMES = [
+            { id: 'light-theme',     name: 'Terang',      desc: 'Pink & ungu lembut',  dark: false, bar: '#fdf4ff', sw: ['#f472b6', '#a855f7', '#fdf4ff'] },
+            { id: 'dark-theme',      name: 'Gelap',       desc: 'Hijau & biru muda',   dark: true,  bar: '#020617', sw: ['#34d399', '#22d3ee', '#020617'] },
+            { id: 'bluenight-theme', name: 'Blue Night',  desc: 'Biru malam elegan',   dark: true,  bar: '#070d1f', sw: ['#60a5fa', '#6366f1', '#070d1f'] },
+            { id: 'lavender-theme',  name: 'Lavender',    desc: 'Ungu lembut tenang',  dark: false, bar: '#f5f3ff', sw: ['#a78bfa', '#7c3aed', '#f5f3ff'] },
+            { id: 'kids-theme',      name: 'Ceria Anak',  desc: 'Warna-warni ceria',   dark: false, bar: '#fff7e0', sw: ['#ffb703', '#ff5d8f', '#fff7e0'] },
+            { id: 'future-theme',    name: 'Futuristik',  desc: 'Neon cyan & magenta', dark: true,  bar: '#04050d', sw: ['#00e5ff', '#ff2bd6', '#04050d'] }
+        ];
+        window.getTartiliTheme = function (id) {
+            var list = window.TARTILI_THEMES;
+            for (var i = 0; i < list.length; i++) { if (list[i].id === id) return list[i]; }
+            return list[0];
+        };
+        // Pasang tema: class <body>, warna status bar HP, dan (opsional) simpan pilihan
+        window.applyTartiliTheme = function (id, persist) {
+            var t = window.getTartiliTheme(id);
+            if (document.body) document.body.className = t.id + (t.dark ? ' is-dark' : '');
+            var meta = document.getElementById('metaThemeColor');
+            if (meta) meta.setAttribute('content', t.bar);
+            if (persist) { try { localStorage.setItem('tartili_theme', t.id); } catch (e) {} }
+            return t;
+        };
+        // Warna status bar sejak awal (sebelum halaman tampil), tanpa berkedip
         (function () {
             try {
-                var dark = localStorage.getItem('tartili_theme') === 'dark-theme';
-                document.getElementById('metaThemeColor').setAttribute('content', dark ? '#020617' : '#fdf4ff');
+                var t = window.getTartiliTheme(localStorage.getItem('tartili_theme'));
+                document.getElementById('metaThemeColor').setAttribute('content', t.bar);
             } catch (e) {}
         })();
     </script>
@@ -66,7 +93,7 @@
     (function () {
         var splash = document.getElementById('splash-screen');
         if (!splash) return;
-        try { var t = localStorage.getItem('tartili_theme'); if (t) document.body.className = t; } catch (e) {}
+        try { var t = localStorage.getItem('tartili_theme') || 'light-theme'; if (window.applyTartiliTheme) window.applyTartiliTheme(t, false); else document.body.className = t; } catch (e) {}
         var MIN_SHOW_MS = 700, SLOW_MS = 10000;
         var hidden = false, pending = false, slowTimer = null;
         function hideSplash() {
@@ -140,6 +167,17 @@
             <div id="notificationListContainer" style="flex:1; overflow-y:auto;">
                 <div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat notifikasi...</div>
             </div>
+        </div>
+    </div>
+
+    <!-- Popup Pilih Tema -->
+    <div id="themeModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>🎨 Pilih Tema</h3>
+                <button class="modal-close-btn" onclick="closeThemePicker()">✕</button>
+            </div>
+            <div id="themeListContainer" class="theme-grid"></div>
         </div>
     </div>
 
@@ -317,20 +355,20 @@
     <div id="menu-screen" class="screen">
         <div class="menu-content-wrapper">
             <div class="menu-top-actions">
+                <div class="app-brand-title">TARTILIKU</div>
                 <button class="btn-offline-manager install-app-trigger" style="display:none" onclick="installApp()" title="Pasang aplikasi" aria-label="Pasang aplikasi di perangkat ini">
                     <svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"></rect><line x1="12" y1="8" x2="12" y2="14"></line><polyline points="9.5 11.5 12 14 14.5 11.5"></polyline></svg>
                 </button>
                 <button class="btn-offline-manager" onclick="openOfflineManager()" title="Simpan untuk Offline" aria-label="Simpan untuk offline">
                     <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 </button>
-                <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna" aria-label="Ubah tema warna">
+                <button class="btn-theme-toggle" onclick="openThemePicker()" title="Pilih Tema" aria-label="Pilih tema warna">
                     <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                 </button>
                 <button class="btn-logout" onclick="handleLogout()" title="Keluar Akun" aria-label="Keluar akun">
                     <svg viewBox="0 0 24 24"><path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 </button>
             </div>
-            <div class="app-brand-title">TARTILIKU</div>
             <div class="landing-hero-card">
                 <div class="landing-hero-info">
                     <div class="landing-hero-greeting" id="userGreetingText">Assalaamu'alaikum</div>
