@@ -1073,26 +1073,28 @@
         // Kalau masih kurang tajam saat di-zoom naikkan 2400 (mis. 3000); kalau terlalu
         // berat/lambat, turunkan lagi. Angka lebih besar = file lebih besar.
         const PAGE_IMAGE_TRANSFORM = "f_webp,q_auto:good,c_limit,w_2400";
-        const getPageImageUrl = (jilid, page) => {
-            const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
-            if (isImageTransformDisabled()) return getPlainPageImageUrl(jilid, page);
-            return getTransformedPageImageUrl(jilid, page);
+        // Nama berkas halaman di Cloudinary (Public ID):
+        //   halaman bernomor : t{jilid}_h01 ... t{jilid}_h44   (contoh t2_h05)
+        //   halaman pembuka  : t{jilid}_a ... t{jilid}_g        (contoh t2_a)
+        //   halaman nol      : t{jilid}_0                        (cadangan: t{jilid}_h00)
+        // Fungsi ini mengembalikan daftar kemungkinan nama; yang pertama adalah nama utama.
+        const getPageIdVariants = (page) => {
+            const p = String(page);
+            if (p === '0') return ['0', 'h00'];
+            if (/^\d+$/.test(p)) return ['h' + p.padStart(2, '0')];
+            return [p, 'h' + p];
         };
-        const getTransformedPageImageUrl = (jilid, page) => {
-            const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
-            return `${CLOUDINARY_BASE_URL}/image/upload/${PAGE_IMAGE_TRANSFORM}/t${jilid}_h${pageId}.jpg`;
-        };
-        // Semua kemungkinan kunci cache untuk satu halaman (URL sekarang, bertransformasi, polos)
+        const buildPageImageUrl = (jilid, idPart, transformed) =>
+            `${CLOUDINARY_BASE_URL}/image/upload/${transformed ? PAGE_IMAGE_TRANSFORM + '/' : ''}t${jilid}_${idPart}.jpg`;
+        const getTransformedPageImageUrl = (jilid, page) => buildPageImageUrl(jilid, getPageIdVariants(page)[0], true);
+        // URL tanpa transformasi (gambar asli di Cloudinary)
+        const getPlainPageImageUrl = (jilid, page) => buildPageImageUrl(jilid, getPageIdVariants(page)[0], false);
+        const getPageImageUrl = (jilid, page) =>
+            isImageTransformDisabled() ? getPlainPageImageUrl(jilid, page) : getTransformedPageImageUrl(jilid, page);
+        // Kunci cache untuk satu halaman (bertransformasi & polos)
         const getPageImageKeys = (jilid, page) =>
             Array.from(new Set([getPageImageUrl(jilid, page), getTransformedPageImageUrl(jilid, page), getPlainPageImageUrl(jilid, page)]));
         const normalizePageId = (page) => /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : String(page);
-        // URL tanpa transformasi (gambar asli di Cloudinary)
-        const getPlainPageImageUrl = (jilid, page) => {
-            const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
-            return `${CLOUDINARY_BASE_URL}/image/upload/t${jilid}_h${pageId}.jpg`;
-        };
-        const getLegacyPageImageUrl = (jilid, page) =>
-            `${LEGACY_MEDIA_BASE_URL}tar${jilid}/halaman${page}/halaman${page}.jpg`;
         // Kalau transformasi Cloudinary ditolak (404) tapi gambar asli ada, ingat
         // pilihan ini supaya tidak mencoba URL yang gagal lagi di kunjungan berikutnya.
         const isImageTransformDisabled = () => localStorage.getItem('tartili_img_transform_off') === '1';
@@ -1407,10 +1409,9 @@
             return null;
         }
 
-        // Memastikan gambar halaman ada di cache. Urutan percobaan:
+        // Memastikan gambar halaman ada di cache. Urutan percobaan (untuk tiap kemungkinan nama berkas):
         //   1) Cloudinary dengan transformasi (WebP kecil)
         //   2) Cloudinary gambar asli
-        //   3) Server cadangan (Supabase)
         // persist = true -> simpan di cache offline PERMANEN (tidak ikut dibuang otomatis).
         // Kalau sedang diunduh (mis. oleh preload), permintaan yang sama menunggu
         // unduhan itu, bukan mengunduh dua kali.
@@ -1432,26 +1433,34 @@
                 }
 
                 const target = persist ? offlineCache : normalCache;
-                const plain = getPlainPageImageUrl(jilid, page);
-                const candidates = [key];
-                if (plain !== key) candidates.push(plain);
-                candidates.push(getLegacyPageImageUrl(jilid, page));
+                const variants = getPageIdVariants(page);
+                const useTransform = !isImageTransformDisabled();
 
                 let lastError = null;
-                for (let i = 0; i < candidates.length; i++) {
+                for (const idPart of variants) {
+                    let transformedFailed = false;
+                    // 1) Cloudinary dengan transformasi (WebP kecil)
+                    if (useTransform) {
+                        try {
+                            const res = await fetch(buildPageImageUrl(jilid, idPart, true));
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            await target.put(key, res.clone());
+                            if (!persist) trimPageCache(normalCache);
+                            return;
+                        } catch (err) { lastError = err; transformedFailed = true; }
+                    }
+                    // 2) Cloudinary gambar asli
                     try {
-                        const res = await fetch(candidates[i]);
+                        const res = await fetch(buildPageImageUrl(jilid, idPart, false));
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         await target.put(key, res.clone());
-                        // Transformasi gagal tapi gambar asli berhasil -> matikan transformasi
-                        if (i === 1 && candidates[1] === plain && key !== plain) {
+                        // Transformasi gagal tapi gambar asli ada -> matikan transformasi
+                        if (useTransform && transformedFailed) {
                             try { localStorage.setItem('tartili_img_transform_off', '1'); } catch (e) {}
                         }
                         if (!persist) trimPageCache(normalCache);
                         return;
-                    } catch (err) {
-                        lastError = err;
-                    }
+                    } catch (err) { lastError = err; }
                 }
                 throw lastError || new Error('Gagal mengunduh gambar halaman');
             })();
@@ -1500,7 +1509,14 @@
             const container = document.getElementById('imageContainer');
             const spinner = document.getElementById('loadingSpinner');
             const imgPath = getPageImageUrl(currentJilid, currentPage);
-            const legacyImgPath = getLegacyPageImageUrl(currentJilid, currentPage);
+            // Cadangan kalau pemuatan lewat cache gagal: coba URL langsung (semua kemungkinan nama)
+            const directFallbacks = [];
+            getPageIdVariants(currentPage).forEach((idPart) => {
+                [true, false].forEach((tr) => {
+                    const u = buildPageImageUrl(currentJilid, idPart, tr);
+                    if (u !== imgPath && !directFallbacks.includes(u)) directFallbacks.push(u);
+                });
+            });
             const requestId = ++pageLoadRequestId;
             loadJilidConfig(currentJilid); // mulai muat data suara paralel dengan gambar
 
@@ -1541,9 +1557,8 @@
             };
             img.onerror = function() {
                 if (requestId !== pageLoadRequestId) return;
-                if (!img.dataset.legacyFallbackTried) {
-                    img.dataset.legacyFallbackTried = 'true';
-                    img.src = legacyImgPath;
+                if (directFallbacks.length) {
+                    img.src = directFallbacks.shift();
                     return;
                 }
                 if (spinner) spinner.style.display = 'none';
@@ -2195,17 +2210,12 @@
             const audioUrls = getJilidAudioUrls(jilid, cfg);
             const pages = getFullPageList(jilid);
             const imgCache = await caches.open(OFFLINE_IMAGE_CACHE);
-            const cachedPageIds = new Set();
-            const imgRe = new RegExp('/t' + jilid + '_h([^/.]+)\\.jpg');
-            (await imgCache.keys()).forEach((req) => {
-                const m = req.url.match(imgRe);
-                if (m) cachedPageIds.add(m[1]);
-            });
+            const cachedUrls = new Set((await imgCache.keys()).map((r) => r.url));
             const mediaCache = await caches.open(MEDIA_CACHE_NAME);
             const cachedAudio = new Set((await mediaCache.keys()).map((r) => r.url));
             return {
                 pagesTotal: pages.length,
-                pagesDone: pages.filter((p) => cachedPageIds.has(normalizePageId(p))).length,
+                pagesDone: pages.filter((p) => getPageImageKeys(jilid, p).some((k) => cachedUrls.has(k))).length,
                 audioTotal: audioUrls.length,
                 audioDone: audioUrls.filter((u) => cachedAudio.has(u)).length
             };
@@ -2359,7 +2369,7 @@
             if (!confirm('Hapus data offline Jilid ' + jilid + ' dari perangkat ini?')) return;
             try {
                 const imgCache = await caches.open(OFFLINE_IMAGE_CACHE);
-                const re = new RegExp('/t' + jilid + '_h');
+                const re = new RegExp('/image/upload/(?:[^/]+/)?t' + jilid + '_');
                 for (const req of await imgCache.keys()) { if (re.test(req.url)) await imgCache.delete(req); }
                 const mediaCache = await caches.open(MEDIA_CACHE_NAME);
                 const audioRe = new RegExp('/video/upload/t' + jilid + '_h');
