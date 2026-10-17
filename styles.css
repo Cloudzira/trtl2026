@@ -1126,7 +1126,8 @@
 
         /* Mode hemat efek: panel dibuat lebih pekat pada tema tambahan */
         html.lite-fx body.bluenight-theme, html.lite-fx body.lavender-theme,
-        html.lite-fx body.kids-theme, html.lite-fx body.future-theme { --bg-panel: var(--bg-panel-solid); }
+        html.lite-fx body.kids-theme, html.lite-fx body.future-theme,
+        html.lite-fx body.emerald-theme, html.lite-fx body.aesthetic-theme { --bg-panel: var(--bg-panel-solid); }
 
         /* ===== POPUP PILIH TEMA ===== */
         .theme-grid {
@@ -1155,3 +1156,98 @@
         }
         .theme-name { font-size: 13px; font-weight: 800; color: var(--text-main); }
         .theme-desc { font-size: 10px; font-weight: 600; color: var(--text-muted); }
+
+        /* ===== TEMA: EMERALD (gelap, hijau zamrud dengan sentuhan emas) ===== */
+        body.emerald-theme {
+            --bg-main: #03120d;
+            --bg-gradient: radial-gradient(circle at 10% 12%, rgba(16, 185, 129, 0.24) 0%, transparent 44%), radial-gradient(circle at 90% 16%, rgba(212, 175, 55, 0.14) 0%, transparent 42%), radial-gradient(circle at 50% 100%, rgba(20, 184, 166, 0.14) 0%, transparent 50%), #03120d;
+            --bg-card: rgba(8, 30, 23, 0.72);
+            --bg-panel: rgba(6, 26, 20, 0.84);
+            --bg-panel-solid: rgba(6, 26, 20, 0.97);
+            --border-color: rgba(52, 211, 153, 0.22);
+            --text-main: #e6fff5;
+            --text-muted: #8fb8a8;
+            --input-bg: rgba(16, 185, 129, 0.10);
+            --accent-gradient: linear-gradient(135deg, #34d399, #10b981, #0d9488);
+            --accent-solid: #34d399;
+            --accent-rgb: 52, 211, 153;
+            --orb1-rgb: 16, 185, 129;
+            --orb2-rgb: 212, 175, 55;
+            --shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.65), 0 0 1px 1px rgba(212, 175, 55, 0.10) inset;
+            --glow: 0 0 24px rgba(52, 211, 153, 0.35), 0 0 44px rgba(212, 175, 55, 0.14);
+        }
+
+        /* ===== TEMA: AESTETIK (terang, pastel rose, sage & lilac) ===== */
+        body.aesthetic-theme {
+            --bg-main: #fbf6f1;
+            --bg-gradient: radial-gradient(circle at 8% 10%, rgba(244, 194, 194, 0.42) 0%, transparent 44%), radial-gradient(circle at 92% 14%, rgba(184, 204, 190, 0.38) 0%, transparent 44%), radial-gradient(circle at 50% 100%, rgba(226, 208, 250, 0.34) 0%, transparent 52%), #fbf6f1;
+            --bg-card: rgba(255, 255, 255, 0.72);
+            --bg-panel: rgba(255, 252, 249, 0.82);
+            --bg-panel-solid: rgba(255, 252, 249, 0.97);
+            --border-color: rgba(190, 140, 150, 0.26);
+            --text-main: #4a3a3f;
+            --text-muted: #8b7a7f;
+            --input-bg: rgba(255, 244, 240, 0.92);
+            --accent-gradient: linear-gradient(135deg, #d9809c, #c26a8a, #a76bb5);
+            --accent-solid: #c26a8a;
+            --accent-rgb: 194, 106, 138;
+            --orb1-rgb: 244, 170, 190;
+            --orb2-rgb: 160, 190, 170;
+            --shadow: 0 18px 36px -16px rgba(194, 106, 138, 0.25), 0 8px 14px -6px rgba(160, 190, 170, 0.18);
+            --glow: 0 0 20px rgba(194, 106, 138, 0.25), 0 0 34px rgba(160, 190, 170, 0.20);
+        }
+
+        /* ===== KARTU SAPAAN (menu): avatar, dekorasi, chip ===== */
+        .landing-hero-card { overflow: visible; }
+        .hero-deco {
+            position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+            background:
+                radial-gradient(circle at 100% 0%, rgba(var(--orb1-rgb), 0.26) 0%, transparent 52%),
+                repeating-conic-gradient(from 0deg at 100% 0%, rgba(var(--accent-rgb), 0.08) 0deg 6deg, transparent 6deg 12deg);
+            -webkit-mask-image: radial-gradient(circle at 100% 0%, #000 0%, rgba(0, 0, 0, 0.40) 48%, transparent 78%);
+            mask-image: radial-gradient(circle at 100% 0%, #000 0%, rgba(0, 0, 0, 0.40) 48%, transparent 78%);
+        }
+        .landing-hero-info, .landing-hero-actions { position: relative; z-index: 1; }
+        .landing-hero-info { min-width: 0; gap: 10px; }
+
+        .hero-identity { display: flex; align-items: center; gap: 14px; min-width: 0; }
+        .hero-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .hero-avatar {
+            position: relative; flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: 800; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            background: var(--accent-gradient);
+            box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.16), 0 10px 20px -8px rgba(var(--accent-rgb), 0.65);
+        }
+        .hero-avatar::after {
+            content: ""; position: absolute; inset: -6px; border-radius: 50%;
+            border: 1px dashed rgba(var(--accent-rgb), 0.5);
+        }
+
+        .landing-hero-greeting { color: var(--accent-solid); letter-spacing: 0.4px; }
+        .landing-hero-username { font-size: 21px; line-height: 1.2; overflow-wrap: anywhere; }
+        .landing-hero-motivation { font-size: 11.5px; }
+
+        .landing-hero-subtitle { gap: 6px; margin-top: 0; padding-top: 10px; border-top: 1px dashed var(--border-color); }
+        #userClassText, #userTeacherNameText {
+            display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px;
+            font-size: 10.5px; font-weight: 700; color: var(--text-main);
+            background: var(--input-bg); border: 1px solid var(--border-color);
+        }
+        #userClassText::before { content: "🏫"; margin-right: 5px; font-size: 10px; }
+        #userTeacherNameText::before { content: "👨‍🏫"; margin-right: 5px; font-size: 10px; }
+        .landing-hero-subtitle .badge-role {
+            background: var(--accent-gradient); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+            padding: 3px 11px; border-radius: 999px; font-size: 10.5px; letter-spacing: 0.3px;
+            box-shadow: 0 6px 12px -6px rgba(var(--accent-rgb), 0.7);
+        }
+        .landing-hero-subtitle .badge-role:hover { background: var(--accent-gradient); filter: brightness(1.12); transform: translateY(-1px); }
+
+        body.future-theme .landing-hero-card { border-color: rgba(var(--accent-rgb), 0.38); }
+        body.aesthetic-theme .landing-hero-card, body.kids-theme .landing-hero-card { border-radius: 28px; }
+
+        @media (max-width: 480px) {
+            .hero-avatar { width: 42px; height: 42px; font-size: 18px; }
+            .hero-identity { gap: 12px; }
+            .landing-hero-username { font-size: 18px; }
+        }

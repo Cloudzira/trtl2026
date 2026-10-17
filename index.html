@@ -9,24 +9,30 @@
 
     <!-- Aplikasi bisa dipasang di layar utama HP (PWA) -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" id="metaThemeColor" content="#fdf4ff">
+    <meta name="theme-color" id="metaThemeColor" content="#04050d">
     <script>
         // ===== DAFTAR TEMA =====
         // id    : nama class pada <body> (juga disimpan di localStorage 'tartili_theme')
         // dark  : true untuk tema gelap (body otomatis diberi class 'is-dark')
         // bar   : warna status bar HP (sama dengan warna latar tema)
         // sw    : 3 warna contoh untuk kartu pilihan tema [aksen 1, aksen 2, latar]
+        // Tema bawaan (untuk pengguna yang belum pernah memilih): Futuristik
+        window.TARTILI_DEFAULT_THEME = 'future-theme';
         window.TARTILI_THEMES = [
-            { id: 'light-theme',     name: 'Terang',      desc: 'Pink & ungu lembut',  dark: false, bar: '#fdf4ff', sw: ['#f472b6', '#a855f7', '#fdf4ff'] },
-            { id: 'dark-theme',      name: 'Gelap',       desc: 'Hijau & biru muda',   dark: true,  bar: '#020617', sw: ['#34d399', '#22d3ee', '#020617'] },
+            { id: 'future-theme',    name: 'Futuristik',  desc: 'Neon cyan & magenta', dark: true,  bar: '#04050d', sw: ['#00e5ff', '#ff2bd6', '#04050d'] },
             { id: 'bluenight-theme', name: 'Blue Night',  desc: 'Biru malam elegan',   dark: true,  bar: '#070d1f', sw: ['#60a5fa', '#6366f1', '#070d1f'] },
+            { id: 'emerald-theme',   name: 'Emerald',     desc: 'Hijau zamrud mewah',  dark: true,  bar: '#03120d', sw: ['#34d399', '#d4af37', '#03120d'] },
+            { id: 'dark-theme',      name: 'Gelap',       desc: 'Hijau & biru muda',   dark: true,  bar: '#020617', sw: ['#34d399', '#22d3ee', '#020617'] },
+            { id: 'aesthetic-theme', name: 'Aestetik',    desc: 'Pastel rose & sage',  dark: false, bar: '#fbf6f1', sw: ['#e8a0b4', '#a7c4b0', '#fbf6f1'] },
             { id: 'lavender-theme',  name: 'Lavender',    desc: 'Ungu lembut tenang',  dark: false, bar: '#f5f3ff', sw: ['#a78bfa', '#7c3aed', '#f5f3ff'] },
             { id: 'kids-theme',      name: 'Ceria Anak',  desc: 'Warna-warni ceria',   dark: false, bar: '#fff7e0', sw: ['#ffb703', '#ff5d8f', '#fff7e0'] },
-            { id: 'future-theme',    name: 'Futuristik',  desc: 'Neon cyan & magenta', dark: true,  bar: '#04050d', sw: ['#00e5ff', '#ff2bd6', '#04050d'] }
+            { id: 'light-theme',     name: 'Terang',      desc: 'Pink & ungu lembut',  dark: false, bar: '#fdf4ff', sw: ['#f472b6', '#a855f7', '#fdf4ff'] }
         ];
         window.getTartiliTheme = function (id) {
             var list = window.TARTILI_THEMES;
             for (var i = 0; i < list.length; i++) { if (list[i].id === id) return list[i]; }
+            // id tidak dikenal / belum pernah memilih -> tema bawaan
+            for (var j = 0; j < list.length; j++) { if (list[j].id === window.TARTILI_DEFAULT_THEME) return list[j]; }
             return list[0];
         };
         // Pasang tema: class <body>, warna status bar HP, dan (opsional) simpan pilihan
@@ -74,7 +80,7 @@
          ========================================== -->
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="light-theme">
+<body class="future-theme is-dark">
 
     <!-- ===== SPLASH / HALAMAN AWAL ===== -->
     <div id="splash-screen" role="status" aria-live="polite">
@@ -93,7 +99,7 @@
     (function () {
         var splash = document.getElementById('splash-screen');
         if (!splash) return;
-        try { var t = localStorage.getItem('tartili_theme') || 'light-theme'; if (window.applyTartiliTheme) window.applyTartiliTheme(t, false); else document.body.className = t; } catch (e) {}
+        try { var t = localStorage.getItem('tartili_theme') || window.TARTILI_DEFAULT_THEME || 'future-theme'; if (window.applyTartiliTheme) window.applyTartiliTheme(t, false); else document.body.className = t; } catch (e) {}
         var MIN_SHOW_MS = 700, SLOW_MS = 10000;
         var hidden = false, pending = false, slowTimer = null;
         function hideSplash() {
@@ -370,10 +376,16 @@
                 </button>
             </div>
             <div class="landing-hero-card">
+                <div class="hero-deco" aria-hidden="true"></div>
                 <div class="landing-hero-info">
-                    <div class="landing-hero-greeting" id="userGreetingText">Assalaamu'alaikum</div>
-                    <div class="landing-hero-username" id="userUsernameText">Pengguna</div>
-                    <div class="landing-hero-motivation">Selamat belajar TARTILI</div>
+                    <div class="hero-identity">
+                        <div class="hero-avatar" id="userAvatar" aria-hidden="true">P</div>
+                        <div class="hero-text">
+                            <div class="landing-hero-greeting" id="userGreetingText">Assalaamu'alaikum</div>
+                            <div class="landing-hero-username" id="userUsernameText">Pengguna</div>
+                            <div class="landing-hero-motivation" id="userMotivationText">Selamat belajar TARTILI</div>
+                        </div>
+                    </div>
                     <div class="landing-hero-subtitle">
                         <span id="userClassText">Kelas -</span>
                         <span id="userTeacherNameText">Guru: -</span>

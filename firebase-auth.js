@@ -219,10 +219,10 @@
                         item.onclick = () => markNotificationRead(notifId, userId, data);
                         item.innerHTML = `
                             <div style="font-weight:700; font-size:12px; color:var(--text-main); display:flex; justify-content:space-between;">
-                                <span>${data.title}</span>
+                                <span>${(window.riwayatEsc || String)(data.title)}</span>
                                 <span style="font-size:10px; opacity:0.7;">${data.createdAt ? new Date(data.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
                             </div>
-                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${data.message}</div>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${(window.riwayatEsc || String)(data.message)}</div>
                         `;
                         container.appendChild(item);
                     }

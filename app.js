@@ -45,7 +45,7 @@
         window.addEventListener('online', () => updateOnlineStatus(true));
         window.addEventListener('offline', () => updateOnlineStatus(true));
 
-        const savedTheme = localStorage.getItem('tartili_theme') || 'light-theme';
+        const savedTheme = localStorage.getItem('tartili_theme') || window.TARTILI_DEFAULT_THEME || 'future-theme';
         updateOnlineStatus(false);
         applyTheme(savedTheme, false);
 
@@ -349,6 +349,20 @@
             if (usernameEl) usernameEl.innerText = profile.name || 'Pengguna';
             if (roleEl) roleEl.innerHTML = `${profile.role || 'Siswa'} 👥`;
 
+            // Avatar inisial + salam sesuai waktu
+            const avatarEl = document.getElementById('userAvatar');
+            if (avatarEl) {
+                const firstChar = String(profile.name || '').trim().charAt(0);
+                avatarEl.innerText = firstChar ? firstChar.toUpperCase() : '👤';
+            }
+            const motivEl = document.getElementById('userMotivationText');
+            if (motivEl) {
+                const hour = new Date().getHours();
+                const waktu = hour < 11 ? 'pagi' : (hour < 15 ? 'siang' : (hour < 18 ? 'sore' : 'malam'));
+                const kegiatan = profile.role === 'Guru' ? 'selamat mengajar' : (profile.role === 'Admin' ? 'selamat bertugas' : 'selamat belajar');
+                motivEl.innerText = `Selamat ${waktu}, ${kegiatan} TARTILI`;
+            }
+
             if (profile.role === 'Guru') {
                 if (classEl) classEl.innerText = `Kelas ${profile.teacherClassName}`;
                 if (teacherNameEl) teacherNameEl.style.display = 'none';
@@ -438,13 +452,13 @@
                     item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; gap: 8px;";
                     item.innerHTML = `
                         <div style="flex: 1; min-width: 0;">
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${data.name} <span class="badge-role" style="margin-left: 6px;">${data.role}</span></div>
-                            <div style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Email: ${data.email}</div>
-                            <div style="font-size: 10px; color: var(--text-muted);">${data.role === 'Guru' ? 'Kelas ' + data.teacherClassName : 'Kode Kelas ' + (data.classCode || '-')}</div>
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${riwayatEsc(data.name)} <span class="badge-role" style="margin-left: 6px;">${riwayatEsc(data.role)}</span></div>
+                            <div style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Email: ${riwayatEsc(data.email)}</div>
+                            <div style="font-size: 10px; color: var(--text-muted);">${data.role === 'Guru' ? 'Kelas ' + riwayatEsc(data.teacherClassName) : 'Kode Kelas ' + riwayatEsc(data.classCode || '-')}</div>
                         </div>
                         <div style="display: flex; gap: 6px; flex-shrink: 0;">
                             <button onclick="approveMasterUser('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Setujui</button>
-                            <button onclick="deleteUserAccount('${userId}', '${data.name}')" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;" title="Tolak / Hapus">Hapus</button>
+                            <button data-id="${userId}" data-name="${riwayatEsc(data.name)}" onclick="deleteUserAccount(this.dataset.id, this.dataset.name)" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;" title="Tolak / Hapus">Hapus</button>
                         </div>
                     `;
                     container.appendChild(item);
@@ -475,6 +489,28 @@
                 showToast('Gagal menyetujui akun.');
             }
         }
+
+        // Guru menghapus siswa dari kelasnya (dari daftar pendaftar atau daftar anggota).
+        // Yang dihapus adalah profil siswa di database, sehingga siswa tidak lagi
+        // bisa memakai aplikasi (akan kembali ke layar menunggu persetujuan).
+        async function deleteStudentFromClass(userId, userName, source) {
+            if (!navigator.onLine) { showToast('Anda sedang offline. Siswa belum bisa dihapus.'); return; }
+            const nama = userName || 'siswa ini';
+            const pesan = source === 'pending'
+                ? `Tolak dan hapus pendaftaran "${nama}"?`
+                : `Hapus siswa "${nama}" dari kelas Anda?\n\nSiswa tidak akan bisa lagi memakai aplikasi dan tidak bisa mengirim setoran. Tindakan ini tidak dapat dibatalkan.`;
+            if (!confirm(pesan)) return;
+            try {
+                await window.deleteDoc(window.doc(window.firebaseDb, "users", userId));
+                showToast(`Siswa ${nama} berhasil dihapus.`);
+                if (source === 'members') await loadClassMembersList();
+                else await loadTeacherPendingStudents();
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal menghapus siswa' + (e && e.code ? ` (${e.code})` : '') + '.');
+            }
+        }
+        window.deleteStudentFromClass = deleteStudentFromClass;
 
         async function deleteUserAccount(userId, userName) {
             if (!confirm(`Apakah Anda yakin ingin menghapus/menolak pendaftaran akun "${userName}"?`)) return;
@@ -529,12 +565,12 @@
                     item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
                     item.innerHTML = `
                         <div>
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${data.name}</div>
-                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${data.email}</div>
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${riwayatEsc(data.name)}</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${riwayatEsc(data.email)}</div>
                         </div>
                         <div style="display: flex; gap: 6px;">
                             <button onclick="approveStudent('${userId}')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Terima</button>
-                            <button onclick="deleteUserAccount('${userId}', '${data.name}')" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Tolak</button>
+                            <button data-id="${userId}" data-name="${riwayatEsc(data.name)}" onclick="deleteStudentFromClass(this.dataset.id, this.dataset.name, 'pending')" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">Tolak</button>
                         </div>
                     `;
                     container.appendChild(item);
@@ -581,6 +617,10 @@
             appState = 'class-members';
             document.getElementById('class-members-screen').classList.add('active');
 
+            await loadClassMembersList();
+        }
+
+        async function loadClassMembersList() {
             const container = document.getElementById('classMembersContainer');
             const titleEl = document.getElementById('classMembersTitle');
             const subtitleEl = document.getElementById('classMembersSubtitle');
@@ -616,8 +656,8 @@
                         item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(var(--accent-rgb), 0.1); border: 1px solid var(--accent-solid); border-radius: 12px;";
                         item.innerHTML = `
                             <div>
-                                <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👨‍🏫 ${tData.name} <span class="badge-role" style="margin-left: 6px;">Guru Pengampu</span></div>
-                                <div style="font-size: 11px; color: var(--text-muted);">Email: ${tData.email}</div>
+                                <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👨‍🏫 ${riwayatEsc(tData.name)} <span class="badge-role" style="margin-left: 6px;">Guru Pengampu</span></div>
+                                <div style="font-size: 11px; color: var(--text-muted);">Email: ${riwayatEsc(tData.email)}</div>
                             </div>
                         `;
                         container.appendChild(item);
@@ -639,11 +679,15 @@
                     item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;";
                     item.innerHTML = `
                         <div>
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👤 ${sData.name}</div>
-                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${sData.email}</div>
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">👤 ${riwayatEsc(sData.name)}</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Email: ${riwayatEsc(sData.email)}</div>
                         </div>
                         <div style="display:flex; gap:6px; align-items:center;">
                             <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 6px;">Aktif</span>
+                            ${window.currentUserProfile && window.currentUserProfile.role === 'Guru' ? `
+                            <button class="riwayat-del" data-id="${sId}" data-name="${riwayatEsc(sData.name)}" onclick="deleteStudentFromClass(this.dataset.id, this.dataset.name, 'members')" title="Hapus siswa dari kelas" aria-label="Hapus siswa dari kelas">
+                                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                            </button>` : ''}
                         </div>
                     `;
                     container.appendChild(item);
@@ -2006,16 +2050,12 @@
 
                 showUploadingOverlay('Mengirim notifikasi ke guru...');
 
-                // Cari guru pemilik kelas ini untuk dikirimi notifikasi
-                const qTeacher = window.query(
-                    window.collection(window.firebaseDb, "users"),
-                    window.where("role", "==", "Guru"),
-                    window.where("classCode", "==", profile.classCode)
-                );
-                const teacherSnap = await window.getDocs(qTeacher);
-                for (const tDoc of teacherSnap.docs) {
+                // Notifikasi dikirim ke KELAS ("CLASS_<kode kelas>"), jadi siswa tidak
+                // perlu membaca data guru. Guru pemilik kelas menerimanya di daftar
+                // notifikasinya.
+                try {
                     await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
-                        targetUserId: tDoc.id,
+                        targetUserId: "CLASS_" + profile.classCode,
                         title: "🎙️ Setoran Bacaan Baru",
                         message: `${profile.name || 'Siswa'} (Kelas ${profile.classCode}) mengirim rekaman Jilid ${currentJilid} - Hal. ${currentPage}.`,
                         senderId: profile.uid,
@@ -2025,13 +2065,19 @@
                         createdAt: window.serverTimestamp(),
                         readBy: []
                     });
+                } catch (e) {
+                    console.error('Notifikasi setoran ke guru gagal:', e);
+                    showToast('Rekaman tersimpan, tetapi notifikasi ke guru gagal terkirim' + (e && e.code ? ` (${e.code})` : '') + '.');
+                    resetRecording();
+                    return;
                 }
 
                 showToast('Rekaman berhasil dikirim ke guru!');
                 resetRecording();
             } catch (e) {
                 console.error(e);
-                showToast(e && e.fromServer ? e.message : 'Gagal mengirim rekaman. Coba lagi.');
+                const kode = e && (e.code || e.name);
+                showToast(e && e.fromServer ? e.message : ('Gagal mengirim rekaman' + (kode ? ` (${kode})` : '') + '. Coba lagi.'));
                 btnSend.disabled = false;
                 btnSend.innerText = 'Kirim';
             } finally {
