@@ -1,4 +1,5 @@
-// ===== SERVICE WORKER (offline) =====
+
+        // ===== SERVICE WORKER (offline) =====
         // Service Worker baru (sw.js) bersifat TERBATAS: hanya mengurus berkas
         // aplikasi, modul Firebase/font, sampul, dan audio. Firestore, login, dan
         // upload setoran tidak disentuh sama sekali.
@@ -7,7 +8,7 @@
         const MEDIA_CACHE_NAME = 'tartili-media-v1';                 // audio (sama dengan yang dipakai sw.js)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => reg.update().catch(() => {})).catch((err) => {
+                navigator.serviceWorker.register('sw.js').catch((err) => {
                     console.warn('Service Worker gagal didaftarkan:', err);
                 });
                 // Setelah semuanya termuat, minta SW menyimpan modul Firebase & font
@@ -23,15 +24,6 @@
                     }, 2500);
                 });
             });
-            // Saat SW baru mengambil alih, muat ulang SEKALI agar app.js terbaru langsung dipakai
-            if (navigator.serviceWorker.controller) {
-                let swReloaded = false;
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    if (swReloaded) return;
-                    swReloaded = true;
-                    location.reload();
-                });
-            }
             // Bersihkan cache peninggalan versi lama (yang bukan milik TartiliKu)
             if (window.caches) {
                 caches.keys().then((names) => {
@@ -351,6 +343,13 @@
             } else {
                 btnTeacher.style.setProperty('display', 'none', 'important');
             }
+
+            // Tombol Riwayat Setoran hanya untuk siswa
+            const btnRiwayat = document.getElementById('btnRiwayatSetoran');
+            if (btnRiwayat) {
+                const isStudent = !isMaster && profile.role !== 'Guru' && profile.role !== 'Admin';
+                btnRiwayat.style.setProperty('display', isStudent ? 'flex' : 'none', 'important');
+            }
         }
 
         // --- MASTER ADMIN PANEL ---
@@ -658,6 +657,21 @@
                     gradedAt: window.serverTimestamp()
                 });
 
+                // Perbarui riwayat siswa (nilai + catatan). Memakai updateDoc supaya
+                // riwayat yang sudah dihapus siswa tidak muncul lagi. Kalau gagal,
+                // penilaian tetap dianggap berhasil.
+                try {
+                    await window.updateDoc(window.doc(window.firebaseDb, "riwayat_setoran", setoranId), {
+                        status: 'dinilai',
+                        nilai: nilaiFinal,
+                        feedback: feedbackFinal,
+                        guruName: profile.name || 'Guru',
+                        gradedAt: window.serverTimestamp()
+                    });
+                } catch (e) {
+                    console.warn('Riwayat setoran tidak diperbarui:', e);
+                }
+
                 return true;
             } catch (e) {
                 console.error(e);
@@ -767,6 +781,130 @@
             document.getElementById('hasilSetoranModal').classList.add('active');
         }
         window.lihatHasilSetoran = lihatHasilSetoran;
+
+        // --- RIWAYAT SETORAN SISWA ---
+        // Data ringkas (jilid, halaman, nilai, catatan) disimpan di koleksi
+        // "riwayat_setoran" dan TIDAK ikut dihapus otomatis 24 jam seperti
+        // dokumen setoran/audionya. Siswa bisa menghapus riwayatnya sendiri.
+        let riwayatItems = [];
+
+        function riwayatEsc(v) {
+            return String(v == null ? '' : v)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function riwayatMillis(item) {
+            const t = item.createdAt;
+            return (t && typeof t.toMillis === 'function') ? t.toMillis() : Date.now();
+        }
+
+        function renderRiwayatList() {
+            const box = document.getElementById('riwayatListContainer');
+            const summary = document.getElementById('riwayatSummary');
+            if (!box) return;
+
+            if (!riwayatItems.length) {
+                if (summary) summary.style.display = 'none';
+                box.innerHTML = '<div class="riwayat-empty">Belum ada riwayat setoran.<br>Setoran yang Anda kirim ke guru akan tercatat di sini.</div>';
+                return;
+            }
+
+            // Ringkasan: jumlah setoran + rata-rata nilai
+            const graded = riwayatItems.filter(it => it.status === 'dinilai' && typeof it.nilai === 'number');
+            if (summary) {
+                let avgText = '';
+                if (graded.length) {
+                    const avg = Math.round(graded.reduce((s, it) => s + it.nilai, 0) / graded.length * 10) / 10;
+                    avgText = `<span>Rata-rata nilai <b>${avg}</b></span>`;
+                }
+                summary.innerHTML = `<span><b>${riwayatItems.length}</b> setoran</span>${avgText}`;
+                summary.style.display = 'flex';
+            }
+
+            box.innerHTML = riwayatItems.map(it => {
+                const ms = riwayatMillis(it);
+                const tgl = new Date(ms).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                const jam = new Date(ms).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                let scoreHtml;
+                if (it.status === 'dinilai' && typeof it.nilai === 'number') {
+                    const cls = it.nilai >= 80 ? 'high' : (it.nilai >= 60 ? 'mid' : 'low');
+                    scoreHtml = `<div class="riwayat-score ${cls}">${riwayatEsc(it.nilai)}</div>`;
+                } else if (it.status === 'dinilai') {
+                    scoreHtml = '<div class="riwayat-score">✓</div>';
+                } else {
+                    scoreHtml = '<div class="riwayat-score pending">Menunggu</div>';
+                }
+
+                const guru = (it.status === 'dinilai' && it.guruName) ? ` • Guru: ${riwayatEsc(it.guruName)}` : '';
+                const note = it.feedback ? `<div class="riwayat-note">“${riwayatEsc(it.feedback)}”</div>` : '';
+
+                return `
+                    <div class="riwayat-item">
+                        <div class="riwayat-info">
+                            <div class="riwayat-title">Jilid ${riwayatEsc(it.jilid)} • Hal. ${riwayatEsc(it.halaman)}</div>
+                            <div class="riwayat-meta">${tgl}, ${jam}${guru}</div>
+                            ${note}
+                        </div>
+                        ${scoreHtml}
+                        <button class="riwayat-del" onclick="hapusRiwayatSetoran('${riwayatEsc(it.id)}')" title="Hapus riwayat" aria-label="Hapus riwayat">
+                            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                        </button>
+                    </div>`;
+            }).join('');
+        }
+
+        async function openRiwayatSetoran() {
+            const modal = document.getElementById('riwayatModal');
+            const box = document.getElementById('riwayatListContainer');
+            const summary = document.getElementById('riwayatSummary');
+            if (!modal || !box) return;
+            modal.classList.add('active');
+            if (summary) summary.style.display = 'none';
+            box.innerHTML = '<div class="riwayat-empty">Memuat riwayat...</div>';
+
+            const profile = window.currentUserProfile;
+            if (!profile || !profile.uid) {
+                box.innerHTML = '<div class="riwayat-empty">Sesi tidak valid, silakan masuk ulang.</div>';
+                return;
+            }
+            try {
+                const q = window.query(
+                    window.collection(window.firebaseDb, "riwayat_setoran"),
+                    window.where("studentUid", "==", profile.uid)
+                );
+                const snap = await window.getDocs(q);
+                riwayatItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                riwayatItems.sort((a, b) => riwayatMillis(b) - riwayatMillis(a)); // terbaru di atas
+                renderRiwayatList();
+            } catch (e) {
+                console.error('Gagal memuat riwayat setoran:', e);
+                box.innerHTML = '<div class="riwayat-empty">Riwayat belum bisa dimuat.<br>Periksa koneksi internet Anda, lalu coba lagi.</div>';
+            }
+        }
+        window.openRiwayatSetoran = openRiwayatSetoran;
+
+        function closeRiwayatSetoran() {
+            const modal = document.getElementById('riwayatModal');
+            if (modal) modal.classList.remove('active');
+        }
+        window.closeRiwayatSetoran = closeRiwayatSetoran;
+
+        async function hapusRiwayatSetoran(id) {
+            if (!navigator.onLine) { showToast('Anda sedang offline. Riwayat belum bisa dihapus.'); return; }
+            if (!confirm('Hapus riwayat setoran ini?')) return;
+            try {
+                await window.deleteDoc(window.doc(window.firebaseDb, "riwayat_setoran", id));
+                riwayatItems = riwayatItems.filter(it => it.id !== id);
+                renderRiwayatList();
+                showToast('Riwayat dihapus.');
+            } catch (e) {
+                console.error('Gagal menghapus riwayat:', e);
+                showToast('Gagal menghapus riwayat.');
+            }
+        }
+        window.hapusRiwayatSetoran = hapusRiwayatSetoran;
 
         function handleLogout() {
             window.signOut(window.firebaseAuth).catch((error) => { console.error("Gagal keluar", error); });
@@ -899,44 +1037,26 @@
         // Kalau masih kurang tajam saat di-zoom naikkan 2400 (mis. 3000); kalau terlalu
         // berat/lambat, turunkan lagi. Angka lebih besar = file lebih besar.
         const PAGE_IMAGE_TRANSFORM = "f_webp,q_auto:good,c_limit,w_2400";
-        const normalizePageId = (page) => /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : String(page);
-        // Kemungkinan penulisan nama berkas untuk satu halaman (utama dulu, lalu cadangan)
-        const getPageIdVariants = (page) => {
-            const raw = String(page);
-            if (/^\d+$/.test(raw)) {
-                const n = String(parseInt(raw, 10));
-                return Array.from(new Set([n.padStart(2, '0'), n]));
-            }
-            return Array.from(new Set([raw.toLowerCase(), raw.toUpperCase()]));
+        const getPageImageUrl = (jilid, page) => {
+            const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
+            if (isImageTransformDisabled()) return getPlainPageImageUrl(jilid, page);
+            return getTransformedPageImageUrl(jilid, page);
         };
-        // Nama berkas: halaman angka -> t4_h05.jpg ; halaman huruf (a-g) -> t4_a.jpg
-        const getPageFileStem = (jilid, page) =>
-            /^\d+$/.test(String(page)) ? `t${jilid}_h${normalizePageId(page)}` : `t${jilid}_${String(page).toLowerCase()}`;
-        const getTransformedPageImageUrl = (jilid, page) =>
-            `${CLOUDINARY_BASE_URL}/image/upload/${PAGE_IMAGE_TRANSFORM}/${getPageFileStem(jilid, page)}.jpg`;
-        // URL tanpa transformasi (gambar asli di Cloudinary)
-        const getPlainPageImageUrl = (jilid, page) =>
-            `${CLOUDINARY_BASE_URL}/image/upload/${getPageFileStem(jilid, page)}.jpg`;
-        const getPageImageUrl = (jilid, page) =>
-            isImageTransformDisabled() ? getPlainPageImageUrl(jilid, page) : getTransformedPageImageUrl(jilid, page);
+        const getTransformedPageImageUrl = (jilid, page) => {
+            const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
+            return `${CLOUDINARY_BASE_URL}/image/upload/${PAGE_IMAGE_TRANSFORM}/t${jilid}_h${pageId}.jpg`;
+        };
         // Semua kemungkinan kunci cache untuk satu halaman (URL sekarang, bertransformasi, polos)
         const getPageImageKeys = (jilid, page) =>
             Array.from(new Set([getPageImageUrl(jilid, page), getTransformedPageImageUrl(jilid, page), getPlainPageImageUrl(jilid, page)]));
+        const normalizePageId = (page) => /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : String(page);
+        // URL tanpa transformasi (gambar asli di Cloudinary)
+        const getPlainPageImageUrl = (jilid, page) => {
+            const pageId = /^\d+$/.test(String(page)) ? String(page).padStart(2, '0') : page;
+            return `${CLOUDINARY_BASE_URL}/image/upload/t${jilid}_h${pageId}.jpg`;
+        };
         const getLegacyPageImageUrl = (jilid, page) =>
             `${LEGACY_MEDIA_BASE_URL}tar${jilid}/halaman${page}/halaman${page}.jpg`;
-        // Urutan sumber yang dicoba: transformasi -> asli -> nama alternatif -> Supabase
-        const getPageImageCandidates = (jilid, page) => {
-            const list = [getPageImageUrl(jilid, page), getPlainPageImageUrl(jilid, page)];
-            const raw = String(page);
-            const stems = /^\d+$/.test(raw)
-                ? getPageIdVariants(raw).flatMap((id) => [`t${jilid}_h${id}`, `t${jilid}_${id}`])
-                : [`t${jilid}_h${raw.toLowerCase()}`, `t${jilid}_${raw.toUpperCase()}`];
-            stems.forEach((st) => list.push(`${CLOUDINARY_BASE_URL}/image/upload/${st}.jpg`));
-            list.push(getLegacyPageImageUrl(jilid, page));
-            return Array.from(new Set(list));
-        };
-        // Halaman yang sudah terbukti tidak ada di semua sumber (selama sesi) -> jangan diminta ulang
-        const missingPageImages = new Set();
         // Kalau transformasi Cloudinary ditolak (404) tapi gambar asli ada, ingat
         // pilihan ini supaya tidak mencoba URL yang gagal lagi di kunjungan berikutnya.
         const isImageTransformDisabled = () => localStorage.getItem('tartili_img_transform_off') === '1';
@@ -1262,8 +1382,6 @@
             const key = getPageImageUrl(jilid, page);
             const flightKey = (persist ? 'P|' : 'N|') + key;
             if (pageFetchInFlight.has(flightKey)) return pageFetchInFlight.get(flightKey);
-            const missKey = `${jilid}|${normalizePageId(page)}`;
-            if (missingPageImages.has(missKey)) return Promise.reject(new Error('Gambar halaman tidak ditemukan'));
             const p = (async () => {
                 const keys = getPageImageKeys(jilid, page);
                 const offlineCache = await window.caches.open(OFFLINE_IMAGE_CACHE);
@@ -1278,34 +1396,27 @@
                 }
 
                 const target = persist ? offlineCache : normalCache;
-                const candidates = getPageImageCandidates(jilid, page);
                 const plain = getPlainPageImageUrl(jilid, page);
+                const candidates = [key];
+                if (plain !== key) candidates.push(plain);
+                candidates.push(getLegacyPageImageUrl(jilid, page));
 
                 let lastError = null;
-                let allNotFound = true;
-                let transformFailed = false;
                 for (let i = 0; i < candidates.length; i++) {
                     try {
                         const res = await fetch(candidates[i]);
-                        if (!res.ok) {
-                            if (![400, 404].includes(res.status)) allNotFound = false;
-                            if (i === 0 && candidates[0] !== plain) transformFailed = true;
-                            throw new Error(`HTTP ${res.status}`);
-                        }
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         await target.put(key, res.clone());
                         // Transformasi gagal tapi gambar asli berhasil -> matikan transformasi
-                        if (transformFailed && candidates[i] === plain) {
+                        if (i === 1 && candidates[1] === plain && key !== plain) {
                             try { localStorage.setItem('tartili_img_transform_off', '1'); } catch (e) {}
                         }
                         if (!persist) trimPageCache(normalCache);
                         return;
                     } catch (err) {
-                        // Kesalahan jaringan (bukan 404/400) -> jangan anggap halaman hilang
-                        if (!/^HTTP /.test(String(err && err.message))) allNotFound = false;
                         lastError = err;
                     }
                 }
-                if (allNotFound) missingPageImages.add(missKey);
                 throw lastError || new Error('Gagal mengunduh gambar halaman');
             })();
             pageFetchInFlight.set(flightKey, p);
@@ -1353,7 +1464,7 @@
             const container = document.getElementById('imageContainer');
             const spinner = document.getElementById('loadingSpinner');
             const imgPath = getPageImageUrl(currentJilid, currentPage);
-            const fallbackQueue = getPageImageCandidates(currentJilid, currentPage).filter((u) => u !== imgPath);
+            const legacyImgPath = getLegacyPageImageUrl(currentJilid, currentPage);
             const requestId = ++pageLoadRequestId;
             loadJilidConfig(currentJilid); // mulai muat data suara paralel dengan gambar
 
@@ -1394,20 +1505,13 @@
             };
             img.onerror = function() {
                 if (requestId !== pageLoadRequestId) return;
-                if (fallbackQueue.length) {
-                    img.src = fallbackQueue.shift();
+                if (!img.dataset.legacyFallbackTried) {
+                    img.dataset.legacyFallbackTried = 'true';
+                    img.src = legacyImgPath;
                     return;
                 }
                 if (spinner) spinner.style.display = 'none';
-                container.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;text-align:center;padding:16px;">
-                    <div>Gambar halaman ini belum tersedia atau gagal dimuat</div>
-                    <button type="button" id="retryPageLoad" style="padding:6px 14px;border-radius:999px;border:1px solid #ef4444;background:#fff;color:#ef4444;font-size:12px;cursor:pointer;">Coba lagi</button>
-                </div>`;
-                const retryBtn = document.getElementById('retryPageLoad');
-                if (retryBtn) retryBtn.onclick = () => {
-                    missingPageImages.delete(`${currentJilid}|${normalizePageId(currentPage)}`);
-                    loadPageData();
-                };
+                container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;">Gagal memuat halaman</div>`;
             };
 
             const loadCachedImage = async () => {
@@ -1418,8 +1522,6 @@
                     if (!response) return imgPath;
                     return URL.createObjectURL(await response.blob());
                 } catch (error) {
-                    // Sudah dicoba di semua sumber dan memang tidak ada -> langsung tampilkan pesan
-                    if (missingPageImages.has(`${currentJilid}|${normalizePageId(currentPage)}`)) return null;
                     console.warn('Cache gambar halaman tidak tersedia:', error);
                     return imgPath;
                 }
@@ -1427,10 +1529,9 @@
 
             loadCachedImage().then((imageSource) => {
                 if (requestId !== pageLoadRequestId) {
-                    if (imageSource && imageSource.startsWith('blob:')) URL.revokeObjectURL(imageSource);
+                    if (imageSource.startsWith('blob:')) URL.revokeObjectURL(imageSource);
                     return;
                 }
-                if (!imageSource) { fallbackQueue.length = 0; img.onerror(); return; }
                 if (imageSource.startsWith('blob:')) currentPageObjectUrl = imageSource;
                 img.src = imageSource;
             });
@@ -1812,6 +1913,27 @@
                     createdAt: window.serverTimestamp()
                 });
 
+                // Catat ke riwayat siswa (data ringkas, tanpa audio). Kalau gagal,
+                // pengiriman setoran tetap berjalan seperti biasa.
+                try {
+                    await window.setDoc(window.doc(window.firebaseDb, "riwayat_setoran", setoranRef.id), {
+                        studentUid: profile.uid,
+                        studentName: profile.name || 'Siswa',
+                        classCode: profile.classCode,
+                        setoranId: setoranRef.id,
+                        jilid: currentJilid,
+                        halaman: currentPage,
+                        status: 'menunggu',
+                        nilai: null,
+                        feedback: null,
+                        guruName: null,
+                        createdAt: window.serverTimestamp(),
+                        gradedAt: null
+                    });
+                } catch (e) {
+                    console.warn('Riwayat setoran tidak tersimpan:', e);
+                }
+
                 showUploadingOverlay('Mengirim notifikasi ke guru...');
 
                 // Cari guru pemilik kelas ini untuk dikirimi notifikasi
@@ -2038,7 +2160,7 @@
             const pages = getFullPageList(jilid);
             const imgCache = await caches.open(OFFLINE_IMAGE_CACHE);
             const cachedPageIds = new Set();
-            const imgRe = new RegExp('/t' + jilid + '_h?([^/.]+)\\.jpg');
+            const imgRe = new RegExp('/t' + jilid + '_h([^/.]+)\\.jpg');
             (await imgCache.keys()).forEach((req) => {
                 const m = req.url.match(imgRe);
                 if (m) cachedPageIds.add(m[1]);
@@ -2212,28 +2334,4 @@
             showToast('Data offline Jilid ' + jilid + ' dihapus.');
         }
 
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeOfflineManager(); closeInstallHelp(); closeInfoModal(); } });
-        // =====================================================================
-        // INFORMASI & PETUNJUK PENGGUNAAN (tombol "i" di halaman login)
-        // =====================================================================
-        function openInfoModal() {
-            const m = document.getElementById('info-modal');
-            if (!m) return;
-            switchInfoTab('siswa');
-            m.classList.add('open');
-            const closeBtn = m.querySelector('.offline-close');
-            if (closeBtn) closeBtn.focus();
-        }
-        function closeInfoModal() {
-            const m = document.getElementById('info-modal');
-            if (m) m.classList.remove('open');
-        }
-        function switchInfoTab(which) {
-            const siswa = which !== 'guru';
-            document.getElementById('infoStepsSiswa').style.display = siswa ? '' : 'none';
-            document.getElementById('infoStepsGuru').style.display = siswa ? 'none' : '';
-            document.getElementById('infoTabSiswa').classList.toggle('active', siswa);
-            document.getElementById('infoTabGuru').classList.toggle('active', !siswa);
-            document.getElementById('infoTabSiswa').setAttribute('aria-selected', siswa);
-            document.getElementById('infoTabGuru').setAttribute('aria-selected', !siswa);
-        }
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeOfflineManager(); closeInstallHelp(); } });

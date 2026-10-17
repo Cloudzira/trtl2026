@@ -128,54 +128,6 @@
         </div>
     </div>
 
-    <!-- ===== INFORMASI & PETUNJUK PENGGUNAAN (dibuka dari halaman login) ===== -->
-    <div id="info-modal" onclick="if (event.target === this) closeInfoModal()">
-        <div class="offline-card info-card" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
-            <div class="offline-head">
-                <div>
-                    <div class="offline-title" id="infoTitle">Petunjuk Penggunaan</div>
-                    <div class="offline-desc">Panduan singkat memakai TartiliKu.</div>
-                </div>
-                <button type="button" class="offline-close" onclick="closeInfoModal()" aria-label="Tutup">✕</button>
-            </div>
-
-            <div class="info-tabs" role="tablist">
-                <button type="button" class="info-tab active" role="tab" id="infoTabSiswa" onclick="switchInfoTab('siswa')">Siswa</button>
-                <button type="button" class="info-tab" role="tab" id="infoTabGuru" onclick="switchInfoTab('guru')">Guru</button>
-            </div>
-
-            <ol class="info-steps" id="infoStepsSiswa">
-                <li><b>Buat akun.</b> Pilih <i>Buat Akun</i>, isi nama, email, dan kata sandi, pilih <i>Daftar sebagai Siswa</i>, lalu masukkan Kode Kelas dari guru Anda.</li>
-                <li><b>Tunggu persetujuan.</b> Akun aktif setelah disetujui guru pengampu atau Admin. Pilih <i>Cek Status Akun</i> untuk memeriksa.</li>
-                <li><b>Masuk dan pilih jilid.</b> Buka jilid yang ingin dipelajari, lalu baca halaman demi halaman dan dengarkan suara pelajaran.</li>
-                <li><b>Simpan halaman.</b> Gunakan ikon bookmark agar mudah kembali ke halaman yang ingin diulang.</li>
-                <li><b>Kirim setoran.</b> Rekam bacaan Anda, lalu tekan <i>Kirim</i>. Guru akan menilai, dan hasilnya muncul di notifikasi.</li>
-                <li><b>Belajar tanpa internet.</b> Simpan jilid untuk offline saat terhubung, lalu baca dan dengarkan kapan saja.</li>
-            </ol>
-
-            <ol class="info-steps" id="infoStepsGuru" style="display:none">
-                <li><b>Buat akun guru.</b> Pilih <i>Buat Akun</i>, lalu <i>Daftar sebagai Guru</i>, dan isi Nama Kelas Anda.</li>
-                <li><b>Tunggu persetujuan Admin.</b> Setelah disetujui, Anda mendapat Kode Kelas untuk dibagikan kepada siswa.</li>
-                <li><b>Setujui siswa.</b> Siswa yang mendaftar dengan kode kelas Anda muncul di daftar menunggu persetujuan.</li>
-                <li><b>Pantau anggota kelas.</b> Buka daftar anggota untuk melihat siswa di kelas Anda.</li>
-                <li><b>Nilai setoran.</b> Dengarkan rekaman siswa, beri penilaian, lalu kirim. Siswa akan menerima notifikasi.</li>
-            </ol>
-
-            <div class="info-tip">Butuh bantuan? Hubungi kami lewat WhatsApp pada ikon di bawah.</div>
-
-            <!-- Media sosial & footer -->
-            <div class="info-about">
-                <div class="social-media-row" aria-label="Media sosial Kurniapedia">
-                <a class="kurnia-icon ig" href="https://instagram.com/kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="Instagram Kurniapedia" title="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none"/></svg></a>
-                <a class="kurnia-icon tt" href="https://tiktok.com/@kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="TikTok Kurniapedia" title="TikTok"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 7.1a6.5 6.5 0 0 1-4.1-2.2v9.3a6.2 6.2 0 1 1-5.4-6.1v3.3a2.9 2.9 0 1 0 2.1 2.8V2h3.3a3.3 3.3 0 0 0 0 .6 3.9 3.9 0 0 0 3.5 3.9v.6z"/></svg></a>
-                <a class="kurnia-icon yt" href="https://www.youtube.com/@kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="YouTube Kurniapedia" title="YouTube"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.6 3.6 12 3.6 12 3.6s-7.6 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.8.5 9.4.5 9.4.5s7.6 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8z"/><path fill="var(--bg-main)" d="m9.6 15.3 6.2-3.3-6.2-3.3z"/></svg></a>
-                <a class="kurnia-icon wa" href="https://wa.me/6285870906050" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp Kurniapedia" title="WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.4L3 20l1-4.7a8.5 8.5 0 1 1 16.5-3.6z"/><path d="M8.2 8.1c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3.1.5-.1.7l-.6.7c-.2.2-.2.4 0 .7.6 1 1.5 1.8 2.6 2.3.3.1.5.1.7-.1l.8-1c.2-.2.4-.3.7-.2l1.7.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.7-.5.5-1.2.7-2 .6-.8-.1-1.8-.5-3-1.2-1.9-1.1-3.2-3-3.5-3.4-.3-.4-.8-1.2-.8-2.1 0-.8.4-1.3.6-1.7z"/></svg></a>
-            </div>
-                <div class="app-footer">Crafted with ♥ by <span style="color: #00f2fe; font-weight: 600;">Kurniapedia </span> 2026</div>
-            </div>
-        </div>
-    </div>
-
     <div id="toastNotification">Pemberitahuan</div>
 
     <!-- MODAL NOTIFIKASI -->
@@ -191,6 +143,20 @@
         </div>
     </div>
 
+    <!-- Popup Riwayat Setoran (siswa) -->
+    <div id="riwayatModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>🕘 Riwayat Setoran</h3>
+                <button class="modal-close-btn" onclick="closeRiwayatSetoran()">✕</button>
+            </div>
+            <div id="riwayatSummary" class="riwayat-summary" style="display:none;"></div>
+            <div id="riwayatListContainer" style="flex:1; overflow-y:auto;">
+                <div class="riwayat-empty">Memuat riwayat...</div>
+            </div>
+        </div>
+    </div>
+
     <!-- ==========================================
          3. STRUKTUR HTML (ANTARMUKA / TAMPILAN)
          ========================================== -->
@@ -198,10 +164,6 @@
     <!-- Halaman Login Siswa / Guru -->
     <div id="login-screen" class="screen">
         <div class="login-card">
-            <!-- Tombol informasi (pojok kanan atas kartu) -->
-            <button type="button" class="info-btn" onclick="openInfoModal()" aria-label="Informasi dan petunjuk penggunaan" aria-haspopup="dialog" title="Petunjuk penggunaan">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor"/></svg>
-            </button>
             <h2>TARTILIKU</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 2px;">Metode Cepat Tartil Membaca Al-Qur'an</p>
             
@@ -232,7 +194,15 @@
             <!-- Tombol Pengarah ke Halaman Masuk Admin -->
             <button onclick="showAdminLoginScreen()" style="background: transparent; border: none; color: var(--accent-solid); font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 8px;">🔐 Cloudzone</button>
 
-            
+            <div class="social-media-row" aria-label="Media sosial Kurniapedia">
+                <a class="kurnia-icon ig" href="https://instagram.com/kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="Instagram Kurniapedia" title="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none"/></svg></a>
+                <a class="kurnia-icon tt" href="https://tiktok.com/@kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="TikTok Kurniapedia" title="TikTok"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 7.1a6.5 6.5 0 0 1-4.1-2.2v9.3a6.2 6.2 0 1 1-5.4-6.1v3.3a2.9 2.9 0 1 0 2.1 2.8V2h3.3a3.3 3.3 0 0 0 0 .6 3.9 3.9 0 0 0 3.5 3.9v.6z"/></svg></a>
+                <a class="kurnia-icon yt" href="https://www.youtube.com/@kurniapedia" target="_blank" rel="noopener noreferrer" aria-label="YouTube Kurniapedia" title="YouTube"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.6 3.6 12 3.6 12 3.6s-7.6 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.8.5 9.4.5 9.4.5s7.6 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8z"/><path fill="var(--bg-main)" d="m9.6 15.3 6.2-3.3-6.2-3.3z"/></svg></a>
+                <a class="kurnia-icon wa" href="https://wa.me/6285870906050" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp Kurniapedia" title="WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.4L3 20l1-4.7a8.5 8.5 0 1 1 16.5-3.6z"/><path d="M8.2 8.1c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3.1.5-.1.7l-.6.7c-.2.2-.2.4 0 .7.6 1 1.5 1.8 2.6 2.3.3.1.5.1.7-.1l.8-1c.2-.2.4-.3.7-.2l1.7.8c.3.1.4.3.4.5 0 .3-.2 1.2-.8 1.7-.5.5-1.2.7-2 .6-.8-.1-1.8-.5-3-1.2-1.9-1.1-3.2-3-3.5-3.4-.3-.4-.8-1.2-.8-2.1 0-.8.4-1.3.6-1.7z"/></svg></a>
+            </div>
+
+            <!-- Footer Aplikasi -->
+            <div class="app-footer">Crafted with ♥ by <span style="color: #00f2fe; font-weight: 600;">Kurniapedia </span> 2026</div>
         </div>
     </div>
 
@@ -353,9 +323,6 @@
                 <button class="btn-offline-manager" onclick="openOfflineManager()" title="Simpan untuk Offline" aria-label="Simpan untuk offline">
                     <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 </button>
-                <button class="btn-offline-manager" onclick="openInfoModal()" title="Informasi dan Petunjuk" aria-label="Informasi dan petunjuk penggunaan" aria-haspopup="dialog">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.6" r="0.6" fill="currentColor" stroke="none" style="fill: var(--text-muted)"></circle></svg>
-                </button>
                 <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Tema Warna" aria-label="Ubah tema warna">
                     <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                 </button>
@@ -385,6 +352,9 @@
                     </button>
                     <button class="btn-teacher-panel" id="btnTeacherPanel" onclick="openTeacherAdminScreen()" title="Panel Guru / Kelas">
                         <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                    </button>
+                    <button class="btn-riwayat" id="btnRiwayatSetoran" onclick="openRiwayatSetoran()" title="Riwayat Setoran">
+                        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"></path><polyline points="3 4 3 9 8 9"></polyline><polyline points="12 7 12 12 15 14"></polyline></svg>
                     </button>
                     <button class="btn-bookmark" onclick="openBookmarksScreen()" title="Halaman Tersimpan">
                         <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>

@@ -170,12 +170,15 @@
             // Catatan: query TIDAK memakai orderBy() supaya tidak perlu
             // composite index tambahan di Firestore. Urutan terbaru->terlama
             // dilakukan di JavaScript (lihat sort di bawah).
-            const q = query(
-                collection(window.firebaseDb, "notifications"),
-                where("targetUserId", "in", [userId, "ALL_ADMINS", "ROLE_" + profile.role])
-            );
+            // PENTING: notifikasi "ALL_ADMINS" (mis. Pendaftar Baru) HANYA untuk admin.
+            // Sebelumnya semua pengguna (termasuk siswa) ikut membaca "ALL_ADMINS",
+            // sehingga notifikasi pendaftar muncul di akun siswa lain.
+            const notifCol = collection(window.firebaseDb, "notifications");
+            const authUser = window.firebaseAuth && window.firebaseAuth.currentUser;
+            const isAdminUser = profile.role === 'Admin' ||
+                (authUser && authUser.email === 'awanproject70@gmail.com');
 
-            window.unsubNotifications = onSnapshot(q, (snapshot) => {
+            const handleSnapshot = (snapshot) => {
                 let unreadCount = 0;
                 const container = document.getElementById('notificationListContainer');
                 if (container) container.innerHTML = "";
@@ -235,7 +238,29 @@
                         badgeEl.style.display = 'none';
                     }
                 }
-            }, (err) => console.log("Notif snapshot info:", err));
+            };
+
+            const onNotifError = (err) => console.log("Notif snapshot info:", err);
+
+            if (isAdminUser) {
+                // Admin: notifikasi pribadi + notifikasi bersama admin (2 listener, digabung)
+                let ownDocs = [];
+                let sharedDocs = [];
+                const emit = () => {
+                    const docs = ownDocs.concat(sharedDocs);
+                    handleSnapshot({ empty: docs.length === 0, docs: docs });
+                };
+                const unsubOwn = onSnapshot(query(notifCol, where("targetUserId", "==", userId)),
+                    (snap) => { ownDocs = snap.docs; emit(); }, onNotifError);
+                const unsubShared = onSnapshot(query(notifCol, where("targetUserId", "==", "ALL_ADMINS")),
+                    (snap) => { sharedDocs = snap.docs; emit(); }, onNotifError);
+                window.unsubNotifications = () => { unsubOwn(); unsubShared(); };
+            } else {
+                // Guru & siswa: HANYA notifikasi yang ditujukan ke akunnya sendiri
+                window.unsubNotifications = onSnapshot(
+                    query(notifCol, where("targetUserId", "==", userId)),
+                    handleSnapshot, onNotifError);
+            }
         }
 
         // Membersihkan otomatis notifikasi + dokumen setoran yang SUDAH
