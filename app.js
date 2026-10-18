@@ -67,6 +67,52 @@
             } catch (e) { /* abaikan */ }
         })();
 
+        // ===== PANDUAN PENGGUNAAN & TENTANG APLIKASI =====
+        function showGuideTab(name) {
+            ['siswa', 'guru', 'admin', 'tips'].forEach((k) => {
+                const tab = document.getElementById('guideTab-' + k);
+                const panel = document.getElementById('guide-' + k);
+                if (tab) tab.classList.toggle('active', k === name);
+                if (panel) panel.classList.toggle('active', k === name);
+            });
+            const body = document.querySelector('#guideModal .guide-body');
+            if (body) body.scrollTop = 0;
+        }
+
+        function openGuideModal() {
+            const modal = document.getElementById('guideModal');
+            if (!modal) return;
+            // Buka di tab yang sesuai peran (kalau sudah masuk), selain itu tab Siswa
+            const role = window.currentUserProfile && window.currentUserProfile.role;
+            showGuideTab(role === 'Guru' ? 'guru' : (role === 'Admin' ? 'admin' : 'siswa'));
+            modal.classList.add('active');
+        }
+        function closeGuideModal() {
+            const modal = document.getElementById('guideModal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function openAboutModal() {
+            const modal = document.getElementById('aboutModal');
+            if (modal) modal.classList.add('active');
+        }
+        function closeAboutModal() {
+            const modal = document.getElementById('aboutModal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        window.showGuideTab = showGuideTab;
+        window.openGuideModal = openGuideModal;
+        window.closeGuideModal = closeGuideModal;
+        window.openAboutModal = openAboutModal;
+        window.closeAboutModal = closeAboutModal;
+
+        // Ketuk area gelap di luar kotak = tutup popup
+        ['guideModal', 'aboutModal'].forEach((id) => {
+            const m = document.getElementById(id);
+            if (m) m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); });
+        });
+
         // ===== TEMA =====
         // Daftar tema ada di <head> index.html (window.TARTILI_THEMES).
         // Menambah tema baru: tambah 1 baris di daftar itu + 1 blok warna di styles.css.
