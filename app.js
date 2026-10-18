@@ -4,6 +4,11 @@
         // aplikasi, modul Firebase/font, sampul, dan audio. Firestore, login, dan
         // upload setoran tidak disentuh sama sekali.
         const TARTILI_PAGE_IMAGE_CACHE = 'tartili-page-images-v3';   // cache sementara (24 halaman terakhir)
+
+        // Jumlah halaman bernomor tiap jilid (di luar halaman pembuka a-g dan 0).
+        // Jilid baru / jumlah halaman berubah: cukup ubah angka di sini.
+        // (Harus di bagian paling atas, karena dipakai saat aplikasi pertama kali dimuat.)
+        const JILID_PAGE_COUNT = { 1: 44, 2: 44, 3: 44, 4: 44, 5: 44, 6: 48, 7: 70 };
         const OFFLINE_IMAGE_CACHE = 'tartili-offline-pages-v2';      // halaman yang diunduh permanen untuk offline
         const MEDIA_CACHE_NAME = 'tartili-media-v1';                 // audio (sama dengan yang dipakai sw.js)
         if ('serviceWorker' in navigator) {
@@ -1332,10 +1337,6 @@
             }
         }
 
-        // Jumlah halaman bernomor tiap jilid (di luar halaman pembuka a-g dan 0).
-        // Jilid baru / jumlah halaman berubah: cukup ubah angka di sini.
-        const JILID_PAGE_COUNT = { 1: 44, 2: 44, 3: 44, 4: 44, 5: 44, 6: 48, 7: 70 };
-
         function getNumericPageList(jilid) {
             let list = [], max = JILID_PAGE_COUNT[String(jilid)] || 44;
             for (let i = 1; i <= max; i++) list.push(i.toString());
@@ -1881,7 +1882,7 @@
         // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini.
         // Setiap permintaan membuktikan diri dengan TOKEN LOGIN FIREBASE milik
         // pengguna (berlaku singkat), lalu Apps Script yang memeriksanya.
-        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbyq5eWrNHSbS6pnReJp-mzFU9MwIIqsztEJHZ06goB22iB99IGQbfTmWT6UVm04cbFK/exec";
+         const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbwKj91_XK1XKKblERh6YA2R55fyj1CDNGLDFA15ghKn6319zHXtM-RSWiigVLEWUHs2/exec";
         // ===== AUTENTIKASI KE APPS SCRIPT (token login Firebase) =====
         async function callFilebaseApi(payload) {
             const user = window.firebaseAuth && window.firebaseAuth.currentUser;
