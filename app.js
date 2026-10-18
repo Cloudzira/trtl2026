@@ -8,7 +8,7 @@
         // Jumlah halaman bernomor tiap jilid (di luar halaman pembuka a-g dan 0).
         // Jilid baru / jumlah halaman berubah: cukup ubah angka di sini.
         // (Harus di bagian paling atas, karena dipakai saat aplikasi pertama kali dimuat.)
-        const JILID_PAGE_COUNT = { 1: 44, 2: 44, 3: 44, 4: 44, 5: 44, 6: 48, 7: 70 };
+        const JILID_PAGE_COUNT = { 1: 44, 2: 44, 3: 44, 4: 44, 5: 44, 6: 48, 7: 62 };
         const OFFLINE_IMAGE_CACHE = 'tartili-offline-pages-v2';      // halaman yang diunduh permanen untuk offline
         const MEDIA_CACHE_NAME = 'tartili-media-v1';                 // audio (sama dengan yang dipakai sw.js)
         if ('serviceWorker' in navigator) {
