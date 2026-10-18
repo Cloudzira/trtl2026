@@ -1253,3 +1253,69 @@
             .hero-identity { gap: 12px; }
             .landing-hero-username { font-size: 18px; }
         }
+
+        /* ===== DROPDOWN PINTASAN: tampilan profesional, mengikuti tema ===== */
+        #menu-screen .shortcut-panel select,
+        #read-screen .shortcut-panel select,
+        #bookmarks-screen .shortcut-panel select,
+        #menu-screen .shortcut-row select,
+        #read-screen .shortcut-row select,
+        #bookmarks-screen .shortcut-row select,
+        .shortcut-panel select,
+        .shortcut-row select {
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            background-color: var(--input-bg);
+            background-image:
+                linear-gradient(45deg, transparent 50%, var(--accent-solid) 50%),
+                linear-gradient(135deg, var(--accent-solid) 50%, transparent 50%);
+            background-position: calc(100% - 13px) 50%, calc(100% - 8px) 50%;
+            background-size: 5px 5px, 5px 5px;
+            background-repeat: no-repeat;
+            padding-left: 10px !important; padding-right: 24px !important;
+            border: 1px solid var(--border-color);
+            border-radius: 10px !important;
+            color: var(--text-main); font-weight: 700; letter-spacing: 0.2px;
+            cursor: pointer; text-overflow: ellipsis; outline: none;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 8px -4px rgba(var(--accent-rgb), 0.38);
+            transition: var(--transition);
+        }
+        #menu-screen .shortcut-panel select:hover,
+        #read-screen .shortcut-panel select:hover,
+        #bookmarks-screen .shortcut-panel select:hover,
+        #menu-screen .shortcut-row select:hover,
+        #read-screen .shortcut-row select:hover,
+        #bookmarks-screen .shortcut-row select:hover,
+        .shortcut-panel select:hover,
+        .shortcut-row select:hover {
+            border-color: var(--accent-solid);
+            box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14), 0 3px 8px -4px rgba(var(--accent-rgb), 0.45);
+        }
+        #menu-screen .shortcut-panel select:focus,
+        #read-screen .shortcut-panel select:focus,
+        #bookmarks-screen .shortcut-panel select:focus,
+        #menu-screen .shortcut-row select:focus,
+        #read-screen .shortcut-row select:focus,
+        #bookmarks-screen .shortcut-row select:focus,
+        .shortcut-panel select:focus,
+        .shortcut-row select:focus {
+            border-color: var(--accent-solid);
+            box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.25);
+        }
+        .shortcut-row span { font-weight: 700; letter-spacing: 0.3px; }
+
+        /* Daftar pilihan (popup) ikut warna tema */
+        select option { background: var(--bg-main); color: var(--text-main); font-weight: 600; }
+        body.is-dark select { color-scheme: dark; }
+        body:not(.is-dark) select { color-scheme: light; }
+
+        /* Pilihan peran di form daftar: gaya yang sama */
+        .login-card select {
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            background-image:
+                linear-gradient(45deg, transparent 50%, var(--accent-solid) 50%),
+                linear-gradient(135deg, var(--accent-solid) 50%, transparent 50%);
+            background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%;
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
+            padding-right: 38px; cursor: pointer;
+        }

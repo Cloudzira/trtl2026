@@ -1396,6 +1396,10 @@
             document.getElementById('admin-screen').classList.remove('active');
             document.getElementById('teacher-admin-screen').classList.remove('active');
             document.getElementById('class-members-screen').classList.remove('active');
+            // Pilihan jilid di Pintasan disamakan dulu dengan jilid yang dibuka,
+            // baru daftar halamannya disusun (supaya jumlah halamannya sesuai jilid).
+            const jilidSelectRead = document.getElementById('jumpJilidRead');
+            if (jilidSelectRead) jilidSelectRead.value = jilid;
             updatePageOptions('Read');
             
             let numList = getNumericPageList(currentJilid);
@@ -1656,7 +1660,12 @@
                 img.src = imageSource;
             });
 
-            document.getElementById('jumpJilidRead').value = currentJilid;
+            // Jilid di Pintasan berubah (mis. lewat halaman berikut/riwayat): susun ulang daftar halamannya
+            const jilidSelectRead = document.getElementById('jumpJilidRead');
+            if (jilidSelectRead && String(jilidSelectRead.value) !== String(currentJilid)) {
+                jilidSelectRead.value = currentJilid;
+                updatePageOptions('Read');
+            }
             let numList = getNumericPageList(currentJilid);
             if (numList.includes(currentPage.toString())) { 
                 document.getElementById('jumpPageSelectRead').value = currentPage; 
