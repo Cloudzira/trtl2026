@@ -1171,8 +1171,8 @@
         const minSwipeDistance = 50;
 
         // Data blok suara per jilid (tartili1.js ... tartili6.js) dimuat SAAT
-        // DIBUTUHKAN saja, bukan keenam-enamnya di awal.
-        const allAudioConfig = { "1": null, "2": null, "3": null, "4": null, "5": null, "6": null };
+        // DIBUTUHKAN saja, bukan ketujuh-tujuhnya di awal.
+        const allAudioConfig = { "1": null, "2": null, "3": null, "4": null, "5": null, "6": null, "7": null };
         const jilidConfigPromises = {};
 
         function readLoadedJilidConfig(jilid) {
@@ -1183,6 +1183,7 @@
                 case '4': return typeof tartili4Config !== 'undefined' ? tartili4Config : null;
                 case '5': return typeof tartili5Config !== 'undefined' ? tartili5Config : null;
                 case '6': return typeof tartili6Config !== 'undefined' ? tartili6Config : null;
+                case '7': return typeof tartili7Config !== 'undefined' ? tartili7Config : null;
             }
             return null;
         }
@@ -1322,7 +1323,7 @@
         }
 
         function updateMenuCoverFocus() {
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 let btn = document.getElementById('cover-btn-' + i);
                 if (btn) {
                     if (i === selectedMenuCoverIndex) btn.classList.add('keyboard-focused');
@@ -1331,8 +1332,12 @@
             }
         }
 
+        // Jumlah halaman bernomor tiap jilid (di luar halaman pembuka a-g dan 0).
+        // Jilid baru / jumlah halaman berubah: cukup ubah angka di sini.
+        const JILID_PAGE_COUNT = { 1: 44, 2: 44, 3: 44, 4: 44, 5: 44, 6: 48, 7: 70 };
+
         function getNumericPageList(jilid) {
-            let list = [], max = (jilid === 6) ? 48 : 44;
+            let list = [], max = JILID_PAGE_COUNT[String(jilid)] || 44;
             for (let i = 1; i <= max; i++) list.push(i.toString());
             return list;
         }
@@ -1876,7 +1881,7 @@
         // (lihat panduan di Code.gs). Kunci rahasia Filebase TIDAK ditaruh di sini.
         // Setiap permintaan membuktikan diri dengan TOKEN LOGIN FIREBASE milik
         // pengguna (berlaku singkat), lalu Apps Script yang memeriksanya.
-        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbwKj91_XK1XKKblERh6YA2R55fyj1CDNGLDFA15ghKn6319zHXtM-RSWiigVLEWUHs2/exec";
+        const FILEBASE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbyq5eWrNHSbS6pnReJp-mzFU9MwIIqsztEJHZ06goB22iB99IGQbfTmWT6UVm04cbFK/exec";
         // ===== AUTENTIKASI KE APPS SCRIPT (token login Firebase) =====
         async function callFilebaseApi(payload) {
             const user = window.firebaseAuth && window.firebaseAuth.currentUser;
@@ -2253,7 +2258,7 @@
         // jadi selalu sesuai kenyataan.
         // =====================================================================
         const offlineDownloads = {}; // jilid -> { cancelled, done, total, failed }
-        const OFFLINE_JILID_LIST = [1, 2, 3, 4, 5, 6];
+        const OFFLINE_JILID_LIST = [1, 2, 3, 4, 5, 6, 7];
 
         function getJilidAudioUrls(jilid, cfg) {
             const urls = [];
