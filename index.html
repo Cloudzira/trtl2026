@@ -176,6 +176,20 @@
         </div>
     </div>
 
+    <!-- Popup Setujui Pendaftar Baru (Admin) -->
+    <div id="adminApprovalModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>✅ Setujui Pendaftar Baru</h3>
+                <button class="modal-close-btn" onclick="closeMasterAdminModal()" aria-label="Tutup">✕</button>
+            </div>
+            <p style="margin: 0; padding: 10px 16px 0; font-size: 12px; color: var(--text-muted);">Akun baru yang menunggu verifikasi awal dari Admin:</p>
+            <div id="pendingMasterUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 12px 16px 16px;">
+                <!-- Diisi dinamis via JS -->
+            </div>
+        </div>
+    </div>
+
     <!-- Popup Panduan Penggunaan -->
     <div id="guideModal" class="modal-overlay">
         <div class="modal-box">
@@ -193,7 +207,7 @@
                 <div class="guide-panel active" id="guide-siswa">
                     <div class="guide-step"><div class="guide-num">1</div><div class="guide-text"><b>Buat akun dan masuk</b><p>Di halaman masuk pilih <b>Buat Akun</b>, isi nama lengkap, email, dan kata sandi (minimal 6 karakter). Pilih <b>Daftar sebagai Siswa</b> lalu masukkan <b>Kode Kelas</b> dari guru (contoh: KLS-ABC). Tunggu akun disetujui Admin dan guru, lalu masuk dengan email dan kata sandi tadi.</p></div></div>
                     <div class="guide-step"><div class="guide-num">2</div><div class="guide-text"><b>Pilih Tartili</b><p>Di menu, ketuk sampul <b>Jilid 1 sampai 7</b>. Atau pakai <b>Pintasan</b>: pilih nomor Tartili dan Halaman, lalu tekan <b>Buka</b>.</p></div></div>
-                    <div class="guide-step"><div class="guide-num">3</div><div class="guide-text"><b>Membaca dan mendengar contoh</b><p>Halaman buku tampil penuh. <b>Ketuk kotak berwarna</b> di atas tulisan untuk mendengar contoh bacaannya. Cubit dengan dua jari untuk memperbesar halaman, dan geser untuk melihat bagian lain.</p></div></div>
+                    <div class="guide-step"><div class="guide-num">3</div><div class="guide-text"><b>Membaca dan mendengar contoh</b><p>Halaman buku tampil penuh. <b>Ketuk kotak berwarna</b> di atas tulisan untuk mendengar contoh bacaannya. Cubit dengan dua jari untuk memperbesar halaman, dan geser untuk melihat bagian lain. Tombol <b>▶ di pojok kanan atas</b> memutar semua audio halaman berurutan. Di situ ada tombol berhenti dan pengatur kecepatan (0,75× sampai 1,25×).</p></div></div>
                     <div class="guide-step"><div class="guide-num">4</div><div class="guide-text"><b>Pindah dan simpan halaman</b><p>Pakai tombol panah ganda di panel <b>Halaman</b> untuk maju atau mundur. Tombol <b>penanda buku</b> menyimpan halaman yang sedang dibaca. Buka lagi lewat tombol <b>Halaman Tersimpan</b> di menu.</p></div></div>
                     <div class="guide-step"><div class="guide-num">5</div><div class="guide-text"><b>Setoran membaca ke guru</b><p>Di panel <b>Setoran membaca</b>: tekan <b>Rekam</b>, baca halaman dengan jelas, lalu <b>Stop</b>. Dengarkan lewat <b>Play</b>, dan kalau sudah pas tekan <b>Kirim</b>. Rekam ulang saja kalau kurang baik. Mengirim membutuhkan internet.</p></div></div>
                     <div class="guide-step"><div class="guide-num">6</div><div class="guide-text"><b>Lihat nilai dan riwayat</b><p>Hasil penilaian dan catatan guru masuk ke <b>Notifikasi</b> (ikon lonceng). Semua setoran Anda tersimpan di <b>Riwayat Setoran</b> (ikon jam) lengkap dengan jilid, halaman, dan nilainya. Riwayat bisa dihapus satu per satu.</p></div></div>
@@ -205,8 +219,8 @@
                     <div class="guide-step"><div class="guide-num">4</div><div class="guide-text"><b>Kelola anggota kelas</b><p>Ketuk lencana peran (<b>Guru 👥</b>) di kartu sapaan untuk melihat daftar anggota kelas. Tombol <b>tempat sampah</b> di samping nama siswa menghapus siswa dari kelas Anda.</p></div></div>
                 </div>
                 <div class="guide-panel" id="guide-admin">
-                    <div class="guide-step"><div class="guide-num">1</div><div class="guide-text"><b>Masuk sebagai Admin</b><p>Di halaman masuk ketuk tombol <b>Cloudzone</b>, lalu masuk dengan email dan kata sandi Admin.</p></div></div>
-                    <div class="guide-step"><div class="guide-num">2</div><div class="guide-text"><b>Setujui akun baru</b><p>Buka <b>Panel Master Admin</b> di kartu sapaan untuk melihat pendaftar baru. Tekan <b>Setujui</b> untuk akun yang sah, atau <b>Hapus</b> untuk pendaftaran yang tidak dikenal. Notifikasi <b>Pendaftar Baru</b> akan muncul setiap ada yang mendaftar.</p></div></div>
+                    <div class="guide-step"><div class="guide-num">1</div><div class="guide-text"><b>Masuk sebagai Admin</b><p>Di halaman masuk ketuk tombol <b>Cloudzone</b>, lalu masuk dengan email dan kata sandi Admin. Anda akan masuk ke menu yang sama seperti Siswa dan Guru.</p></div></div>
+                    <div class="guide-step"><div class="guide-num">2</div><div class="guide-text"><b>Setujui akun baru</b><p>Ketuk tombol <b>Setujui Pendaftar Baru</b> (ikon orang dengan tanda centang) di kartu sapaan. Angka merah di tombol itu menunjukkan jumlah pendaftar yang menunggu. Tekan <b>Setujui</b> untuk akun yang sah, atau <b>Hapus</b> untuk pendaftaran yang tidak dikenal. Notifikasi <b>Pendaftar Baru</b> akan muncul setiap ada yang mendaftar.</p></div></div>
                 </div>
                 <div class="guide-panel" id="guide-tips">
                     <div class="guide-step"><div class="guide-num">1</div><div class="guide-text"><b>Pasang di layar utama</b><p>Tekan tombol <b>Pasang aplikasi</b> (📲), atau gunakan menu browser lalu pilih <b>Tambahkan ke layar utama</b>, supaya TartiliKu terbuka seperti aplikasi biasa.</p></div></div>
@@ -374,19 +388,8 @@
     </div>
 
     <!-- Halaman Panel Master Admin -->
-    <div id="admin-screen" class="screen">
-        <div class="login-card" style="max-width: 650px; height: 88vh; display: flex; flex-direction: column;">
-            <h2>Panel Master Admin</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Daftar akun baru yang menunggu verifikasi awal:</p>
-            
-            <div id="pendingMasterUsersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
-                <!-- Diisi dinamis via JS -->
-            </div>
-<!-- Tombol Kembali untuk menggantikan tombol Keluar Akun Admin -->
-       <!-- KODE BARU -->
-<button class="btn-back-compact" onclick="handleLogout()">Keluar Akun Admin</button>
-        </div>
-    </div>
+    <!-- (Panel Master Admin kini berupa popup "Setujui Pendaftar Baru"; layar ini tidak dipakai lagi) -->
+    <div id="admin-screen" class="screen"></div>
 
     <!-- Halaman Panel Guru -->
     <div id="teacher-admin-screen" class="screen modal-overlay">
@@ -487,8 +490,9 @@
                         <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                         <span class="notif-badge" id="notifBadgeCount">0</span>
                     </button>
-                    <button class="btn-admin" id="btnMasterAdminPanel" onclick="openMasterAdminScreen()" title="Panel Master Admin">
-                        <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    <button class="btn-admin" id="btnMasterAdminPanel" onclick="openMasterAdminScreen()" title="Setujui Pendaftar Baru" aria-label="Setujui pendaftar baru">
+                        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>
+                        <span class="admin-badge" id="adminPendingBadge" style="display:none;">0</span>
                     </button>
                     <button class="btn-teacher-panel" id="btnTeacherPanel" onclick="openTeacherAdminScreen()" title="Panel Guru / Kelas">
                         <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
@@ -568,6 +572,21 @@
         <div class="image-scroll-area" id="scrollArea">
             <div class="loading-spinner" id="loadingSpinner"></div>
             <div class="image-container" id="imageContainer"></div>
+        </div>
+
+        <!-- Pemutar audio 1 halaman -->
+        <div class="page-player" id="pagePlayer" style="display:none;" aria-label="Pemutar audio halaman">
+            <button type="button" class="pp-btn pp-main" id="ppMain" onclick="togglePagePlayer()" title="Putar semua audio halaman ini" aria-label="Putar semua audio halaman ini">
+                <svg id="ppIconPlay" viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg>
+                <svg id="ppIconPause" viewBox="0 0 24 24" style="display:none;"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>
+            </button>
+            <div class="pp-extra" id="ppExtra" style="display:none;">
+                <button type="button" class="pp-btn pp-small" onclick="stopPagePlayer()" title="Berhenti" aria-label="Berhenti">
+                    <svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"></rect></svg>
+                </button>
+                <button type="button" class="pp-chip" id="ppSpeed" onclick="cyclePagePlayerRate()" title="Kecepatan audio" aria-label="Kecepatan audio">1×</button>
+                <span class="pp-count" id="ppCount">1/1</span>
+            </div>
         </div>
         
         <div class="controls-wrapper">

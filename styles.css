@@ -1403,3 +1403,41 @@
             border: none; cursor: pointer; padding: 6px 14px; border-radius: 999px; font-family: inherit; font-size: 12px; font-weight: 800;
             color: #fff; background: var(--accent-gradient); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
         }
+
+        /* ===== ADMIN: lencana jumlah pendaftar + sembunyikan panel setoran ===== */
+        .btn-admin { position: relative; }
+        .admin-badge {
+            position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px;
+            display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; line-height: 1;
+            color: #fff; background: #ef4444; box-shadow: 0 0 0 2px var(--bg-main);
+        }
+        body.role-admin #studentRecordPanel { display: none !important; }
+
+        /* ===== PEMUTAR AUDIO 1 HALAMAN ===== */
+        .page-player {
+            position: absolute; z-index: 130; right: 12px; top: calc(10px + env(safe-area-inset-top, 0px));
+            display: flex; align-items: center; gap: 6px; padding: 5px; border-radius: 999px;
+            background: var(--bg-panel); border: 1px solid var(--border-color); box-shadow: var(--shadow);
+            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        }
+        .pp-extra { display: flex; align-items: center; gap: 6px; padding-right: 6px; }
+        .pp-btn {
+            width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;
+            border: 1px solid var(--border-color); background: var(--input-bg); transition: var(--transition); padding: 0;
+        }
+        .pp-btn svg { width: 18px; height: 18px; fill: var(--accent-solid); stroke: none; }
+        .pp-btn:hover { transform: scale(1.08); border-color: var(--accent-solid); }
+        .pp-main { background: var(--accent-gradient); border-color: transparent; box-shadow: 0 8px 16px -8px rgba(var(--accent-rgb), 0.8); }
+        .pp-main svg { fill: #fff; margin-left: 1px; }
+        .pp-small { width: 32px; height: 32px; }
+        .pp-small svg { width: 14px; height: 14px; }
+        .pp-chip {
+            padding: 6px 10px; border-radius: 999px; cursor: pointer; font-family: inherit; font-size: 11px; font-weight: 800;
+            color: var(--text-main); background: var(--input-bg); border: 1px solid var(--border-color); transition: var(--transition);
+        }
+        .pp-chip:hover { border-color: var(--accent-solid); }
+        .pp-count { font-size: 10px; font-weight: 700; color: var(--text-muted); min-width: 28px; text-align: center; }
+        .sound-block.playing {
+            background: rgba(var(--accent-rgb), 0.38); border: 1px solid var(--accent-solid);
+            box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.6);
+        }

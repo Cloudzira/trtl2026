@@ -84,14 +84,23 @@
                         // Setup real-time notifications for user
                         initRealtimeNotifications(user.uid, profile);
 
-                        // Bypass Approval untuk Master Admin
+                        // Master Admin: tanpa persetujuan, langsung ke menu (sama seperti Siswa & Guru).
+                        // Persetujuan pendaftar baru ada di popup pada kartu sapaan.
                         if (user.email === 'awanproject70@gmail.com' || profile.role === 'Admin') {
                             await updateUserGreeting();
                             setupDashboardAccess();
+                            if (typeof window.refreshAdminPendingBadge === 'function') window.refreshAdminPendingBadge();
+                            window.__instantShown = false;
                             hideAllScreens();
-                            adminScreen.classList.add('active');
-                            window.appState = 'admin';
-                            await loadMasterPendingUsers();
+                            const adminRestoreRead = localStorage.getItem('tartili_active_screen') === 'read';
+                            const adminLastRead = JSON.parse(localStorage.getItem('tartili_last_read') || 'null');
+                            if (adminRestoreRead && adminLastRead && adminLastRead.jilid && adminLastRead.page != null && typeof window.openJilid === 'function') {
+                                window.openJilid(adminLastRead.jilid, adminLastRead.page);
+                            } else {
+                                menuScreen.classList.add('active');
+                                window.appState = 'menu';
+                                updateMenuCoverFocus();
+                            }
                             return;
                         }
 
@@ -378,6 +387,10 @@
             } else if (data.actionUrl === 'setoran_hasil') {
                 toggleNotifModal(false);
                 lihatHasilSetoran(data);
+            } else if (data.actionUrl === 'admin-approval') {
+                // Pendaftar baru -> buka popup persetujuan Admin
+                toggleNotifModal(false);
+                if (typeof window.openMasterAdminScreen === 'function') window.openMasterAdminScreen();
             } else if (data.actionUrl === 'teacher-approval') {
                 // Siswa baru mendaftar -> buka panel guru untuk menyetujui
                 toggleNotifModal(false);

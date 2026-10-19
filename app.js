@@ -429,6 +429,15 @@
                 motivEl.innerText = `Selamat ${waktu}, ${kegiatan} TARTILI`;
             }
 
+            // Admin tidak punya kelas/guru: sembunyikan chip-nya
+            if (classEl) classEl.style.display = '';
+            if (isAdminProfile(profile)) {
+                if (roleEl) roleEl.innerHTML = 'Admin 👥';
+                if (classEl) classEl.style.display = 'none';
+                if (teacherNameEl) teacherNameEl.style.display = 'none';
+                return;
+            }
+
             if (profile.role === 'Guru') {
                 if (classEl) classEl.innerText = `Kelas ${profile.teacherClassName}`;
                 if (teacherNameEl) teacherNameEl.style.display = 'none';
@@ -474,13 +483,20 @@
             }
         }
 
+        const ADMIN_EMAIL = 'awanproject70@gmail.com';
+        function isAdminProfile(profile) {
+            if (!profile) return false;
+            const authUser = window.firebaseAuth && window.firebaseAuth.currentUser;
+            return profile.role === 'Admin' || profile.email === ADMIN_EMAIL || !!(authUser && authUser.email === ADMIN_EMAIL);
+        }
+
         function setupDashboardAccess() {
             const btnMaster = document.getElementById('btnMasterAdminPanel');
             const btnTeacher = document.getElementById('btnTeacherPanel');
             if (!btnMaster || !btnTeacher) return;
 
             const profile = window.currentUserProfile;
-            const isMaster = profile.email === 'awanproject70@gmail.com' || profile.role === 'Admin';
+            const isMaster = isAdminProfile(profile);
 
             // Gunakan setProperty(..., 'important') supaya visibilitas tombol
             // Admin/Guru TIDAK BISA ditimpa oleh aturan CSS !important lain
@@ -497,6 +513,9 @@
                 btnTeacher.style.setProperty('display', 'none', 'important');
             }
 
+            // Penanda peran pada <body> (dipakai CSS, mis. menyembunyikan panel setoran untuk Admin)
+            document.body.classList.toggle('role-admin', !!isMaster);
+
             // Tombol Riwayat Setoran hanya untuk siswa
             const btnRiwayat = document.getElementById('btnRiwayatSetoran');
             if (btnRiwayat) {
@@ -506,12 +525,34 @@
         }
 
         // --- MASTER ADMIN PANEL ---
+        // Admin: popup "Setujui Pendaftar Baru" (dibuka dari kartu sapaan atau dari notifikasi)
         async function openMasterAdminScreen() {
-            appState = 'admin';
-            document.getElementById('menu-screen').classList.remove('active');
-            document.getElementById('admin-screen').classList.add('active');
+            const modal = document.getElementById('adminApprovalModal');
+            if (modal) modal.classList.add('active');
             await loadMasterPendingUsers();
         }
+        function closeMasterAdminModal() {
+            const modal = document.getElementById('adminApprovalModal');
+            if (modal) modal.classList.remove('active');
+        }
+        window.openMasterAdminScreen = openMasterAdminScreen;
+        window.closeMasterAdminModal = closeMasterAdminModal;
+
+        // Lencana angka di tombol admin = jumlah pendaftar yang menunggu persetujuan
+        function updateAdminBadge(n) {
+            const b = document.getElementById('adminPendingBadge');
+            if (!b) return;
+            b.textContent = n > 99 ? '99+' : String(n);
+            b.style.display = n > 0 ? 'flex' : 'none';
+        }
+        async function refreshAdminPendingBadge() {
+            try {
+                const q = window.query(window.collection(window.firebaseDb, "users"), window.where("isMasterApproved", "==", false));
+                const snap = await window.getDocs(q);
+                updateAdminBadge(snap.size);
+            } catch (e) { /* abaikan: hanya lencana */ }
+        }
+        window.refreshAdminPendingBadge = refreshAdminPendingBadge;
 
         async function loadMasterPendingUsers() {
             const container = document.getElementById('pendingMasterUsersContainer');
@@ -523,6 +564,7 @@
                 const querySnapshot = await window.getDocs(q);
                 
                 container.innerHTML = "";
+                updateAdminBadge(querySnapshot.size);
                 if (querySnapshot.empty) {
                     container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada akun yang menunggu persetujuan.</div>`;
                     return;
@@ -1332,6 +1374,7 @@
 
         function openBookmarksScreen() {
             appState = 'bookmarks';
+            stopPagePlayer(true);
             document.getElementById('read-screen').classList.remove('active');
             document.getElementById('bookmarks-screen').classList.add('active');
             renderBookmarksList();
@@ -1395,6 +1438,7 @@
             }
 
             appState = 'menu';
+            stopPagePlayer(true);
             localStorage.setItem('tartili_active_screen', 'menu');
             document.getElementById('read-screen').classList.remove('active');
             document.getElementById('bookmarks-screen').classList.remove('active');
@@ -1680,6 +1724,8 @@
             if (spinner) spinner.style.display = 'block';
             container.innerHTML = "";
             container.style.backgroundImage = '';
+            stopPagePlayer(true);
+            hidePagePlayer();
 
             let img = new Image();
             img.draggable = false;
@@ -1713,6 +1759,7 @@
                         };
                         container.appendChild(soundBlock);
                     });
+                    setPagePlayerBlocks(blocksJilid, blocksPage, blocks);
                 });
 
                 schedulePrefetchNeighbors(requestId);
@@ -1770,6 +1817,176 @@
             }
         }
 
+        // ===== PEMUTAR AUDIO 1 HALAMAN =====
+        // Memutar semua blok suara di halaman aktif secara berurutan (urutan data = urutan baca),
+        // dengan blok yang sedang bunyi menyala. Bisa dijeda, dihentikan, dan diatur kecepatannya.
+        var pagePlayerState = { blocks: [], jilid: null, page: null, index: 0, playing: false, paused: false,
+                                audio: null, nextAudio: null, nextIndex: -1, timer: null, seq: 0, resumeNext: false };
+        var PAGE_PLAYER_RATES = [1, 0.75, 1.25];
+        var pagePlayerRate = (function () {
+            const r = parseFloat(localStorage.getItem('tartili_page_rate'));
+            return PAGE_PLAYER_RATES.includes(r) ? r : 1;
+        })();
+
+        function ppEl(id) { return document.getElementById(id); }
+
+        function ppUpdateUI() {
+            const st = pagePlayerState;
+            const active = st && st.playing;
+            const extra = ppEl('ppExtra'), play = ppEl('ppIconPlay'), pause = ppEl('ppIconPause'), main = ppEl('ppMain');
+            if (extra) extra.style.display = active ? 'flex' : 'none';
+            if (play) play.style.display = (active && !st.paused) ? 'none' : 'block';
+            if (pause) pause.style.display = (active && !st.paused) ? 'block' : 'none';
+            if (main) {
+                const label = !active ? 'Putar semua audio halaman ini' : (st.paused ? 'Lanjutkan' : 'Jeda');
+                main.title = label; main.setAttribute('aria-label', label);
+            }
+            const speed = ppEl('ppSpeed');
+            if (speed) speed.textContent = String(pagePlayerRate).replace('.', ',') + '×';
+            const count = ppEl('ppCount');
+            if (count && st) count.textContent = `${Math.min(st.index + 1, st.blocks.length)}/${st.blocks.length}`;
+        }
+
+        function ppHighlight(index) {
+            const container = ppEl('imageContainer');
+            if (!container) return;
+            container.querySelectorAll('.sound-block.playing').forEach((el) => el.classList.remove('playing'));
+            if (index == null || index < 0) return;
+            const el = container.querySelectorAll('.sound-block')[index];
+            if (el) el.classList.add('playing');
+        }
+
+        // Dipanggil setiap halaman selesai memasang blok suara
+        function setPagePlayerBlocks(jilid, page, blocks) {
+            stopPagePlayer(true);
+            pagePlayerState.blocks = blocks || [];
+            pagePlayerState.jilid = jilid;
+            pagePlayerState.page = page;
+            const box = ppEl('pagePlayer');
+            if (box) box.style.display = pagePlayerState.blocks.length ? 'flex' : 'none';
+            ppUpdateUI();
+            // Petunjuk satu kali saja
+            if (pagePlayerState.blocks.length && !localStorage.getItem('tartili_hint_pageplayer')) {
+                try { localStorage.setItem('tartili_hint_pageplayer', '1'); } catch (e) { /* abaikan */ }
+                showToast('Ketuk ▶ di pojok kanan atas untuk memutar semua audio halaman ini.');
+            }
+        }
+
+        function hidePagePlayer() {
+            const box = ppEl('pagePlayer');
+            if (box) box.style.display = 'none';
+        }
+
+        function ppBuildAudio(i) {
+            const st = pagePlayerState;
+            const a = new Audio(getPageAudioUrl(st.jilid, st.page, st.blocks[i][4]));
+            a.preload = 'auto';
+            a.defaultPlaybackRate = pagePlayerRate;
+            a.playbackRate = pagePlayerRate;
+            return a;
+        }
+
+        function ppPlayCurrent() {
+            const st = pagePlayerState;
+            if (!st.playing) return;
+            const i = st.index;
+            if (i >= st.blocks.length) { ppFinish(); return; }
+
+            const seq = ++st.seq;
+            const a = (st.nextAudio && st.nextIndex === i) ? st.nextAudio : ppBuildAudio(i);
+            st.nextAudio = null; st.nextIndex = -1;
+            a.defaultPlaybackRate = pagePlayerRate;
+            a.playbackRate = pagePlayerRate;
+            st.audio = a;
+            ppHighlight(i);
+            ppUpdateUI();
+
+            const advance = () => {
+                if (seq !== st.seq || !st.playing) return;
+                // jeda singkat antar blok supaya tiap bunyi terdengar jelas
+                st.resumeNext = true;
+                st.timer = setTimeout(() => {
+                    st.timer = null; st.resumeNext = false;
+                    if (seq !== st.seq || !st.playing || st.paused) return;
+                    st.index = i + 1;
+                    ppPlayCurrent();
+                }, 350);
+            };
+            a.onended = advance;
+            a.onerror = () => { if (seq === st.seq && st.playing) { st.index = i + 1; ppPlayCurrent(); } };
+            const p = a.play();
+            if (p && p.catch) p.catch(() => { if (seq === st.seq && st.playing && !st.paused) { st.index = i + 1; ppPlayCurrent(); } });
+
+            // siapkan audio berikutnya supaya tidak ada jeda unduh
+            if (i + 1 < st.blocks.length) { st.nextAudio = ppBuildAudio(i + 1); st.nextIndex = i + 1; }
+        }
+
+        function ppFinish() {
+            const st = pagePlayerState;
+            st.playing = false; st.paused = false; st.index = 0; st.audio = null; st.nextAudio = null; st.resumeNext = false;
+            ppHighlight(-1);
+            ppUpdateUI();
+        }
+
+        function startPagePlayer() {
+            const st = pagePlayerState;
+            if (!st.blocks.length) return;
+            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }   // hentikan ketukan blok tunggal
+            st.playing = true; st.paused = false; st.index = 0; st.resumeNext = false;
+            // pemanasan audio seluruh halaman (sama seperti setelah ketukan pertama)
+            prefetchPageAudio(st.jilid, st.page, st.blocks, null);
+            ppPlayCurrent();
+        }
+
+        function togglePagePlayer() {
+            const st = pagePlayerState;
+            if (!st.playing) { startPagePlayer(); return; }
+            if (!st.paused) {
+                st.paused = true;
+                if (st.timer) { clearTimeout(st.timer); st.timer = null; }
+                if (st.audio) st.audio.pause();
+            } else {
+                st.paused = false;
+                if (st.resumeNext) {            // dijeda saat jeda antar blok -> lanjut ke blok berikutnya
+                    st.resumeNext = false;
+                    st.index = st.index + 1;
+                    ppPlayCurrent();
+                } else if (st.audio) {
+                    const p = st.audio.play();
+                    if (p && p.catch) p.catch(() => {});
+                }
+            }
+            ppUpdateUI();
+        }
+
+        // silent = true: dipanggil otomatis (ganti halaman, ketuk blok tunggal), tanpa mengubah tampilan tombol berlebihan
+        function stopPagePlayer(silent) {
+            const st = pagePlayerState;
+            if (!st) return;
+            st.seq++;
+            if (st.timer) { clearTimeout(st.timer); st.timer = null; }
+            if (st.audio) { try { st.audio.pause(); } catch (e) { /* abaikan */ } }
+            st.audio = null; st.nextAudio = null; st.nextIndex = -1; st.resumeNext = false;
+            const was = st.playing;
+            st.playing = false; st.paused = false; st.index = 0;
+            if (was || !silent) { ppHighlight(-1); }
+            ppUpdateUI();
+        }
+
+        function cyclePagePlayerRate() {
+            const idx = PAGE_PLAYER_RATES.indexOf(pagePlayerRate);
+            pagePlayerRate = PAGE_PLAYER_RATES[(idx + 1) % PAGE_PLAYER_RATES.length];
+            try { localStorage.setItem('tartili_page_rate', String(pagePlayerRate)); } catch (e) { /* abaikan */ }
+            const st = pagePlayerState;
+            if (st.audio) { st.audio.defaultPlaybackRate = pagePlayerRate; st.audio.playbackRate = pagePlayerRate; }
+            if (st.nextAudio) { st.nextAudio.defaultPlaybackRate = pagePlayerRate; st.nextAudio.playbackRate = pagePlayerRate; }
+            ppUpdateUI();
+        }
+
+        window.togglePagePlayer = togglePagePlayer;
+        window.stopPagePlayer = stopPagePlayer;
+        window.cyclePagePlayerRate = cyclePagePlayerRate;
+
         // Pemanasan audio: setelah siswa mengetuk satu blok, audio blok lain di halaman yang sama
         // diunduh pelan-pelan di latar belakang (maksimal 3 sekaligus) supaya ketukan berikutnya langsung bunyi.
         // Tidak dilakukan saat Penghemat Data aktif atau koneksi sangat lambat.
@@ -1794,6 +2011,7 @@
         }
 
         function playSound(soundFile) {
+            stopPagePlayer(true);
             if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
             currentAudio = new Audio(getPageAudioUrl(currentJilid, currentPage, soundFile));
             const p = currentAudio.play();
