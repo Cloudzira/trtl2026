@@ -119,8 +119,34 @@
                             return;
                         }
 
+                        // Simpan salinan profil di perangkat supaya buka aplikasi berikutnya langsung
+                        // menampilkan menu tanpa menunggu pemuatan Firebase.
+                        try {
+                            localStorage.setItem('tartili_profile_cache', JSON.stringify({
+                                uid: user.uid,
+                                savedAt: Date.now(),
+                                profile: {
+                                    name: profile.name || '',
+                                    role: profile.role,
+                                    classCode: profile.classCode || '',
+                                    teacherClassName: profile.teacherClassName || '',
+                                    isMasterApproved: true,
+                                    isTeacherApproved: true
+                                }
+                            }));
+                        } catch (e) { /* abaikan */ }
+
                         await updateUserGreeting();
                         setupDashboardAccess();
+
+                        // Layar sudah tampil dari salinan profil (mulai instan) dan akunnya sama:
+                        // cukup perbarui data, tidak perlu berpindah layar lagi.
+                        if (window.__instantShown && window.__instantUid === user.uid &&
+                            (menuScreen.classList.contains('active') || readScreen.classList.contains('active'))) {
+                            window.__instantShown = false;
+                            return;
+                        }
+                        window.__instantShown = false;
 
                         hideAllScreens();
                         const restoreRead = localStorage.getItem('tartili_active_screen') === 'read';
@@ -143,6 +169,8 @@
                     }
                 } else {
                     window.currentUserProfile = null;
+                    window.__instantShown = false;
+                    try { localStorage.removeItem('tartili_profile_cache'); } catch (e) { /* abaikan */ }
                     if (typeof window.loadBookmarksForUser === 'function') {
                         window.loadBookmarksForUser(null);
                     }

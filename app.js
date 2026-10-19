@@ -12,6 +12,10 @@
         const OFFLINE_IMAGE_CACHE = 'tartili-offline-pages-v2';      // halaman yang diunduh permanen untuk offline
         const MEDIA_CACHE_NAME = 'tartili-media-v1';                 // audio (sama dengan yang dipakai sw.js)
         if ('serviceWorker' in navigator) {
+            // Service Worker memberi tahu kalau ada versi baru aplikasi
+            navigator.serviceWorker.addEventListener('message', (e) => {
+                if (e.data && e.data.type === 'UPDATE_READY') showUpdateBanner();
+            });
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').catch((err) => {
                     console.warn('Service Worker gagal didaftarkan:', err);
@@ -66,6 +70,17 @@
                 }
             } catch (e) { /* abaikan */ }
         })();
+
+        // ===== INFO VERSI BARU =====
+        function showUpdateBanner() {
+            if (document.getElementById('updateBanner')) return;
+            const bar = document.createElement('div');
+            bar.id = 'updateBanner';
+            bar.className = 'update-banner';
+            bar.innerHTML = '<span>Versi baru tersedia</span><button type="button" id="updateBannerBtn">Muat ulang</button>';
+            document.body.appendChild(bar);
+            document.getElementById('updateBannerBtn').onclick = () => location.reload();
+        }
 
         // ===== PANDUAN PENGGUNAAN & TENTANG APLIKASI =====
         function showGuideTab(name) {
@@ -422,11 +437,29 @@
                 if (teacherNameEl) {
                     teacherNameEl.style.display = 'inline';
                     teacherNameEl.innerText = "Guru: Memuat...";
+
+                    // Nama guru disimpan di perangkat (berlaku 12 jam): tampil seketika dan hemat pembacaan Firestore
+                    let tc = null;
+                    try { tc = JSON.parse(localStorage.getItem('tartili_teacher_cache') || 'null'); } catch (e) { tc = null; }
+                    const tcMatch = tc && tc.classCode === profile.classCode;
+                    if (tcMatch) {
+                        teacherNameEl.innerText = `Guru: ${tc.name}`;
+                        if (classEl) classEl.innerText = `Kelas ${tc.className || profile.classCode || '-'}`;
+                        if (Date.now() - (tc.savedAt || 0) < 12 * 3600 * 1000) return;
+                    }
+                    // Firebase belum siap (mulai instan): nanti diperbarui lagi setelah login terverifikasi
+                    if (typeof window.getDocs !== 'function' || !window.firebaseDb) return;
                     try {
                         const q = window.query(window.collection(window.firebaseDb, "users"), window.where("role", "==", "Guru"), window.where("classCode", "==", profile.classCode));
                         const snap = await window.getDocs(q);
                         if (!snap.empty) {
                             const teacherData = snap.docs[0].data();
+                            try {
+                                localStorage.setItem('tartili_teacher_cache', JSON.stringify({
+                                    classCode: profile.classCode, name: teacherData.name,
+                                    className: teacherData.teacherClassName || '', savedAt: Date.now()
+                                }));
+                            } catch (e) { /* abaikan */ }
                             teacherNameEl.innerText = `Guru: ${teacherData.name}`;
                             if (classEl) classEl.innerText = `Kelas ${teacherData.teacherClassName || profile.classCode || '-'}`;
                         } else {
@@ -1646,6 +1679,7 @@
             
             if (spinner) spinner.style.display = 'block';
             container.innerHTML = "";
+            container.style.backgroundImage = '';
 
             let img = new Image();
             img.draggable = false;
@@ -1653,6 +1687,7 @@
             img.onload = function() {
                 if (requestId !== pageLoadRequestId) return;
                 if (spinner) spinner.style.display = 'none';
+                container.style.backgroundImage = '';
                 container.innerHTML = "";
                 container.appendChild(img);
 
@@ -1662,12 +1697,20 @@
                     if (requestId !== pageLoadRequestId) return;
                     const blocks = cfg && cfg[blocksPage];
                     if (!blocks) return;
+                    let audioWarmed = false;
                     blocks.forEach(block => {
                         let [top, left, width, height, soundFile] = block;
                         const soundBlock = document.createElement('div');
                         soundBlock.className = 'sound-block';
                         soundBlock.style.cssText = `top: ${top}%; left: ${left}%; width: ${width}%; height: ${height}%;`;
-                        soundBlock.onclick = () => playSound(soundFile);
+                        soundBlock.onclick = () => {
+                            playSound(soundFile);
+                            // Ketukan pertama di halaman ini: siapkan audio blok lainnya di latar belakang
+                            if (!audioWarmed) {
+                                audioWarmed = true;
+                                prefetchPageAudio(blocksJilid, blocksPage, blocks, soundFile);
+                            }
+                        };
                         container.appendChild(soundBlock);
                     });
                 });
@@ -1681,12 +1724,21 @@
                     return;
                 }
                 if (spinner) spinner.style.display = 'none';
+                container.style.backgroundImage = '';
                 container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;">Gagal memuat halaman</div>`;
             };
 
             const loadCachedImage = async () => {
                 if (!window.caches) return imgPath;
                 try {
+                    // Halaman belum ada di perangkat: tampilkan pratinjau buram kecil dulu
+                    // sementara gambar penuh diunduh.
+                    if (!(await matchPageCache(currentJilid, currentPage)) && requestId === pageLoadRequestId && navigator.onLine) {
+                        const lqip = `${CLOUDINARY_BASE_URL}/image/upload/f_webp,q_20,w_48,e_blur:300/t${currentJilid}_${getPageIdVariants(currentPage)[0]}.jpg`;
+                        container.style.backgroundImage = `url("${lqip}")`;
+                        container.style.backgroundSize = '100% 100%';
+                        container.style.backgroundRepeat = 'no-repeat';
+                    }
                     await ensurePageCached(currentJilid, currentPage);
                     const response = await matchPageCache(currentJilid, currentPage);
                     if (!response) return imgPath;
@@ -1718,17 +1770,34 @@
             }
         }
 
+        // Pemanasan audio: setelah siswa mengetuk satu blok, audio blok lain di halaman yang sama
+        // diunduh pelan-pelan di latar belakang (maksimal 3 sekaligus) supaya ketukan berikutnya langsung bunyi.
+        // Tidak dilakukan saat Penghemat Data aktif atau koneksi sangat lambat.
+        const warmedAudioUrls = new Set();
+        function prefetchPageAudio(jilid, page, blocks, exceptSoundFile) {
+            if (!blocks || shouldSkipPrefetch()) return;
+            const urls = [];
+            blocks.forEach((b) => {
+                if (!b || !b[4] || b[4] === exceptSoundFile) return;
+                const u = getPageAudioUrl(jilid, page, b[4]);
+                if (!warmedAudioUrls.has(u)) urls.push(u);
+            });
+            if (!urls.length || urls.length > 80) return;
+            let i = 0;
+            const next = () => {
+                if (i >= urls.length) return;
+                const u = urls[i++];
+                warmedAudioUrls.add(u);
+                fetch(u, { mode: 'no-cors' }).catch(() => {}).then(() => setTimeout(next, 40));
+            };
+            next(); next(); next();
+        }
+
         function playSound(soundFile) {
             if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
-            const soundPath = getPageAudioUrl(currentJilid, currentPage, soundFile);
-            const legacySoundPath = `${LEGACY_MEDIA_BASE_URL}tar${currentJilid}/halaman${currentPage}/${soundFile}`;
-            currentAudio = new Audio(soundPath);
-            currentAudio.addEventListener('error', function fallbackToLegacyAudio() {
-                if (currentAudio.src !== soundPath) return;
-                currentAudio.src = legacySoundPath;
-                currentAudio.play();
-            }, { once: true });
-            currentAudio.play();
+            currentAudio = new Audio(getPageAudioUrl(currentJilid, currentPage, soundFile));
+            const p = currentAudio.play();
+            if (p && p.catch) p.catch((err) => console.warn('Audio tidak bisa diputar:', err));
         }
 
         function resetRecording() {
@@ -2507,3 +2576,46 @@
         }
 
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeOfflineManager(); closeInstallHelp(); } });
+
+        // ===== MULAI INSTAN =====
+        // Kalau pengguna pernah masuk dan akunnya sudah disetujui, menu (atau halaman terakhir
+        // yang dibaca) langsung ditampilkan dari salinan profil di perangkat, tanpa menunggu
+        // Firebase dimuat. Setelah login terverifikasi, data diperbarui diam-diam.
+        // Kalau ternyata sesi sudah berakhir, layar masuk akan menggantikannya.
+        (function instantStart() {
+            try {
+                const raw = localStorage.getItem('tartili_profile_cache');
+                if (!raw) return;
+                const cache = JSON.parse(raw);
+                if (!cache || !cache.uid || !cache.profile) return;
+                if (Date.now() - (cache.savedAt || 0) > 30 * 24 * 3600 * 1000) return;
+                const role = cache.profile.role;
+                if (role !== 'Siswa' && role !== 'Guru') return;
+
+                window.currentUserProfile = Object.assign({ uid: cache.uid }, cache.profile);
+                window.__instantShown = true;
+                window.__instantUid = cache.uid;
+
+                ['login-screen', 'admin-login-screen', 'verify-screen', 'menu-screen', 'read-screen',
+                 'bookmarks-screen', 'admin-screen', 'teacher-admin-screen', 'class-members-screen'].forEach((id) => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.remove('active');
+                });
+
+                updateUserGreeting();
+                setupDashboardAccess();
+
+                const restoreRead = localStorage.getItem('tartili_active_screen') === 'read';
+                const lastRead = JSON.parse(localStorage.getItem('tartili_last_read') || 'null');
+                if (restoreRead && lastRead && lastRead.jilid && lastRead.page != null) {
+                    openJilid(lastRead.jilid, lastRead.page);
+                } else {
+                    document.getElementById('menu-screen').classList.add('active');
+                    appState = 'menu';
+                    updateMenuCoverFocus();
+                }
+            } catch (e) {
+                window.__instantShown = false;
+                console.warn('Mulai instan dilewati:', e);
+            }
+        })();

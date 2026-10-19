@@ -100,7 +100,7 @@
         var splash = document.getElementById('splash-screen');
         if (!splash) return;
         try { var t = localStorage.getItem('tartili_theme') || window.TARTILI_DEFAULT_THEME || 'future-theme'; if (window.applyTartiliTheme) window.applyTartiliTheme(t, false); else document.body.className = t; } catch (e) {}
-        var MIN_SHOW_MS = 700, SLOW_MS = 10000;
+        var MIN_SHOW_MS = 400, SLOW_MS = 10000;
         var hidden = false, pending = false, slowTimer = null;
         function hideSplash() {
             if (hidden) return;

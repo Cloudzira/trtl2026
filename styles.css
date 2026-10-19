@@ -1390,3 +1390,16 @@
         .about-social-text small { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .about-social-go { font-size: 20px; color: var(--text-muted); }
         .about-credit { margin-top: 18px; text-align: center; font-size: 12px; font-weight: 600; color: var(--text-muted); opacity: 0.8; }
+
+        /* ===== INFO VERSI BARU ===== */
+        .update-banner {
+            position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+            z-index: 10050; display: flex; align-items: center; gap: 12px; padding: 9px 12px 9px 16px; border-radius: 999px;
+            background: var(--bg-panel-solid, var(--bg-main)); color: var(--text-main);
+            border: 1px solid var(--accent-solid); box-shadow: var(--shadow), var(--glow);
+            font-size: 12px; font-weight: 700; max-width: calc(100vw - 24px);
+        }
+        .update-banner button {
+            border: none; cursor: pointer; padding: 6px 14px; border-radius: 999px; font-family: inherit; font-size: 12px; font-weight: 800;
+            color: #fff; background: var(--accent-gradient); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+        }

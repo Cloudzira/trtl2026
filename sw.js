@@ -7,7 +7,7 @@
    TIDAK menyentuh: Firestore, Firebase Auth, upload setoran (Apps Script),
    gambar halaman (sudah di-cache oleh app.js), dan permintaan selain GET.
    ===================================================================== */
-const VERSION = 'v1';                       // naikkan angka ini kalau ingin memaksa cache aplikasi dibuat ulang
+const VERSION = 'v2';                       // naikkan angka ini kalau ingin memaksa cache aplikasi dibuat ulang
 const SHELL_CACHE = `tartili-shell-${VERSION}`;
 const EXT_CACHE = `tartili-ext-${VERSION}`;
 const MEDIA_CACHE = 'tartili-media-v1';     // sampul + audio (dibiarkan tetap supaya unduhan offline tidak hilang)
@@ -70,11 +70,11 @@ self.addEventListener('fetch', (event) => {
   // 1) Berkas aplikasi sendiri
   if (url.origin === self.location.origin) {
     if (req.mode === 'navigate') {
-      event.respondWith(networkFirst(req, SHELL_CACHE, './', true));
+      event.respondWith(shellSWR(event, true));
     } else if (/\/tartili\d\.js$/.test(url.pathname)) {
       event.respondWith(staleWhileRevalidate(event, SHELL_CACHE));
     } else if (/\.(?:js|css|json|png|jpe?g|svg|ico|webp)$/.test(url.pathname)) {
-      event.respondWith(networkFirst(req, SHELL_CACHE, null, false));
+      event.respondWith(shellSWR(event, false));
     }
     return;
   }
@@ -94,6 +94,8 @@ self.addEventListener('fetch', (event) => {
   // 4) Cloudinary: hanya sampul dan audio (gambar halaman diurus app.js)
   if (url.hostname === 'res.cloudinary.com') {
     if (/\/video\/upload\/[^/]+\.mp3$/i.test(url.pathname)) {
+      // fetch() no-cors dari halaman = pemanasan audio (prefetch): cukup lewat cache HTTP browser
+      if (req.mode === 'no-cors' && req.destination === '') return;
       event.respondWith(audioHandler(event));
     } else if (/\/image\/upload\/(?:[^/]+\/)?cover\d+\.jpg$/i.test(url.pathname)) {
       event.respondWith(coverHandler(event));
@@ -104,6 +106,41 @@ self.addEventListener('fetch', (event) => {
 });
 
 /* ---------- Strategi ---------- */
+
+// Berkas aplikasi: tampilkan dari cache SEKETIKA, lalu ambil versi terbaru di latar belakang.
+// Kalau ada versi baru, halaman diberi tahu (muncul tombol "Muat ulang").
+let updateNotified = false;
+function sameVersion(oldRes, newRes) {
+  const a = oldRes.headers.get('etag'), b = newRes.headers.get('etag');
+  if (a && b) return a === b;
+  const c = oldRes.headers.get('last-modified'), d = newRes.headers.get('last-modified');
+  if (c && d) return c === d;
+  return true; // tidak bisa dibandingkan -> anggap sama (tidak mengganggu pengguna)
+}
+async function notifyUpdate() {
+  if (updateNotified) return;
+  updateNotified = true;
+  const all = await self.clients.matchAll({ type: 'window' });
+  all.forEach((c) => c.postMessage({ type: 'UPDATE_READY' }));
+}
+async function shellSWR(event, isNavigation) {
+  const req = event.request;
+  const cache = await caches.open(SHELL_CACHE);
+  let cached = await cache.match(req, { ignoreSearch: true, ignoreVary: true });
+  if (!cached && isNavigation) cached = await cache.match('./', { ignoreSearch: true });
+  const update = fetch(req).then(async (res) => {
+    if (res && res.ok) {
+      const copy = res.clone();
+      await cache.put(req, copy).catch(() => {});
+      if (cached && !sameVersion(cached, res)) notifyUpdate();
+    }
+    return res;
+  }).catch(() => null);
+  event.waitUntil(update);
+  if (cached) return isNavigation ? cleanResponse(cached) : cached;
+  const res = await update;
+  return res || Response.error();
+}
 
 // Respons hasil redirect tidak boleh dipakai untuk navigasi -> bersihkan
 async function cleanResponse(res) {
