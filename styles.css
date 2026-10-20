@@ -224,7 +224,7 @@
         
         #bookmarks-screen { z-index: 10000; overflow: hidden; }
         .bookmarks-content-wrapper {
-            display: flex; flex-direction: column; align-items: stretch; gap: 0; width: 100%; max-width: 480px; height: 80vh; max-height: 600px; justify-content: flex-start; padding: 0;
+            display: flex; flex-direction: column; align-items: stretch; gap: 0; width: 100%; max-width: 480px; height: calc(var(--app-h, 100vh) * 0.8); max-height: 600px; justify-content: flex-start; padding: 0;
         }
         .bookmarks-header { flex: 0 0 auto; }
         
@@ -355,7 +355,7 @@
         .modal-overlay.active { display: flex; animation: fadeIn 0.3s ease; }
         .modal-box {
             background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 24px;
-            width: 100%; max-width: 480px; height: 80vh; max-height: 600px; display: flex; flex-direction: column;
+            width: 100%; max-width: 480px; height: calc(var(--app-h, 100vh) * 0.8); max-height: 600px; display: flex; flex-direction: column;
             box-shadow: var(--shadow); overflow: hidden; position: relative;
         }
         .modal-header {
@@ -419,7 +419,7 @@
             #menu-screen { 
                 flex-direction: column !important; justify-content: flex-start !important; 
                 align-items: center !important; gap: 12px !important; padding: 12px !important; 
-                height: 100dvh !important; overflow-y: auto !important; overflow-x: hidden !important;
+                height: var(--app-h, 100dvh) !important; overflow-y: auto !important; overflow-x: hidden !important;
             }
             .menu-content-wrapper { max-width: 880px !important; gap: 12px !important; }
 
@@ -914,7 +914,7 @@
         }
         #offline-modal.open, #install-help-modal.open { display: flex; }
         .offline-card {
-            width: 100%; max-width: 440px; max-height: 88vh; overflow-y: auto; border-radius: 20px; padding: 18px;
+            width: 100%; max-width: 440px; max-height: calc(var(--app-h, 100vh) * 0.88); overflow-y: auto; border-radius: 20px; padding: 18px;
             background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main);
             box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
         }
@@ -1441,3 +1441,14 @@
             background: rgba(var(--accent-rgb), 0.38); border: 1px solid var(--accent-solid);
             box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.6);
         }
+
+        /* ===== TINGGI LAYAR NYATA (--app-h diatur oleh skrip di <head>) =====
+           Mencegah panel bawah (Setoran membaca), popup, dan notifikasi keluar layar di HP. */
+        body { height: var(--app-h, 100dvh); }
+        .screen, #read-screen { height: var(--app-h, 100%); }
+        .modal-overlay { height: var(--app-h, 100%); }
+        #toastNotification { bottom: auto; top: calc(var(--app-h, 100dvh) - 84px); }
+        .update-banner { bottom: auto; top: calc(var(--app-h, 100dvh) - 72px); transform: translateX(-50%); }
+
+        /* Tombol audio yang sedang bunyi: tanda jelas */
+        .sound-block.playing { z-index: 6; }

@@ -1853,7 +1853,19 @@
             container.querySelectorAll('.sound-block.playing').forEach((el) => el.classList.remove('playing'));
             if (index == null || index < 0) return;
             const el = container.querySelectorAll('.sound-block')[index];
-            if (el) el.classList.add('playing');
+            if (el) { el.classList.add('playing'); ppEnsureVisible(el); }
+        }
+
+        // Pastikan blok yang sedang bunyi terlihat di layar (terutama mode landscape, saat halaman perlu digulir)
+        function ppEnsureVisible(el) {
+            const area = document.getElementById('scrollArea');
+            if (!el || !area) return;
+            const r = el.getBoundingClientRect();
+            const a = area.getBoundingClientRect();
+            const margin = 36;
+            if (r.top >= a.top + margin && r.bottom <= a.bottom - margin) return;   // sudah terlihat penuh
+            const delta = (r.top + r.height / 2) - (a.top + a.height / 2);
+            try { area.scrollBy({ top: delta, behavior: 'smooth' }); } catch (e) { area.scrollTop += delta; }
         }
 
         // Dipanggil setiap halaman selesai memasang blok suara

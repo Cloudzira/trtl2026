@@ -3,6 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script>
+        // Tinggi layar yang BENAR-BENAR terlihat (px). Dipakai CSS (var --app-h) supaya panel di bagian bawah,
+        // popup, dan notifikasi tidak keluar layar di HP (tinggi "100vh/100dvh" kadang lebih besar dari yang terlihat).
+        (function () {
+            function setAppHeight() {
+                var h = window.innerHeight || document.documentElement.clientHeight;
+                if (h > 0) document.documentElement.style.setProperty('--app-h', h + 'px');
+            }
+            setAppHeight();
+            window.addEventListener('resize', setAppHeight);
+            window.addEventListener('orientationchange', function () { setTimeout(setAppHeight, 120); setTimeout(setAppHeight, 500); });
+            window.addEventListener('pageshow', setAppHeight);
+            window.addEventListener('load', function () { setTimeout(setAppHeight, 300); });
+            document.addEventListener('visibilitychange', function () { if (!document.hidden) setAppHeight(); });
+            if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+        })();
+    </script>
     <title>TartiliKu</title>
     
     <link rel="icon" href="favicon.png">
@@ -414,7 +431,7 @@
 
     <!-- Halaman Daftar Anggota Kelas -->
     <div id="class-members-screen" class="screen">
-        <div class="login-card" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
+        <div class="login-card" style="max-width: 600px; height: calc(var(--app-h, 100vh) * 0.85); display: flex; flex-direction: column;">
             <h2 id="classMembersTitle">Daftar Anggota Kelas</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;" id="classMembersSubtitle">Daftar siswa yang tergabung dalam kelas ini:</p>
             
@@ -430,7 +447,7 @@
 
     <!-- Modal Hasil Penilaian untuk Siswa -->
     <div id="hasilSetoranModal" class="modal-overlay">
-        <div class="modal-box" style="height: auto; max-height: 80vh;">
+        <div class="modal-box" style="height: auto; max-height: calc(var(--app-h, 100vh) * 0.8);">
             <div class="modal-header">
                 <h3>📋 Hasil Penilaian</h3>
                 <button class="modal-close-btn" onclick="document.getElementById('hasilSetoranModal').classList.remove('active')">✕</button>
