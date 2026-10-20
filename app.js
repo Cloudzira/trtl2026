@@ -94,12 +94,29 @@
             if (body) body.scrollTop = 0;
         }
 
+        // Tab panduan yang ditampilkan menurut peran (urutan = urutan tampil, yang pertama = tab awal).
+        // Panduan Admin hanya terlihat oleh Admin. Sebelum masuk (halaman login) tampil Siswa, Guru, dan Tips.
+        const GUIDE_TABS_BY_ROLE = {
+            guest: ['siswa', 'guru', 'tips'],
+            Siswa: ['siswa', 'tips'],
+            Guru:  ['guru', 'siswa', 'tips'],
+            Admin: ['admin', 'guru', 'siswa', 'tips']
+        };
+
         function openGuideModal() {
             const modal = document.getElementById('guideModal');
             if (!modal) return;
-            // Buka di tab yang sesuai peran (kalau sudah masuk), selain itu tab Siswa
-            const role = window.currentUserProfile && window.currentUserProfile.role;
-            showGuideTab(role === 'Guru' ? 'guru' : (role === 'Admin' ? 'admin' : 'siswa'));
+            const profile = window.currentUserProfile;
+            const roleKey = !profile ? 'guest' : (isAdminProfile(profile) ? 'Admin' : (profile.role === 'Guru' ? 'Guru' : 'Siswa'));
+            const visible = GUIDE_TABS_BY_ROLE[roleKey];
+            ['siswa', 'guru', 'admin', 'tips'].forEach((k) => {
+                const tab = document.getElementById('guideTab-' + k);
+                if (!tab) return;
+                const idx = visible.indexOf(k);
+                tab.style.display = idx === -1 ? 'none' : '';
+                tab.style.order = idx === -1 ? 0 : idx;
+            });
+            showGuideTab(visible[0]);
             modal.classList.add('active');
         }
         function closeGuideModal() {
