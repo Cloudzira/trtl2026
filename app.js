@@ -9,6 +9,27 @@
         // Jilid baru / jumlah halaman berubah: cukup ubah angka di sini.
         // (Harus di bagian paling atas, karena dipakai saat aplikasi pertama kali dimuat.)
         const JILID_PAGE_COUNT = { 1: 44, 2: 44, 3: 44, 4: 44, 5: 44, 6: 48, 7: 62 };
+
+        // Nama khusus jilid (selain "Jilid N"). Jilid 7 bernama Tartili Ghorib.
+        const JILID_NAMES = { 7: 'Tartili Ghorib' };
+        // "Jilid 3"  /  "Jilid 7 (Tartili Ghorib)"
+        function getJilidFullLabel(jilid) {
+            const nama = JILID_NAMES[String(jilid)];
+            return nama ? `Jilid ${jilid} (${nama})` : `Jilid ${jilid}`;
+        }
+        // "Tartili Jilid 3"  /  "Tartili Ghorib (Jilid 7)"
+        function getJilidTitle(jilid) {
+            const nama = JILID_NAMES[String(jilid)];
+            return nama ? `${nama} (Jilid ${jilid})` : `Tartili Jilid ${jilid}`;
+        }
+        // Lencana nama di pojok kiri atas halaman baca (hanya untuk jilid yang punya nama khusus)
+        function updateJilidBadge() {
+            const el = document.getElementById('jilidBadge');
+            if (!el) return;
+            const nama = JILID_NAMES[String(currentJilid)];
+            if (nama) { el.innerHTML = `<b>${nama}</b> · Jilid ${currentJilid}`; el.style.display = 'block'; }
+            else { el.style.display = 'none'; }
+        }
         const OFFLINE_IMAGE_CACHE = 'tartili-offline-pages-v2';      // halaman yang diunduh permanen untuk offline
         const MEDIA_CACHE_NAME = 'tartili-media-v1';                 // audio (sama dengan yang dipakai sw.js)
         if ('serviceWorker' in navigator) {
@@ -875,7 +896,7 @@
                 await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
                     targetUserId: d.studentUid,
                     title: "📋 Rekaman Anda Telah Dinilai",
-                    message: `Guru telah menilai setoran Jilid ${d.jilid} Hal. ${d.halaman} Anda.`,
+                    message: `Guru telah menilai setoran ${getJilidFullLabel(d.jilid)} Hal. ${d.halaman} Anda.`,
                     senderId: profile.uid,
                     senderName: profile.name || 'Guru',
                     actionUrl: 'setoran_hasil',
@@ -1013,7 +1034,7 @@
         function lihatHasilSetoran(data) {
             const contentEl = document.getElementById('hasilSetoranContent');
             contentEl.innerHTML = `
-                <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Jilid ${data.jilid} • Halaman ${data.halaman}</div>
+                <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">${getJilidFullLabel(data.jilid)} • Halaman ${data.halaman}</div>
                 ${setoranPlayerHtml(data, 'margin-bottom:12px;')}
                 <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Nilai</div>
                 <div style="font-size:22px; font-weight:800; color:var(--accent-solid); margin-bottom:12px;">${data.nilai != null ? data.nilai : '-'}</div>
@@ -1085,7 +1106,7 @@
                 return `
                     <div class="riwayat-item">
                         <div class="riwayat-info">
-                            <div class="riwayat-title">Jilid ${riwayatEsc(it.jilid)} • Hal. ${riwayatEsc(it.halaman)}</div>
+                            <div class="riwayat-title">${riwayatEsc(getJilidFullLabel(it.jilid))} • Hal. ${riwayatEsc(it.halaman)}</div>
                             <div class="riwayat-meta">${tgl}, ${jam}${guru}</div>
                             ${note}
                         </div>
@@ -1423,7 +1444,7 @@
                             <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:var(--accent-solid);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
                         </div>
                         <div class="bookmark-item-info">
-                            <span class="bookmark-item-title">Tartili Jilid ${b.jilid}</span>
+                            <span class="bookmark-item-title">${getJilidTitle(b.jilid)}</span>
                             <span class="bookmark-item-subtitle">Halaman ${b.page}</span>
                         </div>
                     </div>
@@ -1743,10 +1764,11 @@
             container.style.backgroundImage = '';
             stopPagePlayer(true);
             hidePagePlayer();
+            updateJilidBadge();
 
             let img = new Image();
             img.draggable = false;
-            img.alt = `Tartili jilid ${currentJilid}, halaman ${currentPage}`;
+            img.alt = `${getJilidTitle(currentJilid)}, halaman ${currentPage}`;
             img.onload = function() {
                 if (requestId !== pageLoadRequestId) return;
                 if (spinner) spinner.style.display = 'none';
@@ -2434,7 +2456,7 @@
                     await window.addDoc(window.collection(window.firebaseDb, "notifications"), {
                         targetUserId: "CLASS_" + profile.classCode,
                         title: "🎙️ Setoran Bacaan Baru",
-                        message: `${profile.name || 'Siswa'} (Kelas ${profile.classCode}) mengirim rekaman Jilid ${currentJilid} - Hal. ${currentPage}.`,
+                        message: `${profile.name || 'Siswa'} (Kelas ${profile.classCode}) mengirim rekaman ${getJilidFullLabel(currentJilid)} - Hal. ${currentPage}.`,
                         senderId: profile.uid,
                         senderName: profile.name || 'Siswa',
                         actionUrl: 'setoran',
@@ -2730,7 +2752,7 @@
                 row.className = 'offline-row';
                 row.innerHTML =
                     '<div class="offline-row-info">' +
-                        '<div class="offline-row-title">Jilid ' + j + '</div>' +
+                        '<div class="offline-row-title">' + getJilidFullLabel(j) + '</div>' +
                         '<div class="offline-row-sub" id="offline-sub-' + j + '">Memeriksa...</div>' +
                         '<div class="offline-bar"><div class="offline-bar-fill" id="offline-bar-' + j + '"></div></div>' +
                     '</div>' +
@@ -2761,7 +2783,7 @@
             if (!window.caches) { showToast('Browser Anda belum mendukung penyimpanan offline.'); return; }
             if (!navigator.onLine) { showToast('Anda sedang offline. Sambungkan internet untuk mengunduh.'); return; }
             if (offlineDownloads[jilid]) return;
-            if (!confirm('Unduh Jilid ' + jilid + ' untuk dibaca tanpa internet?\n\nSemua halaman dan suara jilid ini akan disimpan di perangkat dan memakai data internet. Disarankan memakai Wi-Fi.')) return;
+            if (!confirm('Unduh ' + getJilidFullLabel(jilid) + ' untuk dibaca tanpa internet?\n\nSemua halaman dan suara jilid ini akan disimpan di perangkat dan memakai data internet. Disarankan memakai Wi-Fi.')) return;
 
             const state = { cancelled: false, done: 0, total: 0, failed: 0 };
             offlineDownloads[jilid] = state;
@@ -2803,12 +2825,12 @@
             if (state.lostConnection) showToast('Koneksi terputus. Yang sudah tersimpan aman, tekan Lengkapi untuk melanjutkan.');
             else if (!finished) showToast('Unduhan dibatalkan. Yang sudah tersimpan tetap aman.');
             else if (state.failed) showToast('Selesai, tetapi ' + state.failed + ' berkas gagal. Tekan Lengkapi untuk mencoba lagi.');
-            else showToast('Jilid ' + jilid + ' siap dipakai offline.');
+            else showToast(getJilidFullLabel(jilid) + ' siap dipakai offline.');
         }
 
         async function deleteJilidOffline(jilid) {
             if (offlineDownloads[jilid]) return;
-            if (!confirm('Hapus data offline Jilid ' + jilid + ' dari perangkat ini?')) return;
+            if (!confirm('Hapus data offline ' + getJilidFullLabel(jilid) + ' dari perangkat ini?')) return;
             try {
                 const imgCache = await caches.open(OFFLINE_IMAGE_CACHE);
                 const re = new RegExp('/image/upload/(?:[^/]+/)?t' + jilid + '_');
@@ -2819,7 +2841,7 @@
             } catch (e) { console.warn('Gagal menghapus data offline:', e); }
             await refreshOfflineRow(jilid);
             refreshOfflineStorage();
-            showToast('Data offline Jilid ' + jilid + ' dihapus.');
+            showToast('Data offline ' + getJilidFullLabel(jilid) + ' dihapus.');
         }
 
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeOfflineManager(); closeInstallHelp(); } });

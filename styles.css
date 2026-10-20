@@ -377,9 +377,9 @@
 
         @media (orientation: portrait) {
             .menu-content-wrapper { max-width: 420px; }
-            /* 7 jilid: 2 kolom (2 + 2 + 2 + 1), sampul ke-7 di tengah baris terakhir */
+            /* 7 jilid: 2 kolom (2 + 2 + 2 + 1), sampul ke-7 (Tartili Ghorib) di kolom kiri baris terakhir */
             .grid-jilid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; gap: 12px; }
-            .grid-jilid .btn-cover:nth-child(7) { grid-column: 1 / -1; justify-self: center; width: calc((100% - 12px) / 2); }
+            .grid-jilid .btn-cover:nth-child(7) { grid-column: 1; }
             .btn-cover { aspect-ratio: 3/4; }
             
             .landing-hero-card { flex-direction: row; align-items: center; gap: 12px; padding: 16px; }
@@ -1452,3 +1452,19 @@
 
         /* Tombol audio yang sedang bunyi: tanda jelas */
         .sound-block.playing { z-index: 6; }
+
+        /* ===== NAMA JILID KHUSUS: Tartili Ghorib ===== */
+        .btn-cover { position: relative; }
+        .cover-tag {
+            position: absolute; top: 6px; right: 6px; z-index: 2; padding: 3px 9px; border-radius: 999px;
+            font-size: 9.5px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: #fff;
+            background: var(--accent-gradient); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+            box-shadow: 0 6px 12px -6px rgba(var(--accent-rgb), 0.8); pointer-events: none;
+        }
+        .jilid-badge {
+            position: absolute; z-index: 130; left: 12px; top: calc(10px + env(safe-area-inset-top, 0px));
+            padding: 8px 14px; border-radius: 999px; font-size: 11px; font-weight: 700; color: var(--text-muted);
+            background: var(--bg-panel); border: 1px solid var(--border-color); box-shadow: var(--shadow);
+            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); pointer-events: none;
+        }
+        .jilid-badge b { color: var(--accent-solid); font-weight: 800; }

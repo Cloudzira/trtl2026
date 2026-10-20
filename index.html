@@ -223,7 +223,7 @@
             <div class="guide-body">
                 <div class="guide-panel active" id="guide-siswa">
                     <div class="guide-step"><div class="guide-num">1</div><div class="guide-text"><b>Buat akun dan masuk</b><p>Di halaman masuk pilih <b>Buat Akun</b>, isi nama lengkap, email, dan kata sandi (minimal 6 karakter). Pilih <b>Daftar sebagai Siswa</b> lalu masukkan <b>Kode Kelas</b> dari guru (contoh: KLS-ABC). Tunggu akun disetujui Admin dan guru, lalu masuk dengan email dan kata sandi tadi.</p></div></div>
-                    <div class="guide-step"><div class="guide-num">2</div><div class="guide-text"><b>Pilih Tartili</b><p>Di menu, ketuk sampul <b>Jilid 1 sampai 7</b>. Atau pakai <b>Pintasan</b>: pilih nomor Tartili dan Halaman, lalu tekan <b>Buka</b>.</p></div></div>
+                    <div class="guide-step"><div class="guide-num">2</div><div class="guide-text"><b>Pilih Tartili</b><p>Di menu, ketuk sampul <b>Tartili Jilid 1 sampai 6</b> atau <b>Tartili Ghorib</b> (Jilid 7). Atau pakai <b>Pintasan</b>: pilih nomor Tartili dan Halaman (nomor 7 = Tartili Ghorib), lalu tekan <b>Buka</b>.</p></div></div>
                     <div class="guide-step"><div class="guide-num">3</div><div class="guide-text"><b>Membaca dan mendengar contoh</b><p>Halaman buku tampil penuh. <b>Ketuk kotak berwarna</b> di atas tulisan untuk mendengar contoh bacaannya. Tombol <b>▶ di pojok kanan atas</b> memutar semua audio halaman berurutan. Di situ ada tombol berhenti dan pengatur kecepatan (0,75× sampai 1,25×).</p></div></div>
                     <div class="guide-step"><div class="guide-num">4</div><div class="guide-text"><b>Pindah dan simpan halaman</b><p>Pakai tombol panah ganda di panel <b>Halaman</b> untuk maju atau mundur. Tombol <b>penanda buku</b> menyimpan halaman yang sedang dibaca. Buka lagi lewat tombol <b>Halaman Tersimpan</b> di menu.</p></div></div>
                     <div class="guide-step"><div class="guide-num">5</div><div class="guide-text"><b>Setoran membaca ke guru</b><p>Di panel <b>Setoran membaca</b>: tekan <b>Rekam</b>, baca halaman dengan jelas, lalu <b>Stop</b>. Dengarkan lewat <b>Play</b>, dan kalau sudah pas tekan <b>Kirim</b>. Rekam ulang saja kalau kurang baik. Mengirim membutuhkan internet.</p></div></div>
@@ -263,10 +263,10 @@
                     <div class="about-name">TARTILIKU</div>
                     <div class="about-tagline">Metode Cepat Tartil Membaca Al-Qur'an</div>
                     <div class="about-chips">
-                        <span>Tartili Jilid 1–7</span><span>Audio Contoh Bacaan</span><span>Setoran ke Guru</span><span>Bisa Offline</span>
+                        <span>Jilid 1–6 + Tartili Ghorib</span><span>Audio Contoh Bacaan</span><span>Setoran ke Guru</span><span>Bisa Offline</span>
                     </div>
                 </div>
-                <p class="about-desc">TartiliKu adalah buku Tartili digital yang bisa dibuka kapan saja. Siswa membaca halaman, mendengarkan contoh bacaan dengan mengetuk kotak berwarna, lalu menyetor bacaan ke guru untuk dinilai. Nilai dan catatan guru tersimpan rapi di riwayat setoran.</p>
+                <p class="about-desc">TartiliKu adalah buku Tartili digital yang bisa dibuka kapan saja. Siswa membaca halaman, mendengarkan contoh bacaan dengan mengetuk kotak berwarna, lalu menyetor bacaan ke guru untuk dinilai. Nilai dan catatan guru tersimpan rapi di riwayat setoran. Jilid 7 memiliki nama tersendiri, yaitu <b>Tartili Ghorib</b>.</p>
 
                 <div class="about-section-title">Ikuti dan hubungi kami</div>
                 <div class="about-social-list">
@@ -532,7 +532,7 @@
                 <button class="btn-cover" id="cover-btn-3" onclick="openJilid(4, 'a')" onmouseenter="selectedMenuCoverIndex=3; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover4.jpg" alt="Tartili jilid 4" decoding="async"></button>
                 <button class="btn-cover" id="cover-btn-4" onclick="openJilid(5, 'a')" onmouseenter="selectedMenuCoverIndex=4; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover5.jpg" alt="Tartili jilid 5" decoding="async"></button>
                 <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover6.jpg" alt="Tartili jilid 6" decoding="async"></button>
-                <button class="btn-cover" id="cover-btn-6" onclick="openJilid(7, 'a')" onmouseenter="selectedMenuCoverIndex=6; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover7.jpg" alt="Tartili jilid 7" decoding="async"></button>
+                <button class="btn-cover" id="cover-btn-6" onclick="openJilid(7, 'a')" onmouseenter="selectedMenuCoverIndex=6; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover7.jpg" alt="Tartili Ghorib (Jilid 7)" decoding="async"><span class="cover-tag">Ghorib</span></button>
             </div>
             
             <div class="shortcut-panel" style="width: 100%; max-width: 100%;">
@@ -543,7 +543,7 @@
                             <span>Tartili</span>
                             <select id="jumpJilidMenu" onchange="updatePageOptions('Menu')">
                                 <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-                                <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option>
+                                <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7" title="Tartili Ghorib">7</option>
                             </select>
                         </div>
                         <div class="shortcut-row">
@@ -591,6 +591,9 @@
             <div class="image-container" id="imageContainer"></div>
         </div>
 
+        <!-- Nama jilid (hanya tampil untuk jilid bernama khusus, mis. Tartili Ghorib) -->
+        <div class="jilid-badge" id="jilidBadge" style="display:none;"></div>
+
         <!-- Pemutar audio 1 halaman -->
         <div class="page-player" id="pagePlayer" style="display:none;" aria-label="Pemutar audio halaman">
             <button type="button" class="pp-btn pp-main" id="ppMain" onclick="togglePagePlayer()" title="Putar semua audio halaman ini" aria-label="Putar semua audio halaman ini">
@@ -637,7 +640,7 @@
                             <span>Tartili</span>
                             <select id="jumpJilidRead" onchange="updatePageOptions('Read')">
                                 <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-                                <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option>
+                                <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7" title="Tartili Ghorib">7</option>
                             </select>
                         </div>
                         <div class="shortcut-row row-halaman">
