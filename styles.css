@@ -134,7 +134,7 @@
         .kurnia-icon:hover { transform: translateY(-2px); }
         .kurnia-icon.ig:hover { color: #00a6b2; border-color: rgba(0, 166, 178, 0.6); }
         .kurnia-icon.tt:hover { color: #a100d6; border-color: rgba(161, 0, 214, 0.6); }
-        .kurnia-icon.yt:hover { color: #e60073; border-color: rgba(230, 0, 115, 0.6); }
+        .kurnia-icon.web:hover { color: var(--accent-solid); border-color: rgba(var(--accent-rgb), 0.6); }
         .kurnia-icon.wa:hover { color: #00a85a; border-color: rgba(0, 168, 90, 0.6); }
         .kurnia-icon:focus-visible { outline: 2px solid var(--accent-solid); outline-offset: 3px; }
 
