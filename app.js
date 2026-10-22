@@ -849,6 +849,9 @@
                         <div style="display:flex; gap:6px; align-items:center;">
                             <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 6px;">Aktif</span>
                             ${window.currentUserProfile && window.currentUserProfile.role === 'Guru' ? `
+                            <button class="riwayat-del bj-report-btn" data-id="${sId}" data-name="${riwayatEsc(sData.name)}" onclick="bjOpenReport(this.dataset.id, this.dataset.name)" title="Laporan orang tua" aria-label="Laporan orang tua">
+                                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="14" y2="17"></line></svg>
+                            </button>
                             <button class="riwayat-del" data-id="${sId}" data-name="${riwayatEsc(sData.name)}" onclick="deleteStudentFromClass(this.dataset.id, this.dataset.name, 'members')" title="Hapus siswa dari kelas" aria-label="Hapus siswa dari kelas">
                                 <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
                             </button>` : ''}
@@ -888,6 +891,8 @@
                 const profile = window.currentUserProfile;
                 const nilaiFinal = nilai === '' ? null : Number(nilai);
                 const feedbackFinal = feedback || null;
+                // Blok yang ditandai guru (merah = salah, kuning = kurang) dari fitur "Tandai blok"
+                const marks = (typeof window.bjGetReviewMarks === 'function') ? window.bjGetReviewMarks() : { salah: [], kurang: [] };
 
                 // Data lengkap (nilai, catatan, audio, jilid, halaman) disisipkan
                 // LANGSUNG ke notifikasi hasil untuk siswa -- supaya siswa tetap
@@ -906,6 +911,9 @@
                     audioKey: extractSetoranKey(d),
                     nilai: nilaiFinal,
                     feedback: feedbackFinal,
+                    setoranId: setoranId,
+                    salah: marks.salah,
+                    kurang: marks.kurang,
                     createdAt: window.serverTimestamp(),
                     readBy: []
                 });
@@ -916,6 +924,8 @@
                 await window.updateDoc(setoranRef, {
                     nilai: nilaiFinal,
                     feedback: feedbackFinal,
+                    salah: marks.salah,
+                    kurang: marks.kurang,
                     status: 'dinilai',
                     gradedAt: window.serverTimestamp()
                 });
@@ -928,6 +938,8 @@
                         status: 'dinilai',
                         nilai: nilaiFinal,
                         feedback: feedbackFinal,
+                        salah: marks.salah,
+                        kurang: marks.kurang,
                         guruName: profile.name || 'Guru',
                         gradedAt: window.serverTimestamp()
                     });
@@ -973,6 +985,7 @@
                 document.getElementById('reviewNilaiInput').value = d.nilai != null ? d.nilai : '';
                 document.getElementById('reviewFeedbackInput').value = d.feedback || '';
                 document.getElementById('btnKirimPenilaianReview').innerText = d.status === 'dinilai' ? 'Perbarui Penilaian' : 'Kirim Penilaian';
+                if (typeof window.bjOnReviewOpen === 'function') window.bjOnReviewOpen(d);
             } catch (e) {
                 console.error(e);
                 showToast('Gagal membuka setoran.');
@@ -985,6 +998,7 @@
         // goToMenu() saat guru menekan tombol kembali dari mode tinjauan.
         function exitSetoranReview() {
             currentReviewSetoranId = null;
+            if (typeof window.bjOnReviewExit === 'function') window.bjOnReviewExit();
             document.getElementById('teacherReviewPanel').style.display = 'none';
             document.getElementById('studentRecordPanel').style.display = 'flex';
             // removeProperty (bukan set ke '') supaya override paksa tadi
@@ -1032,6 +1046,8 @@
         // dibutuhkan (nilai, catatan, audio, jilid, halaman) sudah disisipkan
         // ke dalam notifikasinya sendiri.
         function lihatHasilSetoran(data) {
+            window.__lastHasil = data;
+            const nTanda = ((data.salah || []).length + (data.kurang || []).length);
             const contentEl = document.getElementById('hasilSetoranContent');
             contentEl.innerHTML = `
                 <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">${getJilidFullLabel(data.jilid)} • Halaman ${data.halaman}</div>
@@ -1039,7 +1055,8 @@
                 <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Nilai</div>
                 <div style="font-size:22px; font-weight:800; color:var(--accent-solid); margin-bottom:12px;">${data.nilai != null ? data.nilai : '-'}</div>
                 <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Catatan Guru</div>
-                <div style="font-size:13px; color:var(--text-main); background:var(--input-bg); padding:10px; border-radius:10px;">${data.feedback || 'Tidak ada catatan.'}</div>
+                <div style="font-size:13px; color:var(--text-main); background:var(--input-bg); padding:10px; border-radius:10px;">${riwayatEsc(data.feedback) || 'Tidak ada catatan.'}</div>
+                ${nTanda ? `<button type="button" class="bj-btn" style="width:100%; margin-top:12px;" onclick="bjOpenFixFromResult()">Perbaiki ${nTanda} blok yang ditandai guru</button>` : ''}
             `;
             document.getElementById('hasilSetoranModal').classList.add('active');
         }
@@ -1102,6 +1119,8 @@
 
                 const guru = (it.status === 'dinilai' && it.guruName) ? ` • Guru: ${riwayatEsc(it.guruName)}` : '';
                 const note = it.feedback ? `<div class="riwayat-note">“${riwayatEsc(it.feedback)}”</div>` : '';
+                const nTanda = ((it.salah || []).length + (it.kurang || []).length);
+                const fixBtn = nTanda ? `<button type="button" class="riwayat-fix" onclick="bjOpenFixFromRiwayat('${riwayatEsc(it.id)}')">Perbaiki ${nTanda} blok</button>` : '';
 
                 return `
                     <div class="riwayat-item">
@@ -1109,6 +1128,7 @@
                             <div class="riwayat-title">${riwayatEsc(getJilidFullLabel(it.jilid))} • Hal. ${riwayatEsc(it.halaman)}</div>
                             <div class="riwayat-meta">${tgl}, ${jam}${guru}</div>
                             ${note}
+                            ${fixBtn}
                         </div>
                         ${scoreHtml}
                         <button class="riwayat-del" onclick="hapusRiwayatSetoran('${riwayatEsc(it.id)}')" title="Hapus riwayat" aria-label="Hapus riwayat">

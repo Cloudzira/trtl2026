@@ -228,12 +228,16 @@
                     <div class="guide-step"><div class="guide-num">4</div><div class="guide-text"><b>Pindah dan simpan halaman</b><p>Pakai tombol panah ganda di panel <b>Halaman</b> untuk maju atau mundur. Tombol <b>penanda buku</b> menyimpan halaman yang sedang dibaca. Buka lagi lewat tombol <b>Halaman Tersimpan</b> di menu.</p></div></div>
                     <div class="guide-step"><div class="guide-num">5</div><div class="guide-text"><b>Setoran membaca ke guru</b><p>Di panel <b>Setoran membaca</b>: tekan <b>Rekam</b>, baca halaman dengan jelas, lalu <b>Stop</b>. Dengarkan lewat <b>Play</b>, dan kalau sudah pas tekan <b>Kirim</b>. Rekam ulang saja kalau kurang baik. Mengirim membutuhkan internet.</p></div></div>
                     <div class="guide-step"><div class="guide-num">6</div><div class="guide-text"><b>Lihat nilai dan riwayat</b><p>Hasil penilaian dan catatan guru masuk ke <b>Notifikasi</b> (ikon lonceng). Semua setoran Anda tersimpan di <b>Riwayat Setoran</b> (ikon jam) lengkap dengan jilid, halaman, dan nilainya. Riwayat bisa dihapus satu per satu.</p></div></div>
+                    <div class="guide-step"><div class="guide-num">7</div><div class="guide-text"><b>Latihan: Talaqqi dan Tebak Bunyi</b><p>Ketuk tombol <b>bintang ★</b> di pojok kanan atas halaman. <b>Mode Talaqqi</b>: dengar contoh, tirukan, lalu bandingkan dengan suaramu (rekaman hanya di HP). <b>Tebak Bunyi</b>: dengar bunyi, lalu ketuk blok yang cocok.</p></div></div>
+                    <div class="guide-step"><div class="guide-num">8</div><div class="guide-text"><b>Perbaiki blok yang ditandai guru</b><p>Kalau guru menandai blok (merah = salah, kuning = kurang), tekan <b>Perbaiki blok</b> di hasil penilaian atau di Riwayat Setoran. Dengar contoh, rekam ulang blok itu, lalu tekan <b>Sudah diperbaiki</b>.</p></div></div>
                 </div>
                 <div class="guide-panel" id="guide-guru">
                     <div class="guide-step"><div class="guide-num">1</div><div class="guide-text"><b>Daftar sebagai Guru</b><p>Di halaman masuk pilih <b>Buat Akun</b> lalu <b>Daftar sebagai Guru</b>, dan isi <b>Nama Kelas</b>. Setelah Admin menyetujui, <b>Kode Kelas</b> Anda tampil di <b>Panel Guru</b>. Bagikan kode itu ke siswa untuk mendaftar.</p></div></div>
                     <div class="guide-step"><div class="guide-num">2</div><div class="guide-text"><b>Terima siswa baru</b><p>Siswa yang mendaftar dengan kode kelas Anda muncul di <b>Panel Guru</b> (ikon guru di kartu sapaan), dan Anda mendapat notifikasi <b>Siswa Baru Mendaftar</b>. Tekan <b>Terima</b> untuk menyetujui atau <b>Tolak</b> untuk menolak.</p></div></div>
                     <div class="guide-step"><div class="guide-num">3</div><div class="guide-text"><b>Menilai setoran</b><p>Notifikasi <b>Setoran Bacaan Baru</b> membuka halaman beserta rekaman siswa. Dengarkan, isi <b>nilai 0 sampai 100</b> dan catatan untuk siswa, lalu tekan <b>Kirim</b>.</p></div></div>
                     <div class="guide-step"><div class="guide-num">4</div><div class="guide-text"><b>Kelola anggota kelas</b><p>Ketuk lencana peran (<b>Guru 👥</b>) di kartu sapaan untuk melihat daftar anggota kelas. Tombol <b>tempat sampah</b> di samping nama siswa menghapus siswa dari kelas Anda.</p></div></div>
+                    <div class="guide-step"><div class="guide-num">5</div><div class="guide-text"><b>Tandai blok yang salah</b><p>Saat menilai, tekan <b>Tandai blok</b>. Pilih <b>Salah</b> atau <b>Kurang</b>, lalu ketuk blok di halaman. Tanda ini dikirim bersama nilai, dan siswa bisa memperbaiki hanya blok yang ditandai.</p></div></div>
+                    <div class="guide-step"><div class="guide-num">6</div><div class="guide-text"><b>Laporan orang tua</b><p>Di daftar anggota kelas, tekan ikon <b>dokumen</b> di samping nama siswa. Laporan pekan ini (halaman lulus, rata-rata nilai, yang perlu dilatih) bisa diubah catatannya lalu dikirim lewat <b>WhatsApp</b>.</p></div></div>
                 </div>
                 <div class="guide-panel" id="guide-admin">
                     <div class="guide-step"><div class="guide-num">1</div><div class="guide-text"><b>Masuk sebagai Admin</b><p>Di halaman masuk ketuk tombol <b>Cloudzone</b>, lalu masuk dengan email dan kata sandi Admin. Anda akan masuk ke menu yang sama seperti Siswa dan Guru.</p></div></div>
@@ -594,11 +598,20 @@
         <!-- Nama jilid (hanya tampil untuk jilid bernama khusus, mis. Tartili Ghorib) -->
         <div class="jilid-badge" id="jilidBadge" style="display:none;"></div>
 
+        <!-- Tandai blok (hanya tampil untuk guru saat meninjau setoran) -->
+        <div class="review-mark-float" id="reviewMarkFloat" style="display:none;">
+            <button type="button" class="review-mark-btn" id="btnTandaiBlok" onclick="bjOpenMarking()">✍ Tandai blok</button>
+            <span class="review-mark-summary" id="reviewMarkSummary">Belum ada tanda</span>
+        </div>
+
         <!-- Pemutar audio 1 halaman -->
         <div class="page-player" id="pagePlayer" style="display:none;" aria-label="Pemutar audio halaman">
             <button type="button" class="pp-btn pp-main" id="ppMain" onclick="togglePagePlayer()" title="Putar semua audio halaman ini" aria-label="Putar semua audio halaman ini">
                 <svg id="ppIconPlay" viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg>
                 <svg id="ppIconPause" viewBox="0 0 24 24" style="display:none;"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>
+            </button>
+            <button type="button" class="pp-btn pp-small" id="ppPractice" onclick="bjOpenPracticeMenu()" title="Mode latihan: Talaqqi dan Tebak Bunyi" aria-label="Mode latihan">
+                <svg viewBox="0 0 24 24"><path d="M12 2l2.6 6.6L21.5 9l-5.3 4.5L17.9 20.5 12 16.8 6.1 20.5l1.7-7L2.5 9l6.9-.4z"></path></svg>
             </button>
             <div class="pp-extra" id="ppExtra" style="display:none;">
                 <button type="button" class="pp-btn pp-small" onclick="stopPagePlayer()" title="Berhenti" aria-label="Berhenti">
@@ -698,6 +711,7 @@
          4. LOGIKA APLIKASI UTAMA (JAVASCRIPT)
          ========================================== -->
     <script src="app.js"></script>
+    <script src="belajar.js"></script>
 <!-- KODE MEMATIKAN ZOOM (Cukup tempel di satu tempat ini saja) -->
 
 

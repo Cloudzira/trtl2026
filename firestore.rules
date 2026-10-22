@@ -1,0 +1,206 @@
+rules_version = '2';
+
+// ============================================================
+//  FIRESTORE RULES - TartiliKu (Kurniapedia)
+//  Koleksi: users, notifications, setoran, riwayat_setoran
+//  Peran  : Admin (master), Guru, Siswa
+//  Cara pasang: Firebase Console -> Firestore Database -> Rules
+//               -> tempel seluruh isi file ini -> Publish
+// ============================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- FUNGSI BANTU ----------
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myDocPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function myDocExists() {
+      return signedIn() && exists(myDocPath());
+    }
+
+    function me() {
+      return get(myDocPath()).data;
+    }
+
+    // Admin utama: akun email admin (sama seperti di aplikasi) atau role 'Admin'
+    function isAdmin() {
+      return signedIn() && (
+        request.auth.token.email == 'awanproject70@gmail.com' ||
+        (myDocExists() && me().role == 'Admin')
+      );
+    }
+
+    // Guru yang sudah disetujui Admin
+    function isTeacher() {
+      return myDocExists() && me().role == 'Guru' && me().isMasterApproved == true;
+    }
+
+    // Akun sudah lolos persetujuan (Admin, dan untuk siswa juga Guru)
+    function isApproved() {
+      return myDocExists() && me().isMasterApproved == true &&
+             (me().role == 'Guru' || me().isTeacherApproved == true);
+    }
+
+    // Data (dokumen) berada di kelas yang sama dengan saya
+    function sameClass(d) {
+      return isApproved() && me().classCode is string && me().classCode != '' &&
+             d.classCode == me().classCode;
+    }
+
+    // Guru pemilik kelas dari dokumen d
+    function teacherOfClass(d) {
+      return isTeacher() && d.classCode == me().classCode;
+    }
+
+    // ---------- USERS ----------
+    match /users/{userId} {
+
+      // Baca: diri sendiri, Admin, atau anggota kelas yang sama
+      // (siswa melihat guru & teman kelas, guru melihat siswanya).
+      allow read: if signedIn() && (
+        request.auth.uid == userId ||
+        isAdmin() ||
+        sameClass(resource.data)
+      );
+
+      // Daftar akun baru: peran hanya Siswa/Guru, belum disetujui Admin,
+      // dan tidak bisa mendaftar langsung sebagai Admin.
+      allow create: if signedIn() && request.auth.uid == userId && (
+        (
+          request.resource.data.keys().hasOnly(['name', 'email', 'role', 'classCode',
+            'teacherClassName', 'isMasterApproved', 'isTeacherApproved', 'createdAt', 'bookmarks']) &&
+          request.resource.data.role in ['Siswa', 'Guru'] &&
+          request.resource.data.isMasterApproved == false &&
+          request.resource.data.isTeacherApproved == (request.resource.data.role == 'Guru') &&
+          request.resource.data.email.lower() == request.auth.token.email.lower() &&
+          request.resource.data.name is string && request.resource.data.name.size() <= 100
+        ) ||
+        // Admin utama boleh membuat dokumen profilnya sendiri (mis. untuk bookmark)
+        request.auth.token.email == 'awanproject70@gmail.com'
+      );
+
+      allow update: if signedIn() && (
+        // Pemilik: hanya boleh mengubah halaman tersimpan (bookmarks)
+        (request.auth.uid == userId &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bookmarks'])) ||
+        // Admin: hanya menyetujui akun
+        (isAdmin() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isMasterApproved'])) ||
+        // Guru: hanya menerima siswa di kelasnya
+        (isTeacher() && resource.data.role == 'Siswa' &&
+          resource.data.classCode == me().classCode &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isTeacherApproved']))
+      );
+
+      // Hapus/tolak akun: Admin, atau Guru untuk siswa di kelasnya sendiri
+      allow delete: if isAdmin() ||
+        (isTeacher() && resource.data.role == 'Siswa' &&
+          resource.data.classCode == me().classCode);
+    }
+
+    // ---------- NOTIFICATIONS ----------
+    match /notifications/{notifId} {
+
+      // Siapa yang berhak membaca/menandai/menghapus sebuah notifikasi:
+      //  - penerima langsung (targetUserId = UID)
+      //  - Admin untuk "ALL_ADMINS"
+      //  - Guru kelasnya untuk "CLASS_<kode kelas>" (siswa baru mendaftar)
+      function canReadNotif(d) {
+        return d.targetUserId == request.auth.uid ||
+               (d.targetUserId == 'ALL_ADMINS' && isAdmin()) ||
+               (isTeacher() && d.targetUserId == 'CLASS_' + me().classCode);
+      }
+
+      allow read: if signedIn() && canReadNotif(resource.data);
+
+      allow create: if signedIn() && (
+        // 1) Pendaftar baru memberi tahu Admin
+        (request.resource.data.targetUserId == 'ALL_ADMINS' &&
+          request.resource.data.actionUrl == 'admin-approval') ||
+        // 1b) Siswa baru memberi tahu guru kelasnya (belum perlu disetujui)
+        (request.resource.data.actionUrl == 'teacher-approval' &&
+          myDocExists() && me().role == 'Siswa' &&
+          request.resource.data.targetUserId == 'CLASS_' + me().classCode) ||
+        // 2) Admin mengirim ke siapa pun (mis. "Akun Disetujui")
+        isAdmin() ||
+        // 3) Guru mengirim ke anggota kelasnya (diterima di kelas, hasil penilaian)
+        (isTeacher() && request.resource.data.targetUserId != 'ALL_ADMINS' &&
+          get(/databases/$(database)/documents/users/$(request.resource.data.targetUserId)).data.classCode == me().classCode) ||
+        // 4) Siswa mengirim setoran ke guru kelasnya (tujuan: "CLASS_<kode kelas>")
+        (isApproved() && me().role == 'Siswa' &&
+          request.resource.data.senderId == request.auth.uid &&
+          request.resource.data.actionUrl == 'setoran' &&
+          request.resource.data.targetUserId == 'CLASS_' + me().classCode)
+      );
+
+      // Tandai terbaca: hanya penerima, dan hanya field readBy
+      allow update: if signedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
+        canReadNotif(resource.data);
+
+      // Hapus: hanya penerima (aplikasi menghapus notifikasi yang sudah dibuka / kedaluwarsa)
+      allow delete: if signedIn() && canReadNotif(resource.data);
+    }
+
+    // ---------- SETORAN (rekaman siswa -> guru) ----------
+    match /setoran/{setoranId} {
+
+      // Baca: siswa pemilik, guru kelasnya, Admin.
+      // (resource == null: aplikasi mengecek dokumen yang mungkin sudah terhapus)
+      allow get: if signedIn() && (
+        resource == null ||
+        resource.data.studentUid == request.auth.uid ||
+        teacherOfClass(resource.data) ||
+        isAdmin()
+      );
+      allow list: if signedIn() && (
+        resource.data.studentUid == request.auth.uid ||
+        teacherOfClass(resource.data) ||
+        isAdmin()
+      );
+
+      // Kirim: siswa yang sudah disetujui, atas nama dirinya sendiri, kelas sendiri
+      allow create: if isApproved() && me().role == 'Siswa' &&
+        request.resource.data.studentUid == request.auth.uid &&
+        request.resource.data.classCode == me().classCode &&
+        request.resource.data.status == 'pending';
+
+      // Menilai: guru kelasnya, hanya field penilaian
+      allow update: if teacherOfClass(resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['nilai', 'feedback', 'status', 'gradedAt', 'salah', 'kurang']);
+
+      // Hapus (pembersihan otomatis 24 jam): guru kelasnya atau Admin
+      allow delete: if teacherOfClass(resource.data) || isAdmin();
+    }
+
+    // ---------- RIWAYAT SETORAN (ringkas, untuk siswa) ----------
+    match /riwayat_setoran/{riwayatId} {
+
+      // Siswa: buat, baca, dan hapus riwayatnya sendiri
+      allow create: if isApproved() &&
+        request.resource.data.studentUid == request.auth.uid &&
+        request.resource.data.status == 'menunggu';
+      allow delete: if signedIn() && resource.data.studentUid == request.auth.uid;
+
+      // Siswa membaca riwayatnya sendiri; guru kelasnya membaca untuk Laporan Orang Tua
+      // (query guru harus menyertakan where classCode == kode kelasnya).
+      allow read: if signedIn() && (resource.data.studentUid == request.auth.uid || teacherOfClass(resource.data));
+
+      // Guru kelasnya mengisi nilai, catatan, dan tanda blok (salah/kurang)
+      allow update: if teacherOfClass(resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'nilai', 'feedback', 'guruName', 'gradedAt', 'salah', 'kurang']);
+    }
+
+    // ---------- SELAIN ITU: DITOLAK ----------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
