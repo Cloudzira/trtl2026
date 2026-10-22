@@ -215,37 +215,43 @@
             const isAdminUser = profile.role === 'Admin' ||
                 (authUser && authUser.email === 'awanproject70@gmail.com');
 
+            let lastNotifSig = null;
             const handleSnapshot = (snapshot) => {
-                let unreadCount = 0;
-                const container = document.getElementById('notificationListContainer');
-                if (container) container.innerHTML = "";
-
-                if (snapshot.empty) {
-                    if (container) container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Tidak ada notifikasi.</div>`;
-                }
-
                 const sortedDocs = snapshot.docs.slice().sort((a, b) => {
                     const ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
                     const tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
                     return tb - ta; // terbaru di atas
                 });
 
-                sortedDocs.forEach(docSnap => {
+                // Hasil penilaian yang usianya sudah lewat 24 jam tidak ditampilkan lagi
+                // (walaupun penghapusannya belum berhasil), dan pembersihan dicoba SEKALI saja
+                // per notifikasi agar tidak terjadi perulangan yang membuat daftar berkedip.
+                const nowMs = Date.now();
+                const isExpiredHasil = (d) => d.actionUrl === 'setoran_hasil' && d.createdAt &&
+                    (nowMs - d.createdAt.toMillis()) / (1000 * 60 * 60) >= RETENSI_SETORAN_JAM;
+                sortedDocs.forEach((ds) => {
+                    const d = ds.data();
+                    if (d.actionUrl === 'setoran') cleanupExpiredSetoranNotif(ds.id, d.setoranId);
+                    if (d.actionUrl === 'setoran_hasil') cleanupExpiredHasilNotif(ds.id, d.createdAt);
+                });
+                const visibleDocs = sortedDocs.filter((ds) => !isExpiredHasil(ds.data()));
+
+                // Isi daftar tidak berubah -> tidak perlu menggambar ulang (mencegah berkedip)
+                const sig = visibleDocs.map((ds) => ds.id + ':' + (((ds.data().readBy || []).includes(userId)) ? 1 : 0)).join('|');
+                if (sig === lastNotifSig) return;
+                lastNotifSig = sig;
+
+                let unreadCount = 0;
+                const container = document.getElementById('notificationListContainer');
+                if (container) container.innerHTML = "";
+
+                if (visibleDocs.length === 0 && container) {
+                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Tidak ada notifikasi.</div>`;
+                }
+
+                visibleDocs.forEach(docSnap => {
                     const data = docSnap.data();
                     const notifId = docSnap.id;
-
-                    // Notifikasi setoran yang sudah dinilai lebih dari 24 jam
-                    // dibersihkan otomatis (baik notifikasinya maupun dokumen
-                    // setoran aslinya) -- tidak perlu tampil lagi di daftar.
-                    if (data.actionUrl === 'setoran') {
-                        cleanupExpiredSetoranNotif(notifId, data.setoranId);
-                    }
-                    // Notifikasi hasil penilaian untuk siswa juga disimpan
-                    // 24 jam (dihitung sejak notifikasinya dibuat, karena
-                    // itu persis waktu penilaian selesai dikirim guru).
-                    if (data.actionUrl === 'setoran_hasil') {
-                        cleanupExpiredHasilNotif(notifId, data.createdAt);
-                    }
 
                     const isRead = data.readBy && data.readBy.includes(userId);
                     if (!isRead) unreadCount++;
@@ -314,7 +320,10 @@
         // DINILAI dan usianya (sejak dinilai) sudah lewat 24 jam. Dipanggil
         // tiap kali daftar notifikasi dirender (lihat listenForNotifications).
         const RETENSI_SETORAN_JAM = 24;
+        const cleanupTried = new Set();   // notifikasi yang sudah pernah dicoba dibersihkan (sekali per sesi)
         async function cleanupExpiredSetoranNotif(notifId, setoranId) {
+            if (!setoranId || cleanupTried.has('s:' + notifId)) return;
+            cleanupTried.add('s:' + notifId);
             try {
                 const setoranSnap = await getDoc(doc(window.firebaseDb, "setoran", setoranId));
                 if (!setoranSnap.exists()) {
@@ -341,9 +350,10 @@
         // seluruh data hasil sudah tersisip langsung di notifikasinya).
         async function cleanupExpiredHasilNotif(notifId, createdAt) {
             try {
-                if (!createdAt) return;
+                if (!createdAt || cleanupTried.has('h:' + notifId)) return;
                 const jamSejakDibuat = (Date.now() - createdAt.toMillis()) / (1000 * 60 * 60);
                 if (jamSejakDibuat >= RETENSI_SETORAN_JAM) {
+                    cleanupTried.add('h:' + notifId);
                     await deleteDoc(doc(window.firebaseDb, "notifications", notifId));
                 }
             } catch (e) {
