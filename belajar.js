@@ -303,6 +303,7 @@
             const pct = score / order.length;
             const stars = pct >= 0.9 ? 3 : (pct >= 0.6 ? 2 : 1);
             const n = bumpStreak();
+            if (score === order.length && window.bintangFlag) window.bintangFlag('telinga');   // lencana Telinga Emas
             body.innerHTML = `
                 <div class="bj-card static" style="text-align:center;align-items:center">
                     <div style="font-size:34px">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>
@@ -426,7 +427,10 @@
             });
             const left = [...flagged].filter((i) => !done.has(i)).length;
             $('fxChips').innerHTML = `<span class="bj-chip">${left} perlu diperbaiki</span><span class="bj-chip on">${done.size} selesai</span>`;
-            if (flagged.size && left === 0) $('fxStatus').textContent = 'Semua blok sudah diperbaiki. Barakallah!';
+            if (flagged.size && left === 0) {
+                $('fxStatus').textContent = 'Semua blok sudah diperbaiki. Barakallah!';
+                if (window.bintangFlag) window.bintangFlag('perbaiki');   // lencana Pemburu Perbaikan
+            }
         }
         function select(i) {
             if (recording) return;
@@ -556,6 +560,8 @@
         };
     }
 
+    window.bjOpenModal = openModal;
+    window.bjCloseModal = closeModal;
     window.bjOpenPracticeMenu = openPracticeMenu;
     window.bjOpenMarking = openMarking;
     window.bjOpenReport = openReport;

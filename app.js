@@ -560,6 +560,8 @@
                 const isStudent = !isMaster && profile.role !== 'Guru' && profile.role !== 'Admin';
                 btnRiwayat.style.setProperty('display', isStudent ? 'flex' : 'none', 'important');
             }
+            // Tombol Peta Perjalanan & chip bintang (khusus siswa) diatur oleh bintang.js
+            if (typeof window.bintangOnProfile === 'function') window.bintangOnProfile();
         }
 
         // --- MASTER ADMIN PANEL ---
@@ -1050,6 +1052,7 @@
             const nTanda = ((data.salah || []).length + (data.kurang || []).length);
             const contentEl = document.getElementById('hasilSetoranContent');
             contentEl.innerHTML = `
+                ${typeof window.bintangResultHtml === 'function' ? window.bintangResultHtml(data) : ''}
                 <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">${getJilidFullLabel(data.jilid)} • Halaman ${data.halaman}</div>
                 ${setoranPlayerHtml(data, 'margin-bottom:12px;')}
                 <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:2px;">Nilai</div>

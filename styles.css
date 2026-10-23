@@ -1569,3 +1569,99 @@
             color: #fff; background: var(--accent-gradient); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
         }
         .review-mark-summary { font-size: 11px; font-weight: 700; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* =====================================================================
+           BINTANG, PETA PERJALANAN, LENCANA, MASKOT PELITA (semua warna dari variabel tema)
+           ===================================================================== */
+        .bs-chip { display: none; align-items: center; padding: 3px 10px; border-radius: 999px; cursor: pointer; font-size: 10.5px; font-weight: 800;
+            color: #f59e0b; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.45); transition: var(--transition); }
+        .bs-chip:hover { transform: translateY(-1px); border-color: #f59e0b; }
+        #userStarChip.bs-chip { display: inline-flex; }
+
+        /* Maskot Pelita: lentera tanpa wajah; ekspresi lewat nyala api, cahaya, dan percikan */
+        .pelita { width: 100%; height: 100%; overflow: visible; }
+        .pelita .pl-halo { fill: #ffd166; opacity: calc(var(--glow) * 0.30); filter: blur(6px); }
+        .pelita .pl-ring { stroke: var(--accent-solid); stroke-width: 3; stroke-linecap: round; }
+        .pelita .pl-cap, .pelita .pl-base { fill: var(--accent-solid); }
+        .pelita .pl-glass { fill: rgba(var(--accent-rgb), 0.16); stroke: var(--accent-solid); stroke-width: 2; }
+        .pelita .pl-flame { fill: #ff9f1c; transform-box: fill-box; transform-origin: 50% 100%; transform: scale(calc(0.55 + var(--glow) * 0.45));
+            animation: plFlicker 1.7s ease-in-out infinite alternate; }
+        .pelita .pl-core { fill: #ffe9a8; transform-box: fill-box; transform-origin: 50% 100%; transform: scale(calc(0.55 + var(--glow) * 0.45));
+            animation: plFlicker 1.3s ease-in-out infinite alternate-reverse; }
+        .pelita .pl-sparks path { fill: #ffd166; opacity: 0; transform-box: fill-box; transform-origin: center; }
+        .pelita.celebrate { animation: plBounce 0.7s ease 2; }
+        .pelita.celebrate .pl-sparks path { animation: plSpark 1.1s ease-in-out infinite alternate; }
+        .pelita.celebrate .pl-sparks path:nth-child(2) { animation-delay: 0.25s; }
+        .pelita.celebrate .pl-sparks path:nth-child(3) { animation-delay: 0.5s; }
+        @keyframes plFlicker { from { transform: scale(calc(0.50 + var(--glow) * 0.42)) rotate(-2deg); } to { transform: scale(calc(0.60 + var(--glow) * 0.45)) rotate(2deg); } }
+        @keyframes plBounce { 40% { transform: translateY(-8px); } }
+        @keyframes plSpark { from { opacity: 0.1; transform: scale(0.6); } to { opacity: 1; transform: scale(1.15); } }
+
+        /* hasil penilaian */
+        .bs-result { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0 14px; margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); }
+        .bs-result .pelita { width: 62px; height: 72px; }
+        .bs-result-stars { font-size: 28px; letter-spacing: 4px; color: #f59e0b; text-shadow: 0 0 14px rgba(245, 158, 11, 0.5); }
+        .bs-result-msg { font-size: 13px; font-weight: 700; color: var(--text-main); text-align: center; }
+
+        /* peta */
+        .bs-top { display: flex; align-items: center; gap: 12px; }
+        .bs-mascot { flex-shrink: 0; width: 54px; height: 64px; }
+        .bs-bubble { position: relative; flex: 1; padding: 10px 12px; border-radius: 14px; font-size: 12px; font-weight: 600; line-height: 1.5; color: var(--text-main);
+            background: var(--input-bg); border: 1px solid var(--border-color); }
+        .bs-bubble::before { content: ""; position: absolute; left: -6px; top: 18px; width: 10px; height: 10px; transform: rotate(45deg);
+            background: var(--input-bg); border-left: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+        .bs-map { position: relative; width: 100%; }
+        .bs-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .bs-seg { fill: none; stroke-width: 5; stroke-linecap: round; }
+        .bs-seg.locked { stroke: var(--border-color); stroke-dasharray: 2 10; }
+        .bs-seg.active { stroke: var(--accent-solid); stroke-dasharray: 10 8; animation: bsDash 1.4s linear infinite; }
+        .bs-seg.done { stroke: var(--accent-solid); }
+        @keyframes bsDash { to { stroke-dashoffset: -36; } }
+        .bs-node { position: absolute; width: 56px; height: 56px; transform: translate(-50%, -50%); padding: 0; cursor: pointer; border-radius: 50%;
+            border: 0; background: var(--bg-card); box-shadow: var(--shadow); transition: var(--transition); }
+        .bs-node:hover, .bs-node.sel { transform: translate(-50%, -50%) scale(1.1); box-shadow: var(--glow); }
+        .bs-node svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .bs-node .tr { fill: none; stroke: var(--border-color); stroke-width: 5; }
+        .bs-node .pg { fill: none; stroke: var(--accent-solid); stroke-width: 5; stroke-linecap: round; }
+        .bs-node.done .pg { stroke: #f59e0b; }
+        .bs-node .num { position: relative; font-size: 17px; font-weight: 800; color: var(--text-main); }
+        .bs-node.done .num { color: #f59e0b; }
+        .bs-node.cur { animation: bsPulse 2s ease-in-out infinite; }
+        @keyframes bsPulse { 50% { box-shadow: 0 0 0 8px rgba(var(--accent-rgb), 0.18), var(--glow); } }
+        .bs-pin { position: absolute; top: -40px; right: -16px; width: 34px; height: 40px; pointer-events: none; }
+        .bs-label { position: absolute; transform: translateY(-50%); display: flex; flex-direction: column; gap: 2px; pointer-events: none; }
+        .bs-label b { font-size: 13px; color: var(--text-main); }
+        .bs-label small { font-size: 10.5px; font-weight: 600; color: var(--text-muted); }
+        .bs-detail { padding: 12px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border-color); }
+        .bs-detail-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+        .bs-detail-head b { font-size: 14px; color: var(--text-main); }
+        .bs-detail-head span { font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
+        .bs-dots { display: flex; flex-wrap: wrap; gap: 5px; }
+        .bs-dot { min-width: 26px; height: 26px; padding: 0 4px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 10.5px; font-weight: 800;
+            color: var(--text-muted); background: var(--input-bg); border: 1px solid var(--border-color); }
+        .bs-dot.try { color: #ef4444; border-color: rgba(239, 68, 68, 0.5); }
+        .bs-dot.s1 { color: #fff; background: rgba(245, 158, 11, 0.55); border-color: #f59e0b; }
+        .bs-dot.s2 { color: #fff; background: rgba(245, 158, 11, 0.8); border-color: #f59e0b; }
+        .bs-dot.s3 { color: #3a2400; background: #ffd166; border-color: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.6); }
+        .bs-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 10.5px; color: var(--text-muted); font-weight: 600; }
+        .bs-legend .bs-dot { min-width: 14px; height: 14px; padding: 0; border-radius: 4px; cursor: default; }
+        .bs-section { margin-top: 4px; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-solid); }
+        .bs-badges { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .bs-badge { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px; border-radius: 14px; background: var(--bg-card); border: 1px solid var(--border-color); opacity: 0.5; filter: grayscale(0.8); }
+        .bs-badge.on { opacity: 1; filter: none; border-color: #f59e0b; box-shadow: 0 0 14px rgba(245, 158, 11, 0.22); }
+        .bs-badge-ic { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800;
+            color: var(--text-muted); background: var(--input-bg); border: 1px solid var(--border-color); }
+        .bs-badge.on .bs-badge-ic { color: #3a2400; background: linear-gradient(135deg, #ffe9a8, #ffd166, #ff9f1c); border-color: #f59e0b; }
+        .bs-badge b { font-size: 12px; color: var(--text-main); }
+        .bs-badge small { font-size: 10.5px; color: var(--text-muted); line-height: 1.4; }
+        .bs-rules { font-size: 11px; color: var(--text-muted); line-height: 1.6; text-align: center; padding: 4px 8px 0; }
+
+        /* konfeti */
+        .bs-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 10100; overflow: hidden; }
+        .bs-cf { position: absolute; top: -16px; border-radius: 2px; animation-name: bsFall; animation-timing-function: linear; animation-fill-mode: forwards; }
+        @keyframes bsFall { to { transform: translateY(calc(var(--app-h, 100vh) + 24px)) rotate(600deg); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .pelita .pl-flame, .pelita .pl-core, .pelita.celebrate, .pelita.celebrate .pl-sparks path, .bs-node.cur, .bs-seg.active { animation: none; }
+            .pelita.celebrate .pl-sparks path { opacity: 1; }
+        }
