@@ -249,68 +249,101 @@
     async function openGuess() {
         closeModal('bjPracticeModal');
         const jilid = currentJilid, page = currentPage;
-        const session = { alive: true };
+        const session = { alive: true, timer: null, ro: null };
         let pd = null;
-        const body = openModal('bjGuessModal', '👂 Tebak Bunyi', () => { session.alive = false; stopAllAudio(); if (pd) pd.revoke(); });
+        const body = openModal('bjGuessModal', '👂 Tebak Bunyi', () => {
+            session.alive = false; stopAllAudio();
+            if (session.timer) clearTimeout(session.timer);
+            if (session.ro) session.ro.disconnect();
+            if (pd) pd.revoke();
+        });
+        const box = $('bjGuessModal').querySelector('.modal-box'); if (box) box.classList.add('bj-game');
         body.innerHTML = '<div class="bj-note">Memuat halaman…</div>';
         pd = await getPageData(jilid, page);
         if (!session.alive) { pd.revoke(); return; }
         if (pd.blocks.length < 2) { body.innerHTML = '<div class="bj-note">Halaman ini terlalu sedikit blok untuk permainan.</div>'; return; }
 
         let order, qi, score, target, locked, els;
+
+        // Halaman selalu dipaskan ke area yang tersedia (tanpa menggulir), di HP maupun laptop, potret maupun landscape.
+        function fit() {
+            const wrap = $('tbWrap'), host = $('tbStage'); const st = host && host.firstChild;
+            if (!wrap || !st) return;
+            const w = wrap.clientWidth, h = wrap.clientHeight; if (!w || !h) return;
+            let sw = w, sh = w / pd.ar;
+            if (sh > h) { sh = h; sw = h * pd.ar; }
+            st.style.width = Math.floor(sw) + 'px'; st.style.height = Math.floor(sh) + 'px';
+        }
+
         function start() {
+            if (session.timer) { clearTimeout(session.timer); session.timer = null; }
+            if (session.ro) { session.ro.disconnect(); session.ro = null; }
             order = shuffle(pd.blocks.map((_, i) => i)).slice(0, Math.min(8, pd.blocks.length));
             qi = 0; score = 0;
             body.innerHTML = `
-                <div class="bj-sub">${esc(getJilidFullLabel(jilid))} • Hal. ${esc(page)} • <span id="tbQ"></span></div>
-                <div class="bj-card static" style="flex-direction:row;align-items:center;justify-content:center;gap:14px">
-                    <button type="button" class="bj-btn round" id="tbPlay" aria-label="Putar bunyi">▶</button>
-                    <span class="bj-sub">Ketuk untuk<br>mendengar lagi</span>
-                </div>
-                <div id="tbStage"></div>
-                <div class="bj-feedback" id="tbFb" style="display:none"></div>
-                <div class="bj-row"><span class="bj-chip on" id="tbScore"></span><span class="bj-chip" id="tbStreak"></span></div>
-                <button type="button" class="bj-btn" id="tbNext" style="display:none"></button>`;
+                <div class="tb-wrap">
+                    <div class="tb-stagewrap" id="tbWrap"><div class="tb-stagehost" id="tbStage"></div></div>
+                    <div class="tb-panel">
+                        <div class="tb-chips"><span class="bj-chip on" id="tbQ"></span><span class="bj-chip" id="tbScore"></span><span class="bj-chip" id="tbStreak"></span></div>
+                        <div class="tb-row">
+                            <button type="button" class="bj-btn round" id="tbPlay" aria-label="Dengar lagi">▶</button>
+                            <div class="tb-fb" id="tbFb" aria-live="polite"></div>
+                        </div>
+                        <button type="button" class="bj-btn tb-next" id="tbNext" disabled>Lanjut</button>
+                    </div>
+                </div>`;
             els = buildStage($('tbStage'), pd, onTap);
+            fit();
+            if (window.ResizeObserver) { session.ro = new ResizeObserver(fit); session.ro.observe($('tbWrap')); }
+            else window.addEventListener('resize', fit);
             $('tbPlay').onclick = () => playTarget();
-            $('tbNext').onclick = () => { qi++; if (qi >= order.length) finish(); else question(); };
+            $('tbNext').onclick = () => advance();
             question();
         }
         function question() {
             locked = false; target = order[qi];
             els.forEach((e) => e.classList.remove('ok', 'bad'));
-            $('tbQ').textContent = `soal ${qi + 1} dari ${order.length}`;
-            $('tbScore').textContent = `Skor ${score}/${qi}`;
+            $('tbQ').textContent = `Soal ${qi + 1}/${order.length}`;
+            $('tbScore').textContent = `⭐ ${score}`;
             const n = streakInfo(); $('tbStreak').textContent = n ? `Beruntun ${n} hari` : 'Mulai beruntun hari ini';
-            $('tbFb').style.display = 'none'; $('tbNext').style.display = 'none';
+            const fb = $('tbFb'); fb.className = 'tb-fb'; fb.textContent = 'Dengarkan, lalu ketuk blok yang cocok.';
+            const nx = $('tbNext'); nx.disabled = true; nx.textContent = (qi + 1 >= order.length) ? 'Lihat hasil' : 'Lanjut';
             playTarget();
         }
         function playTarget() { playAudioUrl(blockUrl(pd, target)); }
+        function advance() {
+            if (session.timer) { clearTimeout(session.timer); session.timer = null; }
+            qi++;
+            if (qi >= order.length) finish(); else question();
+        }
         function onTap(i) {
             if (locked) return;
             locked = true; stopAllAudio();
             const right = i === target;
             if (right) score++; else els[i].classList.add('bad');
             els[target].classList.add('ok');
-            $('tbFb').style.display = 'block';
-            $('tbFb').innerHTML = right ? '<b>Benar!</b> Pendengaranmu tepat.' : '<b>Belum tepat.</b> Blok yang benar ditandai hijau.';
-            $('tbScore').textContent = `Skor ${score}/${qi + 1}`;
-            const last = qi + 1 >= order.length;
-            $('tbNext').textContent = last ? 'Lihat hasil' : 'Soal berikutnya';
-            $('tbNext').style.display = 'block';
+            const fb = $('tbFb');
+            fb.className = 'tb-fb ' + (right ? 'ok' : 'bad');
+            fb.textContent = right ? '✓ Benar! Hebat!' : '✗ Belum tepat. Blok yang benar berwarna hijau.';
+            $('tbScore').textContent = `⭐ ${score}`;
+            $('tbNext').disabled = false;
+            // benar -> lanjut sendiri (lebih cepat); salah -> beri waktu melihat jawaban, lalu bunyi yang benar diputar lagi
+            if (right) { session.timer = setTimeout(() => { if (session.alive) advance(); }, 1300); }
+            else { session.timer = setTimeout(() => { if (session.alive) playTarget(); }, 500); }
         }
         function finish() {
             const pct = score / order.length;
             const stars = pct >= 0.9 ? 3 : (pct >= 0.6 ? 2 : 1);
             const n = bumpStreak();
-            if (score === order.length && window.bintangFlag) window.bintangFlag('telinga');   // lencana Telinga Emas
+            if (score === order.length && window.bintangFlag) window.bintangFlag('telinga');   // pencapaian Telinga Emas
+            if (session.ro) { session.ro.disconnect(); session.ro = null; }
             body.innerHTML = `
-                <div class="bj-card static" style="text-align:center;align-items:center">
-                    <div style="font-size:34px">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>
-                    <b>Skor ${score} dari ${order.length}</b>
+                <div class="tb-result">
+                    <div class="tb-result-stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>
+                    <b>Benar ${score} dari ${order.length}</b>
                     <span>Beruntun ${n} hari. ${stars === 3 ? 'Luar biasa!' : 'Terus berlatih, ya!'}</span>
-                </div>
-                <div class="bj-actions"><button type="button" class="bj-btn ghost" id="tbClose">Tutup</button><button type="button" class="bj-btn" id="tbAgain">Main lagi</button></div>`;
+                    <div class="bj-actions" style="width:100%;max-width:360px"><button type="button" class="bj-btn ghost" id="tbClose">Tutup</button><button type="button" class="bj-btn" id="tbAgain">Main lagi</button></div>
+                </div>`;
             $('tbClose').onclick = () => closeModal('bjGuessModal');
             $('tbAgain').onclick = start;
         }

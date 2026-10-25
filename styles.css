@@ -1645,3 +1645,33 @@
             .pelita .pl-flame, .pelita .pl-core, .pelita.celebrate, .pelita.celebrate .pl-sparks path, .bs-node.cur, .bs-seg.active { animation: none; }
             .pelita.celebrate .pl-sparks path { opacity: 1; }
         }
+
+        /* ===== TEBAK BUNYI: satu layar tanpa menggulir (HP/laptop, potret/landscape) ===== */
+        .bj-box.bj-game { max-width: min(1000px, calc(100vw - 16px)) !important; width: 100%; height: calc(var(--app-h, 100vh) - 16px) !important; max-height: none !important; }
+        .bj-game .bj-body { overflow: hidden; padding: 8px 10px 10px; }
+        .bj-game .bj-body > .tb-wrap, .bj-game .bj-body > .tb-result { flex: 1; min-height: 0; flex-shrink: 1; }
+        .tb-wrap { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+        .tb-stagewrap { min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; }
+        .tb-stagehost { display: flex; align-items: center; justify-content: center; max-width: 100%; max-height: 100%; }
+        .tb-stagewrap .bj-stage { flex-shrink: 0; }
+        .tb-stagewrap .bj-stage img { height: 100%; }
+        .tb-panel { display: flex; flex-direction: column; gap: 8px; }
+        .tb-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .tb-row { display: flex; align-items: center; gap: 10px; }
+        .tb-row .bj-btn.round { flex-shrink: 0; }
+        .tb-fb { flex: 1; display: flex; align-items: center; min-height: 44px; font-size: 14px; font-weight: 700; line-height: 1.4; color: var(--text-main); }
+        .tb-fb.ok { color: #10b981; }
+        .tb-fb.bad { color: #ef4444; }
+        .tb-next { width: 100%; }
+        .tb-result { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; color: var(--text-main); }
+        .tb-result b { font-size: 20px; }
+        .tb-result span { font-size: 13px; color: var(--text-muted); }
+        .tb-result-stars { font-size: 56px; letter-spacing: 6px; color: #f59e0b; text-shadow: 0 0 24px rgba(245, 158, 11, 0.5); }
+        @media (orientation: landscape) {
+            .tb-wrap { grid-template-columns: minmax(0, 1fr) 250px; grid-template-rows: minmax(0, 1fr); }
+            .tb-panel { justify-content: center; gap: 14px; }
+            .tb-row { flex-direction: column; text-align: center; }
+            .tb-fb { justify-content: center; text-align: center; }
+            .tb-row .bj-btn.round { width: 72px; height: 72px; min-height: 72px; font-size: 26px; }
+            .bj-game .modal-header { padding-top: 8px; padding-bottom: 8px; }
+        }
