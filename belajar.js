@@ -270,8 +270,18 @@
             const wrap = $('tbWrap'), host = $('tbStage'); const st = host && host.firstChild;
             if (!wrap || !st) return;
             const w = wrap.clientWidth, h = wrap.clientHeight; if (!w || !h) return;
-            let sw = w, sh = w / pd.ar;
-            if (sh > h) { sh = h; sw = h * pd.ar; }
+            const landscape = !!(window.matchMedia && window.matchMedia('(orientation: landscape)').matches);
+            let sw, sh;
+            if (landscape) {
+                // Landscape: halaman selebar kolom (lebih besar) dan boleh digulir; panel tombol di kanan tetap diam
+                sw = Math.min(w, 900); sh = sw / pd.ar;
+                wrap.classList.add('scroll');
+            } else {
+                // Potret: seluruh halaman dipaskan ke layar tanpa menggulir
+                sw = w; sh = w / pd.ar;
+                if (sh > h) { sh = h; sw = h * pd.ar; }
+                wrap.classList.remove('scroll');
+            }
             st.style.width = Math.floor(sw) + 'px'; st.style.height = Math.floor(sh) + 'px';
         }
 
@@ -322,6 +332,8 @@
             const right = i === target;
             if (right) score++; else els[i].classList.add('bad');
             els[target].classList.add('ok');
+            // pastikan blok yang benar terlihat (di landscape halaman bisa digulir)
+            if (!right && els[target].scrollIntoView) { try { els[target].scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { /* abaikan */ } }
             const fb = $('tbFb');
             fb.className = 'tb-fb ' + (right ? 'ok' : 'bad');
             fb.textContent = right ? '✓ Benar! Hebat!' : '✗ Belum tepat. Blok yang benar berwarna hijau.';

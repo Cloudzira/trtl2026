@@ -1675,3 +1675,14 @@
             .tb-row .bj-btn.round { width: 72px; height: 72px; min-height: 72px; font-size: 26px; }
             .bj-game .modal-header { padding-top: 8px; padding-bottom: 8px; }
         }
+
+        /* ===== TEBAK BUNYI (landscape): halaman besar & bisa digulir, panel tombol tetap di kanan ===== */
+        .tb-stagewrap.scroll { align-items: flex-start; justify-content: center; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
+        .tb-stagewrap.scroll .tb-stagehost { max-height: none; align-items: flex-start; }
+        @media (orientation: landscape) {
+            .tb-wrap { grid-template-columns: minmax(0, 1fr) 240px; gap: 12px; }
+            .tb-panel { align-self: stretch; justify-content: center; gap: 12px; padding: 14px 12px;
+                border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border-color); }
+            .tb-chips { flex-direction: column; align-items: stretch; gap: 6px; }
+            .tb-chips .bj-chip { justify-content: center; }
+        }

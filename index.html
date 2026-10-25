@@ -247,7 +247,7 @@
                 <div class="guide-panel" id="guide-tips">
                     <div class="guide-step"><div class="guide-num">1</div><div class="guide-text"><b>Pasang di layar utama</b><p>Tekan tombol <b>Pasang aplikasi</b> (📲), atau gunakan menu browser lalu pilih <b>Tambahkan ke layar utama</b>, supaya TartiliKu terbuka seperti aplikasi biasa.</p></div></div>
                     <div class="guide-step"><div class="guide-num">2</div><div class="guide-text"><b>Belajar tanpa internet</b><p>Tekan ikon <b>unduh</b> di bagian atas menu untuk <b>menyimpan jilid ke perangkat</b>. Jilid yang sudah disimpan bisa dibaca tanpa internet. Merekam bisa dilakukan kapan saja, tetapi mengirim setoran tetap butuh internet.</p></div></div>
-                    <div class="guide-step"><div class="guide-num">3</div><div class="guide-text"><b>Ganti tema warna</b><p>Tekan ikon <b>palet warna</b> di bagian atas menu untuk memilih tema yang paling nyaman di mata. Pilihan Anda akan diingat.</p></div></div>
+                    <div class="guide-step"><div class="guide-num">3</div><div class="guide-text"><b>Layar penuh dan tema warna</b><p>Tekan ikon <b>layar penuh</b> di sebelah tombol unduh untuk memperbesar tampilan (tidak tersedia di iPhone). Tekan ikon <b>palet warna</b> di bagian atas menu untuk memilih tema yang paling nyaman di mata. Pilihan Anda akan diingat.</p></div></div>
                     <div class="guide-step"><div class="guide-num">4</div><div class="guide-text"><b>Rekaman yang jernih</b><p>Izinkan akses mikrofon saat diminta, rekam di tempat yang tenang, dan dekatkan mikrofon ke mulut. Guru menilai rekaman yang terakhir Anda kirim.</p></div></div>
                     <div class="guide-step"><div class="guide-num">5</div><div class="guide-text"><b>Tentang penyimpanan rekaman</b><p>Rekaman yang sudah dinilai dihapus otomatis dari server setelah 24 jam. Nilai dan catatan tetap tersimpan di <b>Riwayat Setoran</b>.</p></div></div>
                 </div>
@@ -482,6 +482,9 @@
                 </button>
                 <button class="btn-offline-manager" onclick="openOfflineManager()" title="Simpan untuk Offline" aria-label="Simpan untuk offline">
                     <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </button>
+                <button class="btn-offline-manager" id="btnFullscreen" onclick="toggleFullscreen()" title="Layar penuh" aria-label="Layar penuh">
+                    <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
                 </button>
                 <button class="btn-theme-toggle" onclick="openThemePicker()" title="Pilih Tema" aria-label="Pilih tema warna">
                     <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
