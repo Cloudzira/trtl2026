@@ -434,10 +434,14 @@
 
         // Matikan menu klik-kanan / tahan-lama pada gambar halaman & pemutar rekaman
         document.addEventListener('contextmenu', (e) => {
-            if (e.target && e.target.closest && e.target.closest('.image-container, .setoran-player, audio')) e.preventDefault();
+            if (e.target && e.target.closest && e.target.closest('.image-container, .setoran-player, audio, .bj-stage, .bj-cropbox')) e.preventDefault();
         });
         document.addEventListener('dragstart', (e) => {
-            if (e.target && e.target.closest && e.target.closest('.image-container')) e.preventDefault();
+            if (e.target && e.target.closest && e.target.closest('.image-container, .bj-stage, .bj-cropbox')) e.preventDefault();
+        });
+        // Cegah juga pemilihan/penyeretan lewat gestur (tahan-lama di layar sentuh) pada halaman di mode latihan
+        document.addEventListener('selectstart', (e) => {
+            if (e.target && e.target.closest && e.target.closest('.bj-stage, .bj-cropbox')) e.preventDefault();
         });
 
         async function updateUserGreeting() {

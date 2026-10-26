@@ -174,7 +174,7 @@
         const status = (t) => { $('tlStatus').textContent = t; };
         const crop = (i) => {
             const [top, left, w, h] = pd.blocks[i];
-            $('tlCrop').innerHTML = `<div class="bj-cropbox" style="--ar:${(w * pd.ar) / h}"><img alt="" src="${pd.src}" style="width:${10000 / w}%;left:${(-left / w) * 100}%;top:${(-top / h) * 100}%"></div>`;
+            $('tlCrop').innerHTML = `<div class="bj-cropbox" style="--ar:${(w * pd.ar) / h}"><img alt="" draggable="false" src="${pd.src}" style="width:${10000 / w}%;left:${(-left / w) * 100}%;top:${(-top / h) * 100}%"></div>`;
         };
         function cancelRun() {
             session.runId++;

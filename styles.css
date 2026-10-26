@@ -1686,3 +1686,17 @@
             .tb-chips { flex-direction: column; align-items: stretch; gap: 6px; }
             .tb-chips .bj-chip { justify-content: center; }
         }
+
+        /* ===== PERLINDUNGAN HALAMAN DI MODE LATIHAN (sama seperti halaman baca) ===== */
+        .bj-stage, .bj-stage *, .bj-cropbox, .bj-cropbox * {
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+        }
+        /* gambar tidak bisa disentuh langsung: tidak ada menu "simpan gambar" / seret gambar */
+        .bj-stage img, .bj-cropbox img { -webkit-user-drag: none; pointer-events: none; }
+        /* tanda air nama pengguna di atas halaman (tidak bisa disentuh) */
+        .bj-stage::after, .bj-cropbox::after {
+            content: ''; position: absolute; inset: 0; z-index: 5; pointer-events: none;
+            background-image: var(--page-watermark, none); background-repeat: repeat;
+        }
+        /* halaman tidak ikut tercetak / disimpan sebagai PDF */
+        @media print { .bj-stage, .bj-cropbox { display: none !important; } }
