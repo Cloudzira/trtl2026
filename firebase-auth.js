@@ -1,6 +1,6 @@
 
         import { initializeApp } from "https://esm.sh/firebase@10.8.0/app";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://esm.sh/firebase@10.8.0/auth?deps=@firebase/app@0.9.27";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://esm.sh/firebase@10.8.0/auth?deps=@firebase/app@0.9.27";
         import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc, addDoc, onSnapshot, orderBy, serverTimestamp } from "https://esm.sh/firebase@10.8.0/firestore?deps=@firebase/app@0.9.27";
         
         const firebaseConfig = {
@@ -33,6 +33,8 @@
             window.signInWithEmailAndPassword = signInWithEmailAndPassword;
             window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
             window.signOut = signOut;
+            window.GoogleAuthProvider = GoogleAuthProvider;
+            window.signInWithPopup = signInWithPopup;
             window.doc = doc;
             window.setDoc = setDoc;
             window.getDoc = getDoc;
@@ -66,6 +68,22 @@
                         if (userSnap.exists()) {
                             window.currentUserProfile = { uid: user.uid, ...userSnap.data() };
                         } else {
+                            // Akun Google yang baru pertama kali masuk (belum punya profil TartiliKu):
+                            // minta pengguna melengkapi pendaftaran (nama, peran, kode kelas).
+                            const isGoogleUser = (user.providerData || []).some((p) => p.providerId === 'google.com');
+                            if (isGoogleUser && user.email !== 'awanproject70@gmail.com') {
+                                window.currentUserProfile = null;
+                                window.__instantShown = false;
+                                window.__pendingGoogleUser = { uid: user.uid, email: user.email, name: user.displayName || '' };
+                                hideAllScreens();
+                                const gcScreen = document.getElementById('google-complete-screen');
+                                const gcEmail = document.getElementById('gcEmail');
+                                const gcName = document.getElementById('gcName');
+                                if (gcEmail) gcEmail.textContent = user.email;
+                                if (gcName && !gcName.value) gcName.value = user.displayName || '';
+                                if (gcScreen) gcScreen.classList.add('active');
+                                return;
+                            }
                             window.currentUserProfile = { 
                                 uid: user.uid,
                                 name: user.email.split('@')[0], 
@@ -194,7 +212,7 @@
         }
 
         function hideAllScreens() {
-            ['login-screen', 'admin-login-screen', 'verify-screen', 'menu-screen', 'read-screen', 'bookmarks-screen', 'admin-screen', 'teacher-admin-screen', 'class-members-screen'].forEach(id => {
+            ['login-screen', 'google-complete-screen', 'admin-login-screen', 'verify-screen', 'menu-screen', 'read-screen', 'bookmarks-screen', 'admin-screen', 'teacher-admin-screen', 'class-members-screen'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('active');
             });

@@ -64,7 +64,7 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        #login-screen, #admin-login-screen, #verify-screen, #admin-screen, #class-members-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
+        #login-screen, #google-complete-screen, #admin-login-screen, #verify-screen, #admin-screen, #class-members-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
         .login-card {
             background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding: 30px 24px; border-radius: 28px; border: 1px solid var(--border-color);
@@ -1700,3 +1700,19 @@
         }
         /* halaman tidak ikut tercetak / disimpan sebagai PDF */
         @media print { .bj-stage, .bj-cropbox { display: none !important; } }
+
+        /* ===== MASUK DENGAN GOOGLE ===== */
+        .auth-divider { display: flex; align-items: center; gap: 10px; margin: 6px 0 2px; color: var(--text-muted); font-size: 11px; font-weight: 700; }
+        .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border-color); }
+        .btn-google {
+            display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 46px; padding: 0 16px; cursor: pointer;
+            font-family: inherit; font-size: 14px; font-weight: 700; color: #3c4043; background: #fff;
+            border: 1px solid #dadce0; border-radius: 14px; transition: var(--transition);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        }
+        .btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+        .btn-google:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2); }
+        .btn-google:disabled { opacity: 0.6; cursor: default; }
+        .gc-email { align-self: center; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--text-main);
+            background: var(--input-bg); border: 1px solid var(--border-color); word-break: break-all; }
+        .gc-cancel { background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700; color: var(--accent-solid); margin-top: 4px; }

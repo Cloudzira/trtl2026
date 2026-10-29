@@ -222,7 +222,7 @@
             </div>
             <div class="guide-body">
                 <div class="guide-panel active" id="guide-siswa">
-                    <div class="guide-step"><div class="guide-num">1</div><div class="guide-text"><b>Buat akun dan masuk</b><p>Di halaman masuk pilih <b>Buat Akun</b>, isi nama lengkap, email, dan kata sandi (minimal 6 karakter). Pilih <b>Daftar sebagai Siswa</b> lalu masukkan <b>Kode Kelas</b> dari guru (contoh: KLS-ABC). Tunggu akun disetujui Admin dan guru, lalu masuk dengan email dan kata sandi tadi.</p></div></div>
+                    <div class="guide-step"><div class="guide-num">1</div><div class="guide-text"><b>Buat akun dan masuk</b><p>Di halaman masuk pilih <b>Buat Akun</b>, isi nama lengkap, email, dan kata sandi (minimal 6 karakter). Pilih <b>Daftar sebagai Siswa</b> lalu masukkan <b>Kode Kelas</b> dari guru (contoh: KLS-ABC). Tunggu akun disetujui Admin dan guru, lalu masuk dengan email dan kata sandi tadi. Bisa juga lewat tombol <b>Masuk / Daftar dengan Google</b>: setelah memilih akun Google, lengkapi nama, peran, dan kode kelas.</p></div></div>
                     <div class="guide-step"><div class="guide-num">2</div><div class="guide-text"><b>Pilih Tartili</b><p>Di menu, ketuk sampul <b>Tartili Jilid 1 sampai 6</b> atau <b>Tartili Ghorib</b> (Jilid 7). Atau pakai <b>Pintasan</b>: pilih nomor Tartili dan Halaman (nomor 7 = Tartili Ghorib), lalu tekan <b>Buka</b>.</p></div></div>
                     <div class="guide-step"><div class="guide-num">3</div><div class="guide-text"><b>Membaca dan mendengar contoh</b><p>Halaman buku tampil penuh. <b>Ketuk kotak berwarna</b> di atas tulisan untuk mendengar contoh bacaannya. Tombol <b>▶ di pojok kanan atas</b> memutar semua audio halaman berurutan. Di situ ada tombol berhenti dan pengatur kecepatan (0,75× sampai 1,25×).</p></div></div>
                     <div class="guide-step"><div class="guide-num">4</div><div class="guide-text"><b>Pindah dan simpan halaman</b><p>Pakai tombol panah ganda di panel <b>Halaman</b> untuk maju atau mundur. Tombol <b>penanda buku</b> menyimpan halaman yang sedang dibaca. Buka lagi lewat tombol <b>Halaman Tersimpan</b> di menu.</p></div></div>
@@ -326,6 +326,25 @@
          3. STRUKTUR HTML (ANTARMUKA / TAMPILAN)
          ========================================== -->
 
+    <!-- Lengkapi Pendaftaran (akun Google baru) -->
+    <div id="google-complete-screen" class="screen">
+        <div class="login-card">
+            <h2>Lengkapi Pendaftaran</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 2px;">Akun Google Anda belum terdaftar di TartiliKu.</p>
+            <div class="gc-email" id="gcEmail"></div>
+            <input type="text" id="gcName" placeholder="Nama Lengkap" autocomplete="name" />
+            <select id="gcRole" onchange="toggleGoogleRoleFields()">
+                <option value="Siswa">Daftar sebagai Siswa</option>
+                <option value="Guru">Daftar sebagai Guru</option>
+            </select>
+            <input type="text" id="gcClassCode" placeholder="Kode Kelas dari Guru (Contoh: KLS-ABC)" />
+            <input type="text" id="gcTeacherClassName" placeholder="Nama Kelas Anda (Contoh: 5A / Al-Qur'an)" style="display:none;" />
+            <button class="btn-login" id="gcSubmit" onclick="submitGoogleRegistration()">Daftar</button>
+            <div id="gcError" class="login-error"></div>
+            <button type="button" class="gc-cancel" onclick="cancelGoogleRegistration()">Batal / ganti akun</button>
+        </div>
+    </div>
+
     <!-- Halaman Login Siswa / Guru -->
     <div id="login-screen" class="screen">
         <div class="login-card">
@@ -352,6 +371,12 @@
 
             <button class="btn-login" id="authSubmitBtn" onclick="handleAuthSubmit()">Masuk Sekarang</button>
             <div id="loginError" class="login-error">Terjadi kesalahan pada data yang dimasukkan.</div>
+
+            <div class="auth-divider"><span>atau</span></div>
+            <button type="button" class="btn-google" id="btnGoogle" onclick="handleGoogleSignIn()">
+                <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                <span>Masuk / Daftar dengan Google</span>
+            </button>
 
             <!-- Tombol pasang aplikasi (muncul otomatis kalau perangkat mendukung) -->
             <button type="button" class="install-app-link install-app-trigger" style="display:none" onclick="installApp()">📲 Pasang aplikasi di perangkat ini</button>
