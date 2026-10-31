@@ -1716,3 +1716,10 @@
         .gc-email { align-self: center; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--text-main);
             background: var(--input-bg); border: 1px solid var(--border-color); word-break: break-all; }
         .gc-cancel { background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700; color: var(--accent-solid); margin-top: 4px; }
+
+        /* ===== LUPA KATA SANDI ===== */
+        .link-forgot { align-self: flex-end; background: transparent; border: none; cursor: pointer; padding: 2px 4px; margin-top: -4px;
+            font-family: inherit; font-size: 12px; font-weight: 700; color: var(--accent-solid); }
+        .link-forgot:hover { text-decoration: underline; }
+        .link-forgot:disabled { opacity: 0.5; cursor: default; }
+        .login-info { display: none; font-size: 12px; font-weight: 600; line-height: 1.5; text-align: center; color: #10b981; }

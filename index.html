@@ -358,6 +358,7 @@
 
             <input type="email" id="authEmail" placeholder="Email Anda" />
             <input type="password" id="authPassword" placeholder="Kata Sandi (Min. 6 Karakter)" />
+            <button type="button" class="link-forgot" id="btnForgot" onclick="handleForgotPassword()">Lupa kata sandi?</button>
             
             <div id="registerFields" class="register-only-field">
                 <input type="text" id="authName" placeholder="Nama Lengkap" />
@@ -371,6 +372,7 @@
 
             <button class="btn-login" id="authSubmitBtn" onclick="handleAuthSubmit()">Masuk Sekarang</button>
             <div id="loginError" class="login-error">Terjadi kesalahan pada data yang dimasukkan.</div>
+            <div id="loginInfo" class="login-info" role="status"></div>
 
             <div class="auth-divider"><span>atau</span></div>
             <button type="button" class="btn-google" id="btnGoogle" onclick="handleGoogleSignIn()">

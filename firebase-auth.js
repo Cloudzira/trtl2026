@@ -1,6 +1,6 @@
 
         import { initializeApp } from "https://esm.sh/firebase@10.8.0/app";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://esm.sh/firebase@10.8.0/auth?deps=@firebase/app@0.9.27";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://esm.sh/firebase@10.8.0/auth?deps=@firebase/app@0.9.27";
         import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc, addDoc, onSnapshot, orderBy, serverTimestamp } from "https://esm.sh/firebase@10.8.0/firestore?deps=@firebase/app@0.9.27";
         
         const firebaseConfig = {
@@ -35,6 +35,7 @@
             window.signOut = signOut;
             window.GoogleAuthProvider = GoogleAuthProvider;
             window.signInWithPopup = signInWithPopup;
+            window.sendPasswordResetEmail = sendPasswordResetEmail;
             window.doc = doc;
             window.setDoc = setDoc;
             window.getDoc = getDoc;

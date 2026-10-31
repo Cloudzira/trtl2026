@@ -271,6 +271,11 @@
                 regFields.classList.remove('show');
                 submitBtn.innerText = "Masuk Sekarang";
             }
+            // "Lupa kata sandi?" hanya relevan di mode Masuk
+            const forgot = document.getElementById('btnForgot');
+            if (forgot) forgot.style.display = isRegisterMode ? 'none' : 'block';
+            const info = document.getElementById('loginInfo');
+            if (info) info.style.display = 'none';
             toggleRoleFields();
         }
 
@@ -413,6 +418,36 @@
                 errorDiv.style.display = 'block';
             }
         }
+
+        // ===== LUPA KATA SANDI =====
+        // Mengirim tautan pengaturan ulang ke email. Pesan sengaja netral (tidak membocorkan apakah email terdaftar).
+        async function handleForgotPassword() {
+            const errorDiv = document.getElementById('loginError');
+            const infoDiv = document.getElementById('loginInfo');
+            const btn = document.getElementById('btnForgot');
+            const email = (document.getElementById('authEmail').value || '').trim();
+            errorDiv.style.display = 'none'; infoDiv.style.display = 'none';
+            if (!email) { errorDiv.innerText = 'Isi email Anda di kolom email dulu, lalu tekan "Lupa kata sandi?".'; errorDiv.style.display = 'block'; return; }
+            if (!navigator.onLine) { errorDiv.innerText = 'Tidak ada koneksi internet.'; errorDiv.style.display = 'block'; return; }
+            if (typeof window.sendPasswordResetEmail !== 'function') { errorDiv.innerText = 'Layanan belum siap. Muat ulang halaman, lalu coba lagi.'; errorDiv.style.display = 'block'; return; }
+            try {
+                if (btn) btn.disabled = true;
+                await window.sendPasswordResetEmail(window.firebaseAuth, email);
+                infoDiv.innerText = 'Jika email itu terdaftar, tautan untuk mengatur ulang kata sandi sudah dikirim. Periksa kotak masuk dan folder spam.';
+                infoDiv.style.display = 'block';
+            } catch (err) {
+                console.error(err);
+                const code = err && err.code;
+                errorDiv.innerText = code === 'auth/invalid-email' ? 'Format email tidak valid.'
+                    : code === 'auth/too-many-requests' ? 'Terlalu banyak percobaan. Coba lagi beberapa menit lagi.'
+                    : code === 'auth/network-request-failed' ? 'Koneksi internet bermasalah. Coba lagi.'
+                    : 'Tautan belum bisa dikirim. Coba lagi.';
+                errorDiv.style.display = 'block';
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+        window.handleForgotPassword = handleForgotPassword;
 
         // ===== MASUK / DAFTAR DENGAN GOOGLE =====
         function isInAppBrowser() {
