@@ -293,38 +293,6 @@
             }
         }
 
-        function showAdminLoginScreen() {
-            document.getElementById('login-screen').classList.remove('active');
-            document.getElementById('admin-login-screen').classList.add('active');
-        }
-
-        function backToLoginScreen() {
-            document.getElementById('admin-login-screen').classList.remove('active');
-            document.getElementById('login-screen').classList.add('active');
-        }
-
-        async function handleAdminLogin() {
-            const email = document.getElementById('adminAuthEmail').value;
-            const password = document.getElementById('adminAuthPassword').value;
-            const errorDiv = document.getElementById('adminLoginError');
-
-            if (!email || !password) {
-                errorDiv.innerText = "Email dan kata sandi admin wajib diisi.";
-                errorDiv.style.display = 'block';
-                return;
-            }
-
-            try {
-                await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
-                errorDiv.style.display = 'none';
-                showToast('Berhasil masuk sebagai Admin!');
-            } catch (err) {
-                console.error(err);
-                errorDiv.innerText = "Email atau kata sandi admin salah.";
-                errorDiv.style.display = 'block';
-            }
-        }
-
         async function handleAuthSubmit() {
             const email = document.getElementById('authEmail').value;
             const password = document.getElementById('authPassword').value;
@@ -3079,7 +3047,7 @@
                 window.__instantShown = true;
                 window.__instantUid = cache.uid;
 
-                ['login-screen', 'admin-login-screen', 'verify-screen', 'menu-screen', 'read-screen',
+                ['login-screen', 'verify-screen', 'menu-screen', 'read-screen',
                  'bookmarks-screen', 'admin-screen', 'teacher-admin-screen', 'class-members-screen'].forEach((id) => {
                     const el = document.getElementById(id);
                     if (el) el.classList.remove('active');
@@ -3102,3 +3070,16 @@
                 console.warn('Mulai instan dilewati:', e);
             }
         })();
+
+
+        function togglePasswordVisibility() {
+            const input = document.getElementById('authPassword');
+            const btn = document.getElementById('btnTogglePass');
+            if (!input) return;
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            if (btn) {
+                btn.classList.toggle('on', show);
+                btn.setAttribute('aria-label', show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+            }
+        }

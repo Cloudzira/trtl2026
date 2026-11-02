@@ -52,7 +52,6 @@
 
             onAuthStateChanged(auth, async (user) => {
                 const loginScreen = document.getElementById('login-screen');
-                const adminLoginScreen = document.getElementById('admin-login-screen');
                 const verifyScreen = document.getElementById('verify-screen');
                 const menuScreen = document.getElementById('menu-screen');
                 const readScreen = document.getElementById('read-screen');
@@ -213,7 +212,7 @@
         }
 
         function hideAllScreens() {
-            ['login-screen', 'google-complete-screen', 'admin-login-screen', 'verify-screen', 'menu-screen', 'read-screen', 'bookmarks-screen', 'admin-screen', 'teacher-admin-screen', 'class-members-screen'].forEach(id => {
+            ['login-screen', 'google-complete-screen', 'verify-screen', 'menu-screen', 'read-screen', 'bookmarks-screen', 'admin-screen', 'teacher-admin-screen', 'class-members-screen'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('active');
             });

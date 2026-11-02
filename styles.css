@@ -64,7 +64,7 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        #login-screen, #google-complete-screen, #admin-login-screen, #verify-screen, #admin-screen, #class-members-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
+        #login-screen, #google-complete-screen, #verify-screen, #admin-screen, #class-members-screen { background: var(--bg-gradient); padding: 16px; z-index: 999; overflow-y: auto; }
         .login-card {
             background: var(--bg-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding: 30px 24px; border-radius: 28px; border: 1px solid var(--border-color);
@@ -1723,3 +1723,81 @@
         .link-forgot:hover { text-decoration: underline; }
         .link-forgot:disabled { opacity: 0.5; cursor: default; }
         .login-info { display: none; font-size: 12px; font-weight: 600; line-height: 1.5; text-align: center; color: #10b981; }
+
+        /* ===== HALAMAN MASUK: TAMPILAN PROFESIONAL (rapi, tidak terpotong) ===== */
+        /* Layar dapat digulir penuh; kartu otomatis di tengah bila muat, dan tidak terpotong
+           di atas/bawah bila layar pendek (margin:auto = pemusatan yang aman). */
+        #login-screen, #google-complete-screen, #verify-screen {
+            justify-content: flex-start; align-items: center;
+            overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+            padding: max(20px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+        }
+        #login-screen .login-card, #google-complete-screen .login-card, #verify-screen .login-card {
+            margin: auto; flex-shrink: 0; max-width: 400px; min-width: 0;
+            padding: 30px 24px 22px; gap: 12px; border-radius: 26px; overflow: hidden;
+        }
+        .login-card > * { min-width: 0; max-width: 100%; }
+
+        .login-brand { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: 6px; }
+        .login-logo {
+            width: 68px; height: 68px; border-radius: 20px; object-fit: cover; display: block;
+            box-shadow: 0 10px 24px -8px rgba(var(--accent-rgb), 0.55), 0 0 0 1px var(--border-color);
+            margin-bottom: 8px;
+        }
+        .login-brand h2 { font-size: 24px; letter-spacing: 1.5px; line-height: 1.2; }
+        .login-tagline { font-size: 12.5px; font-weight: 600; line-height: 1.45; color: var(--text-muted); margin: 0; text-wrap: balance; }
+
+        .login-card .auth-mode-toggle { margin: 4px 0 2px; }
+        .login-card .auth-mode-btn { padding: 10px 8px; font-size: 13px; }
+
+        .input-wrap { position: relative; width: 100%; }
+        .input-wrap .input-icon {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px;
+            fill: none; stroke: var(--text-muted); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round;
+            pointer-events: none; transition: stroke 0.2s ease;
+        }
+        .input-wrap:focus-within .input-icon { stroke: var(--accent-solid); }
+        .input-wrap input { padding-left: 44px; padding-right: 44px; }
+        .input-eye {
+            position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center; border: none; background: transparent;
+            cursor: pointer; border-radius: 10px; padding: 0;
+        }
+        .input-eye svg { width: 18px; height: 18px; fill: none; stroke: var(--text-muted); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+        .input-eye.on svg { stroke: var(--accent-solid); }
+        .input-eye:hover svg { stroke: var(--accent-solid); }
+
+        .login-card input, .login-card select { min-height: 46px; text-overflow: ellipsis; }
+        .login-card input::placeholder { color: var(--text-muted); opacity: 0.85; font-weight: 500; }
+        .login-card .btn-login { min-height: 48px; margin-top: 2px; letter-spacing: 0.2px; }
+        .login-card .link-forgot { margin-top: -6px; }
+        .login-error, .login-info { overflow-wrap: anywhere; }
+
+        .login-card .install-app-link {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px; align-self: center;
+            margin: 6px auto 0; padding: 9px 16px; max-width: 100%;
+            border: 1px dashed rgba(var(--accent-rgb), 0.55); border-radius: 999px; background: rgba(var(--accent-rgb), 0.07);
+            font-size: 12px; line-height: 1.3; text-align: center; transition: var(--transition);
+        }
+        .login-card .install-app-link[style*="display:none"], .login-card .install-app-link[style*="display: none"] { display: none !important; }
+        .install-app-link svg { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .login-card .install-app-link:hover { background: rgba(var(--accent-rgb), 0.14); transform: translateY(-1px); }
+
+        .login-card .info-links-row { margin-top: 6px; flex-wrap: wrap; }
+        .login-card .social-media-row { margin-top: 2px; }
+        .login-card .app-footer { margin-top: 2px; line-height: 1.5; }
+
+        @media (max-width: 380px) {
+            #login-screen .login-card, #google-complete-screen .login-card, #verify-screen .login-card { padding: 24px 18px 18px; }
+            .login-brand h2 { font-size: 22px; }
+        }
+        @media (max-height: 620px) {
+            .login-logo { width: 52px; height: 52px; border-radius: 16px; margin-bottom: 4px; }
+        }
+        .login-card .btn-google { white-space: nowrap; font-size: 14px; }
+        .login-card .btn-google span { overflow: hidden; text-overflow: ellipsis; }
+        @media (max-width: 340px) {
+            .login-card .btn-google { font-size: 13px; gap: 8px; padding: 0 10px; }
+            .login-card .install-app-link { font-size: 11.5px; padding: 8px 12px; }
+        }
+        .login-card .install-app-link span, .login-card .app-footer { text-wrap: balance; }
