@@ -3,72 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <script>
-        // Tinggi layar yang BENAR-BENAR terlihat (px). Dipakai CSS (var --app-h) supaya panel di bagian bawah,
-        // popup, dan notifikasi tidak keluar layar di HP (tinggi "100vh/100dvh" kadang lebih besar dari yang terlihat).
-        (function () {
-            function setAppHeight() {
-                var h = window.innerHeight || document.documentElement.clientHeight;
-                if (h > 0) document.documentElement.style.setProperty('--app-h', h + 'px');
-            }
-            setAppHeight();
-            window.addEventListener('resize', setAppHeight);
-            window.addEventListener('orientationchange', function () { setTimeout(setAppHeight, 120); setTimeout(setAppHeight, 500); });
-            window.addEventListener('pageshow', setAppHeight);
-            window.addEventListener('load', function () { setTimeout(setAppHeight, 300); });
-            document.addEventListener('visibilitychange', function () { if (!document.hidden) setAppHeight(); });
-            if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
-        })();
-    </script>
+    <script src="js/init-viewport-height.js"></script>
     <title>TartiliKu</title>
-    
+
     <link rel="icon" href="favicon.png">
 
     <!-- Aplikasi bisa dipasang di layar utama HP (PWA) -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" id="metaThemeColor" content="#04050d">
-    <script>
-        // ===== DAFTAR TEMA =====
-        // id    : nama class pada <body> (juga disimpan di localStorage 'tartili_theme')
-        // dark  : true untuk tema gelap (body otomatis diberi class 'is-dark')
-        // bar   : warna status bar HP (sama dengan warna latar tema)
-        // sw    : 3 warna contoh untuk kartu pilihan tema [aksen 1, aksen 2, latar]
-        // Tema bawaan (untuk pengguna yang belum pernah memilih): Futuristik
-        window.TARTILI_DEFAULT_THEME = 'future-theme';
-        window.TARTILI_THEMES = [
-            { id: 'future-theme',    name: 'Futuristik',  desc: 'Neon cyan & magenta', dark: true,  bar: '#04050d', sw: ['#00e5ff', '#ff2bd6', '#04050d'] },
-            { id: 'bluenight-theme', name: 'Blue Night',  desc: 'Biru malam elegan',   dark: true,  bar: '#070d1f', sw: ['#60a5fa', '#6366f1', '#070d1f'] },
-            { id: 'emerald-theme',   name: 'Emerald',     desc: 'Hijau zamrud mewah',  dark: true,  bar: '#03120d', sw: ['#34d399', '#d4af37', '#03120d'] },
-            { id: 'dark-theme',      name: 'Gelap',       desc: 'Hijau & biru muda',   dark: true,  bar: '#020617', sw: ['#34d399', '#22d3ee', '#020617'] },
-            { id: 'aesthetic-theme', name: 'Aestetik',    desc: 'Pastel rose & sage',  dark: false, bar: '#fbf6f1', sw: ['#e8a0b4', '#a7c4b0', '#fbf6f1'] },
-            { id: 'lavender-theme',  name: 'Lavender',    desc: 'Ungu lembut tenang',  dark: false, bar: '#f5f3ff', sw: ['#a78bfa', '#7c3aed', '#f5f3ff'] },
-            { id: 'kids-theme',      name: 'Ceria Anak',  desc: 'Warna-warni ceria',   dark: false, bar: '#fff7e0', sw: ['#ffb703', '#ff5d8f', '#fff7e0'] },
-            { id: 'light-theme',     name: 'Terang',      desc: 'Pink & ungu lembut',  dark: false, bar: '#fdf4ff', sw: ['#f472b6', '#a855f7', '#fdf4ff'] }
-        ];
-        window.getTartiliTheme = function (id) {
-            var list = window.TARTILI_THEMES;
-            for (var i = 0; i < list.length; i++) { if (list[i].id === id) return list[i]; }
-            // id tidak dikenal / belum pernah memilih -> tema bawaan
-            for (var j = 0; j < list.length; j++) { if (list[j].id === window.TARTILI_DEFAULT_THEME) return list[j]; }
-            return list[0];
-        };
-        // Pasang tema: class <body>, warna status bar HP, dan (opsional) simpan pilihan
-        window.applyTartiliTheme = function (id, persist) {
-            var t = window.getTartiliTheme(id);
-            if (document.body) document.body.className = t.id + (t.dark ? ' is-dark' : '');
-            var meta = document.getElementById('metaThemeColor');
-            if (meta) meta.setAttribute('content', t.bar);
-            if (persist) { try { localStorage.setItem('tartili_theme', t.id); } catch (e) {} }
-            return t;
-        };
-        // Warna status bar sejak awal (sebelum halaman tampil), tanpa berkedip
-        (function () {
-            try {
-                var t = window.getTartiliTheme(localStorage.getItem('tartili_theme'));
-                document.getElementById('metaThemeColor').setAttribute('content', t.bar);
-            } catch (e) {}
-        })();
-    </script>
+    <script src="js/init-theme-registry.js"></script>
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="TartiliKu">
@@ -84,18 +27,18 @@
     <link rel="modulepreload" href="https://esm.sh/firebase@10.8.0/firestore?deps=@firebase/app@0.9.27">
 
     <link href="https://fonts.bunny.net/css?family=Plus+Jakarta+Sans:400,500,600,700,800%7CAmiri:700&display=swap" rel="stylesheet">
-    
+
     <!-- ==========================================
          1. INISIALISASI FIREBASE & AUTENTIKASI
          ========================================== -->
-    <script type="module" src="firebase-auth.js"></script>
+    <script type="module" src="js/firebase-auth.js"></script>
 
-    <!-- Data blok suara Tartili (tartili1.js - tartili6.js) kini dimuat otomatis per jilid oleh app.js -->
+    <!-- Data blok suara Tartili (data/tartili1.js - data/tartili6.js) dimuat otomatis per jilid oleh js/08-reader.js -->
 
     <!-- ==========================================
          2. PENGATURAN TAMPILAN (CSS / GLASS MORPHISM)
          ========================================== -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="future-theme is-dark">
 
@@ -111,41 +54,7 @@
         </div>
         <div class="app-footer splash-footer">Crafted with ♥ by <span style="color: var(--accent-solid); font-weight: 700;">Kurniapedia</span> 2026</div>
     </div>
-    <script>
-    // Splash tampil sampai halaman pertama (login / menu) siap, minimal 0,7 detik.
-    (function () {
-        var splash = document.getElementById('splash-screen');
-        if (!splash) return;
-        try { var t = localStorage.getItem('tartili_theme') || window.TARTILI_DEFAULT_THEME || 'future-theme'; if (window.applyTartiliTheme) window.applyTartiliTheme(t, false); else document.body.className = t; } catch (e) {}
-        var MIN_SHOW_MS = 400, SLOW_MS = 10000;
-        var hidden = false, pending = false, slowTimer = null;
-        function hideSplash() {
-            if (hidden) return;
-            hidden = true;
-            clearTimeout(slowTimer);
-            observer.disconnect();
-            splash.classList.add('hide');
-            setTimeout(function () { if (splash.parentNode) splash.parentNode.removeChild(splash); }, 600);
-        }
-        function tryHide() {
-            if (hidden || pending || !document.querySelector('.screen.active')) return;
-            pending = true;
-            setTimeout(hideSplash, Math.max(0, MIN_SHOW_MS - performance.now()));
-        }
-        var observer = new MutationObserver(tryHide);
-        observer.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['class'] });
-        document.addEventListener('DOMContentLoaded', tryHide);
-        // Kalau terlalu lama (mis. offline saat pertama kali dibuka), tampilkan pesan
-        slowTimer = setTimeout(function () {
-            var s = document.getElementById('splashStatus'), b = document.getElementById('splashRetry');
-            if (s) s.textContent = navigator.onLine
-                ? 'Memuat lebih lama dari biasanya...'
-                : 'Anda sedang offline. Buka aplikasi sekali saat online agar bisa dipakai offline.';
-            if (b) b.style.display = 'inline-block';
-        }, SLOW_MS);
-        window.addEventListener('online', function () { if (!hidden) location.reload(); });
-    })();
-    </script>
+    <script src="js/init-splash.js"></script>
 
     <div id="offlineBadge">Offline</div>
 
@@ -371,7 +280,7 @@
                 </button>
             </div>
             <button type="button" class="link-forgot" id="btnForgot" onclick="handleForgotPassword()">Lupa kata sandi?</button>
-            
+
             <div id="registerFields" class="register-only-field">
                 <input type="text" id="authName" placeholder="Nama Lengkap" />
                 <select id="authRole" onchange="toggleRoleFields()">
@@ -414,7 +323,6 @@
             <div class="app-footer">Crafted with ♥ by <span style="color: var(--accent-solid); font-weight: 700;">Kurniapedia</span> 2026</div>
         </div>
     </div>
-
 
     <!-- Halaman Menunggu Persetujuan -->
     <div id="verify-screen" class="screen">
@@ -463,13 +371,11 @@
         <div class="login-card" style="max-width: 600px; height: calc(var(--app-h, 100vh) * 0.85); display: flex; flex-direction: column;">
             <h2 id="classMembersTitle">Daftar Anggota Kelas</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;" id="classMembersSubtitle">Daftar siswa yang tergabung dalam kelas ini:</p>
-            
+
             <div id="classMembersContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 4px;">
                 <!-- Diisi dinamis via JS -->
             </div>
 
-        <!-- KODE BARU -->
-            <!-- KODE BARU -->
             <button class="btn-back-compact" onclick="goBackFromClassMembers()">Kembali</button>
         </div>
     </div>
@@ -493,8 +399,6 @@
         <div style="color:white; font-weight:700; font-size:15px;" id="uploadingOverlayText">Mengirim rekaman...</div>
         <div style="color:rgba(255,255,255,0.75); font-size:12px; max-width:280px;">Jangan tutup atau pindah halaman sampai proses ini selesai.</div>
     </div>
-
-
 
     <!-- Halaman Menu Utama -->
     <div id="menu-screen" class="screen">
@@ -560,7 +464,7 @@
             </div>
 
             <div class="menu-section-title">DALAM PENGEMBANGAN KURNIAPEDIA</div>
-            
+
             <div class="grid-jilid">
                 <button class="btn-cover" id="cover-btn-0" onclick="openJilid(1, 'a')" onmouseenter="selectedMenuCoverIndex=0; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover1.jpg" alt="Tartili jilid 1" decoding="async"></button>
                 <button class="btn-cover" id="cover-btn-1" onclick="openJilid(2, 'a')" onmouseenter="selectedMenuCoverIndex=1; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover2.jpg" alt="Tartili jilid 2" decoding="async"></button>
@@ -570,7 +474,7 @@
                 <button class="btn-cover" id="cover-btn-5" onclick="openJilid(6, 'a')" onmouseenter="selectedMenuCoverIndex=5; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover6.jpg" alt="Tartili jilid 6" decoding="async"></button>
                 <button class="btn-cover" id="cover-btn-6" onclick="openJilid(7, 'a')" onmouseenter="selectedMenuCoverIndex=6; updateMenuCoverFocus();"><img src="https://res.cloudinary.com/ycfss0no/image/upload/f_webp,q_auto,w_400/cover7.jpg" alt="Tartili Ghorib (Jilid 7)" decoding="async"><span class="cover-tag">Ghorib</span></button>
             </div>
-            
+
             <div class="shortcut-panel" style="width: 100%; max-width: 100%;">
                 <div class="section-title">Pintasan</div>
                 <div class="shortcut-container">
@@ -615,7 +519,7 @@
                 <h3 id="bookmarksTitle">Halaman Tersimpan</h3>
                 <button class="modal-close-btn" onclick="goToMenu()" title="Tutup" aria-label="Tutup halaman tersimpan">✕</button>
             </div>
-            
+
             <div class="bookmarks-list" id="bookmarksListContainer"></div>
         </div>
     </div>
@@ -653,7 +557,7 @@
                 <span class="pp-count" id="ppCount">1/1</span>
             </div>
         </div>
-        
+
         <div class="controls-wrapper">
             <div class="page-nav-panel">
                 <div class="section-title">Halaman</div>
@@ -663,11 +567,11 @@
                             <svg viewBox="0 0 24 24"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
                         </span>
                     </button>
-                    
+
                     <button class="btn-bookmark" id="btnBookmark" onclick="toggleBookmark()" title="Simpan Halaman">
                         <svg viewBox="0 0 24 24"><path d="M6 2C4.89543 2 4 2.89543 4 4V22L12 17L20 22V4C20 2.89543 19.1046 2 18 2H6ZM9 5H15C15.5523 5 16 5.44772 16 6C16 6.55228 15.5523 7 15 7H9C8.44772 7 8 6.55228 8 6C8 5.44772 8.44772 5 9 5Z"/></svg>
                     </button>
-                    
+
                     <button class="btn-page-nav-custom btn-next-custom" onclick="changePage(1)" title="Berikutnya">
                         <span class="nav-icon">
                             <svg viewBox="0 0 24 24"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>
@@ -740,15 +644,28 @@
     </div>
 
     <!-- ==========================================
-         4. LOGIKA APLIKASI UTAMA (JAVASCRIPT)
+         3. LOGIKA APLIKASI (JAVASCRIPT) - urutan muat PENTING
          ========================================== -->
-    <script src="app.js"></script>
-    <script src="belajar.js"></script>
-    <script src="bintang.js"></script>
-<!-- KODE MEMATIKAN ZOOM (Cukup tempel di satu tempat ini saja) -->
+    <script src="js/01-config.js"></script>
+    <script src="js/02-app-shell.js"></script>
+    <script src="js/03-auth.js"></script>
+    <script src="js/04-content-protection.js"></script>
+    <script src="js/05-dashboards.js"></script>
+    <script src="js/06-grading-and-history.js"></script>
+    <script src="js/07-bookmarks.js"></script>
+    <script src="js/08-reader.js"></script>
+    <script src="js/09-page-loader.js"></script>
+    <script src="js/10-page-player.js"></script>
+    <script src="js/11-recording.js"></script>
+    <script src="js/12-setoran-upload.js"></script>
+    <script src="js/13-touch-and-zoom.js"></script>
+    <script src="js/14-pwa-install.js"></script>
+    <script src="js/15-offline-manager.js"></script>
+    <script src="js/16-fullscreen.js"></script>
+    <script src="js/17-instant-start.js"></script>
 
-
-
-    
+    <!-- Fitur tambahan (memakai fungsi dari berkas di atas, jadi harus dimuat sesudahnya) -->
+    <script src="js/belajar.js"></script>
+    <script src="js/bintang.js"></script>
 </body>
 </html>

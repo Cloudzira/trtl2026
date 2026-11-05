@@ -7,7 +7,7 @@
    TIDAK menyentuh: Firestore, Firebase Auth, upload setoran (Apps Script),
    gambar halaman (sudah di-cache oleh app.js), dan permintaan selain GET.
    ===================================================================== */
-const VERSION = 'v5';                       // naikkan angka ini kalau ingin memaksa cache aplikasi dibuat ulang
+const VERSION = 'v6';                       // naikkan angka ini kalau ingin memaksa cache aplikasi dibuat ulang
 const SHELL_CACHE = `tartili-shell-${VERSION}`;
 const EXT_CACHE = `tartili-ext-${VERSION}`;
 const MEDIA_CACHE = 'tartili-media-v1';     // sampul + audio (dibiarkan tetap supaya unduhan offline tidak hilang)
@@ -16,9 +16,43 @@ const OFFLINE_IMAGE_CACHE = 'tartili-offline-pages-v2'; // halaman unduhan offli
 const KEEP = [SHELL_CACHE, EXT_CACHE, MEDIA_CACHE, PAGE_IMAGE_CACHE, OFFLINE_IMAGE_CACHE];
 
 const SHELL_FILES = [
-  './', 'app.js', 'styles.css', 'firebase-auth.js',
-  'tartili1.js', 'tartili2.js', 'tartili3.js', 'tartili4.js', 'tartili5.js', 'tartili6.js', 'tartili7.js', 'belajar.js', 'bintang.js',
-  'manifest.json', 'favicon.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'
+  './',
+  'css/styles.css',
+  'js/init-viewport-height.js',
+  'js/init-theme-registry.js',
+  'js/init-splash.js',
+  'js/firebase-auth.js',
+  'js/01-config.js',
+  'js/02-app-shell.js',
+  'js/03-auth.js',
+  'js/04-content-protection.js',
+  'js/05-dashboards.js',
+  'js/06-grading-and-history.js',
+  'js/07-bookmarks.js',
+  'js/08-reader.js',
+  'js/09-page-loader.js',
+  'js/10-page-player.js',
+  'js/11-recording.js',
+  'js/12-setoran-upload.js',
+  'js/13-touch-and-zoom.js',
+  'js/14-pwa-install.js',
+  'js/15-offline-manager.js',
+  'js/16-fullscreen.js',
+  'js/17-instant-start.js',
+  'js/belajar.js',
+  'js/bintang.js',
+  'data/tartili1.js',
+  'data/tartili2.js',
+  'data/tartili3.js',
+  'data/tartili4.js',
+  'data/tartili5.js',
+  'data/tartili6.js',
+  'data/tartili7.js',
+  'manifest.json',
+  'favicon.png',
+  'icon-192.png',
+  'icon-512.png',
+  'apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
