@@ -1,0 +1,13 @@
+# Aturan gaya penulisan kode (dibaca otomatis oleh VS Code, WebStorm, dll.)
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,rules}]
+indent_size = 2
