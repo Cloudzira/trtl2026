@@ -375,10 +375,6 @@ body {
     border-color: rgba(var(--accent-rgb), 0.6);
 }
 
-.kurnia-icon.wa:hover {
-    color: #00a85a;
-    border-color: rgba(0, 168, 90, 0.6);
-}
 
 .kurnia-icon:focus-visible {
     outline: 2px solid var(--accent-solid);
@@ -3759,9 +3755,6 @@ body:not(.is-dark) select {
     color: var(--text-main);
 }
 
-.about-social.wa .about-social-icon {
-    color: #25d366;
-}
 
 .about-social-text {
     flex: 1;
