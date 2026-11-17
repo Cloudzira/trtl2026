@@ -8,7 +8,7 @@
    ===================================================================== */
 
 import { initializeApp } from "https://esm.sh/firebase@10.8.0/app";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://esm.sh/firebase@10.8.0/auth?deps=@firebase/app@0.9.27";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://esm.sh/firebase@10.8.0/auth?deps=@firebase/app@0.9.27";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc, addDoc, onSnapshot, orderBy, serverTimestamp } from "https://esm.sh/firebase@10.8.0/firestore?deps=@firebase/app@0.9.27";
 
 const firebaseConfig = {
@@ -38,12 +38,9 @@ try {
 
     window.firebaseAuth = auth;
     window.firebaseDb = db;
-    window.signInWithEmailAndPassword = signInWithEmailAndPassword;
-    window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
     window.signOut = signOut;
     window.GoogleAuthProvider = GoogleAuthProvider;
     window.signInWithPopup = signInWithPopup;
-    window.sendPasswordResetEmail = sendPasswordResetEmail;
     window.doc = doc;
     window.setDoc = setDoc;
     window.getDoc = getDoc;
@@ -69,6 +66,14 @@ try {
         const classMembersScreen = document.getElementById('class-members-screen');
 
         if (user) {
+            // Hanya akun Google yang diterima. Sesi lama dari login email/kata sandi
+            // dikeluarkan, lalu pengguna diminta masuk dengan Google.
+            const viaGoogle = (user.providerData || []).some((p) => p.providerId === 'google.com');
+            if (!viaGoogle) {
+                try { await signOut(auth); } catch (e) { /* abaikan */ }
+                try { sessionStorage.setItem('tartili_login_notice', 'Masuk dengan email dan kata sandi sudah tidak dipakai. Silakan masuk dengan akun Google.'); } catch (e) { /* abaikan */ }
+                return;
+            }
             try {
                 const userDocRef = doc(db, "users", user.uid);
                 const userSnap = await getDoc(userDocRef);
@@ -210,9 +215,19 @@ try {
                 window.loadBookmarksForUser(null);
             }
             if (window.unsubNotifications) window.unsubNotifications();
+            notifVisible = [];
+            updateNotifIndicators(0);
             hideAllScreens();
             loginScreen.classList.add('active');
             window.appState = 'login';
+            try {
+                const notice = sessionStorage.getItem('tartili_login_notice');
+                if (notice) {
+                    sessionStorage.removeItem('tartili_login_notice');
+                    const errEl = document.getElementById('loginError');
+                    if (errEl) { errEl.innerText = notice; errEl.style.display = 'block'; }
+                }
+            } catch (e) { /* abaikan */ }
         }
     });
 } catch (e) {
@@ -226,32 +241,109 @@ function hideAllScreens() {
     });
 }
 
-// --- REALTIME NOTIFIKASI SITEM ---
+// --- REALTIME NOTIFIKASI ---
+// Fitur: daftar bertanda jenis & waktu relatif, tandai semua dibaca, bersihkan yang
+// sudah dibaca, notifikasi perangkat (saat aplikasi terbuka/di latar), lencana ikon
+// aplikasi, dan judul tab "(n)". Hanya notifikasi BARU (setelah muat awal) yang
+// memunculkan pemberitahuan, jadi tidak ada banjir notifikasi saat membuka aplikasi.
+let notifVisible = [];   // salinan daftar yang sedang tampil (untuk "tandai semua dibaca")
+const BASE_TITLE = document.title;
+
+const NOTIF_TYPES = {
+    setoran:          { tag: 'Setoran',   cls: 'nt-setoran' },
+    setoran_hasil:    { tag: 'Hasil',     cls: 'nt-hasil' },
+    'admin-approval': { tag: 'Pendaftar', cls: 'nt-daftar' },
+    'teacher-approval': { tag: 'Pendaftar', cls: 'nt-daftar' }
+};
+
+function notifTimeLabel(ts) {
+    if (!ts) return '';
+    const d = ts.toDate();
+    const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
+    if (diffMin < 1) return 'Baru saja';
+    if (diffMin < 60) return diffMin + ' mnt lalu';
+    const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const start = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const hariLalu = Math.round((start(new Date()) - start(d)) / 86400000);
+    if (hariLalu === 0) return jam;
+    if (hariLalu === 1) return 'Kemarin ' + jam;
+    return d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + jam;
+}
+
+function updateNotifIndicators(unread) {
+    const badgeEl = document.getElementById('notifBadgeCount');
+    if (badgeEl) {
+        if (unread > 0) { badgeEl.innerText = unread > 9 ? '9+' : unread; badgeEl.style.display = 'flex'; }
+        else badgeEl.style.display = 'none';
+    }
+    const chip = document.getElementById('notifCountChip');
+    if (chip) { chip.innerText = unread; chip.style.display = unread > 0 ? 'inline-block' : 'none'; }
+    document.title = unread > 0 ? `(${unread}) ${BASE_TITLE}` : BASE_TITLE;
+    try {
+        if (unread > 0 && navigator.setAppBadge) navigator.setAppBadge(unread);
+        else if (navigator.clearAppBadge) navigator.clearAppBadge();
+    } catch (e) { /* abaikan */ }
+}
+
+// Pemberitahuan di perangkat (butuh izin). Lewat Service Worker agar tetap jalan di PWA.
+async function showDeviceNotification(title, body, tag) {
+    try {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        const opts = { body: body, tag: tag, icon: 'icon-192.png', badge: 'icon-192.png', renotify: false };
+        const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+        if (reg && reg.showNotification) await reg.showNotification(title, opts);
+        else new Notification(title, opts);
+    } catch (e) { console.log('Notifikasi perangkat info:', e); }
+}
+
+function renderNotifPermBanner() {
+    const box = document.getElementById('notifPermBanner');
+    if (!box) return;
+    if (!('Notification' in window)) { box.style.display = 'none'; return; }
+    if (Notification.permission === 'default') {
+        box.style.display = 'flex';
+        box.innerHTML = '<span>Aktifkan agar setoran &amp; hasil penilaian muncul sebagai pemberitahuan di perangkat.</span><button type="button" onclick="enableDeviceNotifications()">Aktifkan</button>';
+    } else if (Notification.permission === 'denied') {
+        box.style.display = 'flex';
+        box.innerHTML = '<span>Pemberitahuan perangkat diblokir. Izinkan lewat pengaturan situs di browser.</span>';
+    } else {
+        box.style.display = 'none';
+    }
+}
+async function enableDeviceNotifications() {
+    try { await Notification.requestPermission(); } catch (e) { /* abaikan */ }
+    renderNotifPermBanner();
+    if (Notification.permission === 'granted' && typeof showToast === 'function') showToast('Notifikasi perangkat aktif.');
+}
+window.enableDeviceNotifications = enableDeviceNotifications;
+window.renderNotifPermBanner = renderNotifPermBanner;
+
 function initRealtimeNotifications(userId, profile) {
     if (window.unsubNotifications) window.unsubNotifications();
+    renderNotifPermBanner();
 
-    // Catatan: query TIDAK memakai orderBy() supaya tidak perlu
-    // composite index tambahan di Firestore. Urutan terbaru->terlama
-    // dilakukan di JavaScript (lihat sort di bawah).
-    // PENTING: notifikasi "ALL_ADMINS" (mis. Pendaftar Baru) HANYA untuk admin.
-    // Sebelumnya semua pengguna (termasuk siswa) ikut membaca "ALL_ADMINS",
-    // sehingga notifikasi pendaftar muncul di akun siswa lain.
+    // Catatan: query TIDAK memakai orderBy() supaya tidak perlu composite index.
+    // Urutan terbaru->terlama dilakukan di JavaScript.
+    // "ALL_ADMINS" HANYA untuk admin; "CLASS_<kode>" HANYA untuk guru kelas itu.
     const notifCol = collection(window.firebaseDb, "notifications");
     const authUser = window.firebaseAuth && window.firebaseAuth.currentUser;
     const isAdminUser = profile.role === 'Admin' ||
         (authUser && authUser.email === 'awanproject70@gmail.com');
 
     let lastNotifSig = null;
-    const handleSnapshot = (snapshot) => {
+    let initialized = false;            // muat awal selesai -> notifikasi berikutnya dianggap "baru"
+    const seen = new Set();
+    notifVisible = [];
+
+    const handleSnapshot = (snapshot, ready) => {
         const sortedDocs = snapshot.docs.slice().sort((a, b) => {
             const ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
             const tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
             return tb - ta; // terbaru di atas
         });
 
-        // Hasil penilaian yang usianya sudah lewat 24 jam tidak ditampilkan lagi
-        // (walaupun penghapusannya belum berhasil), dan pembersihan dicoba SEKALI saja
-        // per notifikasi agar tidak terjadi perulangan yang membuat daftar berkedip.
+        // Hasil penilaian yang sudah lewat 24 jam tidak ditampilkan lagi; pembersihan
+        // dicoba SEKALI per notifikasi agar tidak terjadi perulangan yang membuat daftar berkedip.
         const nowMs = Date.now();
         const isExpiredHasil = (d) => d.actionUrl === 'setoran_hasil' && d.createdAt &&
             (nowMs - d.createdAt.toMillis()) / (1000 * 60 * 60) >= RETENSI_SETORAN_JAM;
@@ -266,81 +358,137 @@ function initRealtimeNotifications(userId, profile) {
         const sig = visibleDocs.map((ds) => ds.id + ':' + (((ds.data().readBy || []).includes(userId)) ? 1 : 0)).join('|');
         if (sig === lastNotifSig) return;
         lastNotifSig = sig;
+        notifVisible = visibleDocs;
+
+        // Deteksi notifikasi baru (bukan muat awal, bukan tulisan lokal sendiri)
+        if (ready) {
+            if (!initialized) {
+                visibleDocs.forEach((ds) => seen.add(ds.id));
+                initialized = true;
+            } else {
+                const fresh = visibleDocs.filter((ds) => {
+                    if (seen.has(ds.id)) return false;
+                    seen.add(ds.id);
+                    const d = ds.data();
+                    return !ds.metadata.hasPendingWrites && d.createdAt && !(d.readBy || []).includes(userId);
+                });
+                if (fresh.length) {
+                    const d = fresh[0].data();
+                    const judul = fresh.length > 1 ? `${fresh.length} notifikasi baru` : d.title;
+                    const isi = fresh.length > 1 ? 'Buka TartiliKu untuk melihatnya.' : d.message;
+                    if (typeof showToast === 'function') showToast('🔔 ' + judul);
+                    if (document.visibilityState !== 'visible') showDeviceNotification(judul, isi, 'tartili-' + fresh[0].id);
+                }
+            }
+        }
 
         let unreadCount = 0;
         const container = document.getElementById('notificationListContainer');
         if (container) container.innerHTML = "";
 
         if (visibleDocs.length === 0 && container) {
-            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Tidak ada notifikasi.</div>`;
+            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:28px 20px; font-size:12px;">Tidak ada notifikasi.</div>`;
         }
+        const esc = window.riwayatEsc || String;
 
         visibleDocs.forEach(docSnap => {
             const data = docSnap.data();
             const notifId = docSnap.id;
-
             const isRead = data.readBy && data.readBy.includes(userId);
             if (!isRead) unreadCount++;
 
             if (container) {
+                const type = NOTIF_TYPES[data.actionUrl] || { tag: 'Info', cls: 'nt-info' };
                 const item = document.createElement('div');
                 item.className = `notif-item ${isRead ? 'read' : 'unread'}`;
                 item.onclick = () => markNotificationRead(notifId, userId, data);
                 item.innerHTML = `
-                            <div style="font-weight:700; font-size:12px; color:var(--text-main); display:flex; justify-content:space-between;">
-                                <span>${(window.riwayatEsc || String)(data.title)}</span>
-                                <span style="font-size:10px; opacity:0.7;">${data.createdAt ? new Date(data.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
-                            </div>
-                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${(window.riwayatEsc || String)(data.message)}</div>
-                        `;
+                    <div class="notif-row">
+                        <span class="notif-tag ${type.cls}">${type.tag}</span>
+                        <span class="notif-time">${notifTimeLabel(data.createdAt)}</span>
+                    </div>
+                    <div class="notif-title">${esc(data.title)}</div>
+                    <div class="notif-msg">${esc(data.message)}</div>`;
                 container.appendChild(item);
             }
         });
 
-        // Update badge counter UI
-        const badgeEl = document.getElementById('notifBadgeCount');
-        if (badgeEl) {
-            if (unreadCount > 0) {
-                badgeEl.innerText = unreadCount > 9 ? '9+' : unreadCount;
-                badgeEl.style.display = 'flex';
-            } else {
-                badgeEl.style.display = 'none';
-            }
-        }
+        const toolbar = document.getElementById('notifToolbar');
+        if (toolbar) toolbar.style.display = visibleDocs.length ? 'flex' : 'none';
+        updateNotifIndicators(unreadCount);
     };
 
     const onNotifError = (err) => console.log("Notif snapshot info:", err);
 
-    // Tujuan bersama: admin -> "ALL_ADMINS", guru -> "CLASS_<kode kelas>"
-    // (mis. siswa baru mendaftar). Siswa hanya membaca notifikasi pribadinya.
     const sharedTargets = [];
     if (isAdminUser) sharedTargets.push("ALL_ADMINS");
     if (profile.role === 'Guru' && profile.classCode) sharedTargets.push("CLASS_" + profile.classCode);
 
     if (sharedTargets.length) {
-        // Notifikasi pribadi + notifikasi bersama (beberapa listener, digabung)
+        // Notifikasi pribadi + notifikasi bersama (beberapa listener, digabung).
+        // "ready" baru true setelah SEMUA listener menjawab sekali.
         let ownDocs = [];
         const sharedDocs = {};
+        const answered = new Set();
+        const total = 1 + sharedTargets.length;
         const emit = () => {
             let docs = ownDocs.slice();
             sharedTargets.forEach(tg => { docs = docs.concat(sharedDocs[tg] || []); });
-            handleSnapshot({ empty: docs.length === 0, docs: docs });
+            handleSnapshot({ empty: docs.length === 0, docs: docs }, answered.size >= total);
         };
         const unsubs = [];
         unsubs.push(onSnapshot(query(notifCol, where("targetUserId", "==", userId)),
-            (snap) => { ownDocs = snap.docs; emit(); }, onNotifError));
+            (snap) => { ownDocs = snap.docs; answered.add('own'); emit(); }, onNotifError));
         sharedTargets.forEach(tg => {
             unsubs.push(onSnapshot(query(notifCol, where("targetUserId", "==", tg)),
-                (snap) => { sharedDocs[tg] = snap.docs; emit(); }, onNotifError));
+                (snap) => { sharedDocs[tg] = snap.docs; answered.add(tg); emit(); }, onNotifError));
         });
         window.unsubNotifications = () => { unsubs.forEach(u => u()); };
     } else {
         // Siswa: HANYA notifikasi yang ditujukan ke akunnya sendiri
         window.unsubNotifications = onSnapshot(
             query(notifCol, where("targetUserId", "==", userId)),
-            handleSnapshot, onNotifError);
+            (snap) => handleSnapshot(snap, true), onNotifError);
     }
 }
+
+// Tandai semua notifikasi yang tampil sebagai sudah dibaca (tidak menghapus apa pun)
+async function markAllNotificationsRead() {
+    const user = window.firebaseAuth && window.firebaseAuth.currentUser;
+    if (!user) return;
+    const targets = notifVisible.filter((ds) => !((ds.data().readBy || []).includes(user.uid)));
+    if (!targets.length) { if (typeof showToast === 'function') showToast('Semua notifikasi sudah dibaca.'); return; }
+    try {
+        await Promise.all(targets.map((ds) =>
+            updateDoc(doc(window.firebaseDb, "notifications", ds.id), { readBy: [...(ds.data().readBy || []), user.uid] })));
+        if (typeof showToast === 'function') showToast('Semua notifikasi ditandai dibaca.');
+    } catch (e) {
+        console.error(e);
+        if (typeof showToast === 'function') showToast('Gagal menandai notifikasi.');
+    }
+}
+
+// Hapus notifikasi yang sudah dibaca. Notifikasi setoran & hasil penilaian TIDAK ikut
+// dihapus (masih dibutuhkan untuk dengar ulang/lihat nilai; dibersihkan otomatis 24 jam).
+async function clearReadNotifications() {
+    const user = window.firebaseAuth && window.firebaseAuth.currentUser;
+    if (!user) return;
+    const targets = notifVisible.filter((ds) => {
+        const d = ds.data();
+        return (d.readBy || []).includes(user.uid) && d.actionUrl !== 'setoran' && d.actionUrl !== 'setoran_hasil';
+    });
+    if (!targets.length) { if (typeof showToast === 'function') showToast('Tidak ada notifikasi dibaca yang bisa dibersihkan.'); return; }
+    if (!confirm(`Hapus ${targets.length} notifikasi yang sudah dibaca?`)) return;
+    try {
+        await Promise.all(targets.map((ds) => deleteDoc(doc(window.firebaseDb, "notifications", ds.id))));
+        if (typeof showToast === 'function') showToast('Notifikasi dibersihkan.');
+    } catch (e) {
+        console.error(e);
+        if (typeof showToast === 'function') showToast('Gagal membersihkan notifikasi.');
+    }
+}
+window.markAllNotificationsRead = markAllNotificationsRead;
+window.clearReadNotifications = clearReadNotifications;
 
 // Membersihkan otomatis notifikasi + dokumen setoran yang SUDAH
 // DINILAI dan usianya (sejak dinilai) sudah lewat 24 jam. Dipanggil

@@ -7,7 +7,7 @@
    TIDAK menyentuh: Firestore, Firebase Auth, upload setoran (Apps Script),
    gambar halaman (sudah di-cache oleh app.js), dan permintaan selain GET.
    ===================================================================== */
-const VERSION = 'v6';                       // naikkan angka ini kalau ingin memaksa cache aplikasi dibuat ulang
+const VERSION = 'v7';                       // naikkan angka ini kalau ingin memaksa cache aplikasi dibuat ulang
 const SHELL_CACHE = `tartili-shell-${VERSION}`;
 const EXT_CACHE = `tartili-ext-${VERSION}`;
 const MEDIA_CACHE = 'tartili-media-v1';     // sampul + audio (dibiarkan tetap supaya unduhan offline tidak hilang)
@@ -294,3 +294,15 @@ async function rangeResponse(res, header) {
     }
   });
 }
+
+// Klik pemberitahuan perangkat: buka/fokuskan aplikasi
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const list = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of list) {
+      if ('focus' in c) { await c.focus(); return; }
+    }
+    if (self.clients.openWindow) await self.clients.openWindow('./');
+  })());
+});

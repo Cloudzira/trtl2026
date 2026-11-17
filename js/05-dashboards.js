@@ -3,7 +3,7 @@
    Berkas : js/05-dashboards.js  (urutan muat ke-5 dari 17)
    Tugas  : Sapaan pengguna, akses dashboard sesuai peran, persetujuan
             pendaftar (admin & guru), dan daftar anggota kelas.
-   Isi    : updateUserGreeting, isAdminProfile, setupDashboardAccess,
+   Isi    : updateUserGreeting, openAdminUsersModal (daftar guru & siswa terdaftar), isAdminProfile, setupDashboardAccess,
             openMasterAdminScreen, closeMasterAdminModal, updateAdminBadge,
             refreshAdminPendingBadge, loadMasterPendingUsers,
             approveMasterUser, deleteStudentFromClass, deleteUserAccount,
@@ -119,6 +119,9 @@ function setupDashboardAccess() {
         btnMaster.style.setProperty('display', 'none', 'important');
     }
 
+    const btnUsers = document.getElementById('btnAdminUsers');
+    if (btnUsers) btnUsers.style.setProperty('display', isMaster ? 'flex' : 'none', 'important');
+
     if (profile.role === 'Guru') {
         btnTeacher.style.setProperty('display', 'flex', 'important');
     } else {
@@ -229,6 +232,126 @@ async function approveMasterUser(userId) {
         showToast('Gagal menyetujui akun.');
     }
 }
+
+// ===== PENGGUNA TERDAFTAR (ADMIN): daftar guru & siswa + hapus =====
+// Menampilkan akun yang SUDAH disetujui Admin. Yang masih menunggu ada di popup
+// "Setujui Pendaftar Baru". Menghapus = menghapus profil di database (akun Google-nya
+// tidak ikut terhapus dari Firebase Auth, tetapi tidak bisa memakai aplikasi lagi
+// sampai mendaftar ulang dan disetujui).
+let adminUsersTab = 'Guru';
+let adminUsersData = { Guru: [], Siswa: [] };
+
+async function openAdminUsersModal() {
+    const modal = document.getElementById('adminUsersModal');
+    if (modal) modal.classList.add('active');
+    await loadAdminUsers();
+}
+function closeAdminUsersModal() {
+    const modal = document.getElementById('adminUsersModal');
+    if (modal) modal.classList.remove('active');
+}
+function setAdminUsersTab(tab) {
+    adminUsersTab = tab;
+    document.getElementById('auTabGuru').classList.toggle('active', tab === 'Guru');
+    document.getElementById('auTabSiswa').classList.toggle('active', tab === 'Siswa');
+    renderAdminUsers();
+}
+
+async function loadAdminUsers() {
+    const box = document.getElementById('adminUsersContainer');
+    if (!box) return;
+    box.innerHTML = `<div class="au-empty">Memuat pengguna...</div>`;
+    try {
+        const col = window.collection(window.firebaseDb, 'users');
+        const [snapG, snapS] = await Promise.all([
+            window.getDocs(window.query(col, window.where('role', '==', 'Guru'))),
+            window.getDocs(window.query(col, window.where('role', '==', 'Siswa')))
+        ]);
+        const pick = (snap) => snap.docs
+            .map((d) => ({ id: d.id, ...d.data() }))
+            .filter((u) => u.isMasterApproved === true)
+            .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'id'));
+        adminUsersData = { Guru: pick(snapG), Siswa: pick(snapS) };
+        renderAdminUsers();
+    } catch (e) {
+        console.error(e);
+        box.innerHTML = `<div class="au-empty" style="color:#ef4444;">Gagal memuat pengguna.</div>`;
+    }
+}
+
+function renderAdminUsers() {
+    const box = document.getElementById('adminUsersContainer');
+    if (!box) return;
+    const cg = document.getElementById('auCountGuru');
+    const cs = document.getElementById('auCountSiswa');
+    if (cg) cg.textContent = adminUsersData.Guru.length;
+    if (cs) cs.textContent = adminUsersData.Siswa.length;
+
+    const q = ((document.getElementById('auSearch') || {}).value || '').trim().toLowerCase();
+    // Peta kode kelas -> guru, untuk menampilkan nama guru di daftar siswa
+    const guruByClass = {};
+    adminUsersData.Guru.forEach((g) => { if (g.classCode) guruByClass[g.classCode] = g; });
+
+    const list = adminUsersData[adminUsersTab].filter((u) => !q ||
+        [u.name, u.email, u.classCode, u.teacherClassName].some((v) => String(v || '').toLowerCase().includes(q)));
+
+    if (!list.length) {
+        box.innerHTML = `<div class="au-empty">${q ? 'Tidak ada hasil.' : (adminUsersTab === 'Guru' ? 'Belum ada guru terdaftar.' : 'Belum ada siswa terdaftar.')}</div>`;
+        return;
+    }
+    box.innerHTML = '';
+    list.forEach((u) => {
+        const row = document.createElement('div');
+        row.className = 'au-row';
+        let info;
+        if (u.role === 'Guru') {
+            const n = adminUsersData.Siswa.filter((s) => s.classCode === u.classCode).length;
+            info = `Kelas ${riwayatEsc(u.teacherClassName || '-')} · Kode ${riwayatEsc(u.classCode || '-')} · ${n} siswa`;
+        } else {
+            const g = guruByClass[u.classCode];
+            info = `Kode ${riwayatEsc(u.classCode || '-')}${g ? ' · Guru: ' + riwayatEsc(g.name) : ' · guru tidak ditemukan'}` +
+                (u.isTeacherApproved ? '' : ' · <b style="color:#f59e0b;">menunggu guru</b>');
+        }
+        row.innerHTML = `
+            <div class="au-main">
+                <div class="au-name">${riwayatEsc(u.name || '-')}</div>
+                <div class="au-sub">${riwayatEsc(u.email || '-')}</div>
+                <div class="au-sub">${info}</div>
+            </div>
+            <button type="button" class="au-del" data-id="${u.id}" data-name="${riwayatEsc(u.name || '')}" data-role="${u.role}" title="Hapus ${u.role}" aria-label="Hapus ${u.role}">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+            </button>`;
+        row.querySelector('.au-del').onclick = (ev) => {
+            const d = ev.currentTarget.dataset;
+            deleteRegisteredUser(d.id, d.name, d.role);
+        };
+        box.appendChild(row);
+    });
+}
+
+async function deleteRegisteredUser(userId, userName, role) {
+    if (!navigator.onLine) { showToast('Anda sedang offline. Belum bisa menghapus.'); return; }
+    const nama = userName || (role === 'Guru' ? 'guru ini' : 'siswa ini');
+    let pesan = `Hapus ${role} "${nama}"?\n\nPengguna tidak bisa lagi memakai aplikasi sampai mendaftar ulang dan disetujui. Tindakan ini tidak dapat dibatalkan.`;
+    if (role === 'Guru') {
+        const g = adminUsersData.Guru.find((x) => x.id === userId);
+        const n = g ? adminUsersData.Siswa.filter((s) => s.classCode === g.classCode).length : 0;
+        if (n > 0) pesan += `\n\nPERHATIAN: kelas guru ini masih punya ${n} siswa. Siswa tidak ikut terhapus, tetapi tidak akan punya guru untuk menilai setoran mereka.`;
+    }
+    if (!confirm(pesan)) return;
+    try {
+        await window.deleteDoc(window.doc(window.firebaseDb, 'users', userId));
+        showToast(`${role} ${nama} berhasil dihapus.`);
+        await loadAdminUsers();
+    } catch (e) {
+        console.error(e);
+        showToast('Gagal menghapus' + (e && e.code ? ` (${e.code})` : '') + '.');
+    }
+}
+window.openAdminUsersModal = openAdminUsersModal;
+window.closeAdminUsersModal = closeAdminUsersModal;
+window.setAdminUsersTab = setAdminUsersTab;
+window.renderAdminUsers = renderAdminUsers;
 
 // Guru menghapus siswa dari kelasnya (dari daftar pendaftar atau daftar anggota).
 // Yang dihapus adalah profil siswa di database, sehingga siswa tidak lagi

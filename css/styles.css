@@ -5484,3 +5484,44 @@ button.bj-chip {
 .login-card .app-footer {
     text-wrap: balance;
 }
+
+
+/* ===== LOGIN HANYA GOOGLE ===== */
+.login-lead { margin: 6px 0 2px; text-align: center; font-size: 14px; font-weight: 700; color: var(--text-main); }
+.login-card .btn-google-main { min-height: 52px; font-size: 15px; }
+.login-note { margin: 4px 0 0; text-align: center; font-size: 11.5px; line-height: 1.5; color: var(--text-muted); text-wrap: balance; }
+
+/* ===== NOTIFIKASI (toolbar, jenis, banner izin) ===== */
+.notif-count-chip { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #ef4444; color: #fff; font-size: 11px; font-weight: 800; vertical-align: middle; }
+.notif-toolbar { display: flex; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border-color); }
+.notif-toolbar button { flex: 1; padding: 7px 8px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); font-size: 11px; font-weight: 700; cursor: pointer; }
+.notif-toolbar button:hover { border-color: var(--accent-solid); }
+.notif-perm { align-items: center; gap: 10px; padding: 10px 14px; background: rgba(var(--accent-rgb), 0.1); border-bottom: 1px solid var(--border-color); font-size: 11.5px; line-height: 1.4; color: var(--text-main); }
+.notif-perm span { flex: 1; }
+.notif-perm button { padding: 6px 12px; border: none; border-radius: 8px; background: var(--accent-solid); color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; }
+.notif-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 3px; }
+.notif-tag { padding: 1px 7px; border-radius: 6px; font-size: 9.5px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; background: rgba(var(--accent-rgb), .15); color: var(--accent-solid); }
+.notif-tag.nt-setoran { background: rgba(245, 158, 11, .15); color: #d97706; }
+.notif-tag.nt-hasil { background: rgba(16, 185, 129, .15); color: #059669; }
+.notif-tag.nt-daftar { background: rgba(99, 102, 241, .15); color: #6366f1; }
+.notif-time { font-size: 10px; opacity: .7; color: var(--text-muted); white-space: nowrap; }
+.notif-title { font-weight: 700; font-size: 12.5px; color: var(--text-main); }
+.notif-msg { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+.notif-item.read .notif-title { font-weight: 600; opacity: .8; }
+
+/* ===== PENGGUNA TERDAFTAR (ADMIN) ===== */
+.au-tabs { display: flex; gap: 6px; padding: 10px 16px 0; }
+.au-tab { flex: 1; padding: 9px 8px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-muted); font-size: 12.5px; font-weight: 800; cursor: pointer; }
+.au-tab span { margin-left: 4px; padding: 0 6px; border-radius: 999px; background: rgba(var(--accent-rgb), .15); font-size: 10.5px; }
+.au-tab.active { background: var(--accent-solid); border-color: var(--accent-solid); color: #fff; }
+.au-tab.active span { background: rgba(255,255,255,.25); }
+.au-search { padding: 10px 16px 4px; }
+.au-search input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); font-size: 13px; }
+.au-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 16px; text-align: left; }
+.au-row { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; }
+.au-main { flex: 1; min-width: 0; }
+.au-name { font-weight: 700; font-size: 13px; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.au-sub { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.au-del { flex-shrink: 0; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid rgba(239, 68, 68, .3); background: rgba(239, 68, 68, .12); cursor: pointer; }
+.au-del svg { width: 17px; height: 17px; fill: none; stroke: #ef4444; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.au-empty { text-align: center; color: var(--text-muted); padding: 24px 12px; font-size: 12px; }

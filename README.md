@@ -36,9 +36,9 @@ tidak boleh ditukar. Urutan yang sama tertulis di bagian bawah `index.html`.
 |----|--------|-------------|
 | 01 | `01-config.js` | Nama cache, jumlah halaman & nama tiap jilid |
 | 02 | `02-app-shell.js` | Service Worker, status offline, panduan, **tema**, toast |
-| 03 | `03-auth.js` | Masuk, daftar, lupa sandi, Google |
+| 03 | `03-auth.js` | Masuk & daftar HANYA lewat Google |
 | 04 | `04-content-protection.js` | Tanda air & pencegah simpan gambar |
-| 05 | `05-dashboards.js` | Sapaan, dashboard admin & guru, daftar kelas |
+| 05 | `05-dashboards.js` | Sapaan, dashboard admin & guru, daftar kelas, pengguna terdaftar (admin) |
 | 06 | `06-grading-and-history.js` | Penilaian setoran, riwayat, keluar akun |
 | 07 | `07-bookmarks.js` | Bookmark & halaman terakhir dibaca |
 | 08 | `08-reader.js` | State pembaca, alamat gambar/audio, menu, buka jilid, ganti halaman |
